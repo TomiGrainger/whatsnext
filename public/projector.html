@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Upgrade LIVE — Room Display</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/projector.css">
+</head>
+<body class="s-projector">
+<div class="proj">
+  <div class="proj-top">
+    <div class="wordmark">THE UPGRADE <em>LIVE</em></div>
+    <div class="topic">TOPIC <span id="p-n">1</span> OF <span id="p-t">5</span></div>
+  </div>
+
+  <!-- DISCUSSION / RESULTS: the room display -->
+  <div class="pview active" id="pv-discussion">
+    <div class="proj-grid">
+      <div>
+        <h1 class="proj-q" id="p-q">Is convenience making us <b>weaker?</b></h1>
+        <div class="proj-stats">
+          <div class="st agree"><div class="n" id="p-agree">41%</div><div class="l">AGREE</div></div>
+          <div class="slash">/</div>
+          <div class="st disagree"><div class="n" id="p-disagree">37%</div><div class="l">DISAGREE</div></div>
+          <div class="slash">/</div>
+          <div class="st unsure"><div class="n" id="p-unsure">22%</div><div class="l">UNSURE</div></div>
+        </div>
+      </div>
+      <div class="proj-ring">
+        <svg viewBox="0 0 36 36" id="p-ring"></svg>
+        <div class="ring-center">
+          <div class="k">WHAT'S NEXT?</div>
+          <div class="big"><span class="num" id="p-wn-num">7</span><span class="den">/<span id="p-wn-den">10</span></span></div>
+          <div class="sub">people want to move on</div>
+        </div>
+      </div>
+      <div class="proj-ch">
+        <div class="lab">CHALLENGES</div>
+        <div class="count" id="p-ch-count">6</div>
+        <div class="in">IN QUEUE</div>
+        <div class="avs" id="p-avs"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POLL -->
+  <div class="pview" id="pv-poll">
+    <div class="pv-col">
+      <div class="pv-eyebrow">POLL</div>
+      <h1 class="pv-q" id="pp-q">BIGGEST CHALLENGE AHEAD?</h1>
+      <div class="pv-bars" id="pp-bars"></div>
+    </div>
+  </div>
+
+  <!-- WORD CLOUD -->
+  <div class="pview" id="pv-wordcloud">
+    <div class="pv-col">
+      <div class="pv-eyebrow">WORD CLOUD</div>
+      <h1 class="pv-q" id="pw-q">ONE WORD FOR THE FUTURE?</h1>
+      <div class="pv-cloud" id="pw-cloud"></div>
+    </div>
+  </div>
+
+  <!-- EMOJI -->
+  <div class="pview" id="pv-emoji">
+    <div class="pv-col">
+      <div class="pv-eyebrow">EMOJI REACTIONS</div>
+      <h1 class="pv-q" id="pe-q">HOW DO YOU <b>FEEL?</b></h1>
+      <div class="pv-emoji" id="pe-grid"></div>
+    </div>
+  </div>
+
+  <!-- SLIDER -->
+  <div class="pview" id="pv-slider">
+    <div class="pv-col">
+      <div class="pv-eyebrow">SLIDER</div>
+      <h1 class="pv-q" id="ps-q">AI REPLACING HUMAN <b>JOBS?</b></h1>
+      <div class="pv-slider">
+        <div class="big"><span id="ps-pct">72</span>%</div>
+        <div class="lab" id="ps-lab">VERY CONCERNED</div>
+        <div class="track"><div class="fillbar" id="ps-fill"></div><div class="knob" id="ps-knob"></div></div>
+        <div class="ends"><span id="ps-left">0% · NOT WORRIED</span><span id="ps-right">100% · VERY</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RANKING -->
+  <div class="pview" id="pv-ranking">
+    <div class="pv-col">
+      <div class="pv-eyebrow">RANKING</div>
+      <h1 class="pv-q" id="pr-q">RANK BY FUTURE HAPPINESS</h1>
+      <div class="pv-rank" id="pr-list"></div>
+    </div>
+  </div>
+
+  <div class="pv-foot" id="pv-foot"></div>
+  <div class="stage"></div>
+</div>
+
+<script src="/js/live.js"></script>
+<script src="/js/projector.js"></script>
+</body>
+</html>

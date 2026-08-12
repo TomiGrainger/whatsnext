@@ -1,0 +1,84 @@
+/* THE UPGRADE LIVE — shared design system
+   Matched to designs/ : crimson on near-black, Anton display, Space Mono labels. */
+
+:root{
+  --red:#FF2D46;
+  --red-2:#FF465B;
+  --red-deep:#B01324;
+  --red-dim:#3a0e15;
+  --bg:#0a0a0b;
+  --bg-2:#0f0f11;
+  --ink:#f5f3ef;          /* warm off-white display */
+  --white:#ffffff;
+  --muted:#8b8b90;
+  --dim:#57575d;
+  --faint:#2a2a2e;
+  --card:#141417;
+  --card-2:#1a1a1e;
+  --line:rgba(255,255,255,.07);
+  --line-2:rgba(255,255,255,.12);
+  --glow:0 0 40px rgba(255,45,70,.45);
+  --mono:'Space Mono','SFMono-Regular',ui-monospace,Menlo,monospace;
+  --display:'Anton','Oswald','Arial Narrow',system-ui,sans-serif;
+  --sans:'Inter','Helvetica Neue',system-ui,-apple-system,sans-serif;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+input,textarea{font-family:inherit;}
+::selection{background:var(--red);color:#fff;}
+
+/* ---- reusable type ---- */
+.mono{font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase;}
+.display{font-family:var(--display);text-transform:uppercase;line-height:.92;letter-spacing:.005em;}
+.red{color:var(--red);}
+.muted{color:var(--muted);}
+.dim{color:var(--dim);}
+
+.wordmark{font-family:var(--sans);font-weight:800;letter-spacing:.02em;font-size:15px;}
+.wordmark em{color:var(--red);font-style:italic;font-weight:800;margin-left:.15em;}
+
+/* section eyebrow used on every page header (e.g. "09 · MODERATOR") */
+.page-head{padding:34px 40px 0;}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.16em;color:var(--red);font-weight:700;}
+.eyebrow u{ text-decoration-thickness:2px;text-underline-offset:5px;}
+.page-title{font-family:var(--sans);font-weight:800;font-size:42px;letter-spacing:-.02em;color:var(--white);margin:6px 0 0;}
+
+/* pill button */
+.btn{
+  font-family:var(--mono);font-weight:700;text-transform:uppercase;letter-spacing:.12em;
+  font-size:14px;color:#fff;background:var(--red);border-radius:14px;padding:16px 22px;
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  transition:transform .08s ease,filter .15s ease;
+}
+.btn:hover{filter:brightness(1.08);}
+.btn:active{transform:scale(.98);}
+.btn.ghost{background:var(--card-2);color:var(--ink);border:1px solid var(--line);}
+.btn.outline{background:transparent;border:1px solid var(--red);color:var(--red);}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;}
+
+/* toast for live confirmations */
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+  background:var(--red);color:#fff;font-family:var(--mono);font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;font-size:12px;padding:12px 20px;border-radius:12px;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:999;box-shadow:var(--glow);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* connection dot */
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 10px var(--red);display:inline-block;animation:pulse 1.6s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+@keyframes pop{0%{transform:scale(.8);opacity:0;}60%{transform:scale(1.08);}100%{transform:scale(1);opacity:1;}}
+.pop{animation:pop .25s ease;}
+@keyframes floatUp{0%{transform:translateY(0) scale(1);opacity:1;}100%{transform:translateY(-120px) scale(1.6);opacity:0;}}

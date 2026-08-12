@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>The Upgrade LIVE — Join</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/audience.css">
+</head>
+<body class="s-audience">
+<div class="phone">
+  <div class="grabber"></div>
+  <div class="ph-head">
+    <div class="wordmark">THE UPGRADE <em>LIVE</em></div>
+    <div class="counter" id="ph-counter">THE BIG DEBATE</div>
+  </div>
+
+  <!-- 01 JOIN -->
+  <section class="screen active" id="s-join">
+    <div class="eyebrow-c">THE BIG DEBATE</div>
+    <div class="big">WHAT'S<b>NEXT?</b></div>
+    <div class="sub">Be part of the conversation that shapes what's next.</div>
+    <div class="qr-tile" id="qr-tile"></div>
+    <div class="code-box">
+      <div class="lab">ROOM CODE</div>
+      <input class="val code-input" id="join-code" value="WN25" maxlength="8" autocomplete="off" spellcheck="false" autocapitalize="characters" aria-label="Room code">
+    </div>
+    <div class="spacer"></div>
+    <button class="btn join-btn" id="join-btn">JOIN THE DEBATE →</button>
+  </section>
+
+  <!-- 02 DISCUSSION -->
+  <section class="screen" id="s-discussion">
+    <div class="q-eyebrow">THE QUESTION</div>
+    <h1 class="q-title" id="disc-q">IS CONVENIENCE MAKING US <b>WEAKER?</b></h1>
+    <div class="q-stats">
+      <div class="st agree"><div class="n" id="st-agree">42</div><div class="l">AGREE</div></div>
+      <div class="st disagree"><div class="n" id="st-disagree">38</div><div class="l">DISAGREE</div></div>
+      <div class="st unsure"><div class="n" id="st-unsure">20</div><div class="l">UNSURE</div></div>
+    </div>
+    <div class="react-row">
+      <button class="react" data-choice="agree"><div class="emo">👍</div><div class="lab">AGREE</div></button>
+      <button class="react" data-choice="disagree"><div class="emo">👎</div><div class="lab">DISAGREE</div></button>
+      <button class="react" data-choice="unsure"><div class="emo">😐</div><div class="lab">UNSURE</div></button>
+      <button class="react fight" id="fight-btn"><div class="emo">⚡</div><div class="lab">FIGHT</div></button>
+    </div>
+    <button class="next-bar" id="next-bar">→ WHAT'S NEXT?&nbsp; 7/10</button>
+  </section>
+
+  <!-- 04 POLL -->
+  <section class="screen" id="s-poll">
+    <div class="s-eyebrow">POLL</div>
+    <h1 class="s-title" id="poll-q">BIGGEST CHALLENGE AHEAD?</h1>
+    <div class="poll-list" id="poll-list"></div>
+    <div class="foot" id="poll-foot">50 RESPONSES</div>
+  </section>
+
+  <!-- 05 WORD CLOUD -->
+  <section class="screen" id="s-wordcloud">
+    <div class="s-eyebrow">WORD CLOUD</div>
+    <h1 class="s-title" id="wc-q">ONE WORD FOR THE FUTURE?</h1>
+    <div class="cloud" id="wc-cloud"></div>
+    <div class="word-input">
+      <input class="field" id="wc-input" maxlength="20" placeholder="Your word…" autocomplete="off">
+      <button class="btn" id="wc-send">→</button>
+    </div>
+    <div class="foot" id="wc-foot">50 RESPONSES</div>
+  </section>
+
+  <!-- 06 EMOJI -->
+  <section class="screen" id="s-emoji">
+    <div class="s-eyebrow">EMOJI REACTIONS</div>
+    <h1 class="s-title" id="emoji-q">HOW DO YOU <b>FEEL?</b></h1>
+    <div class="emoji-grid" id="emoji-grid"></div>
+    <div class="foot">TAP TO REACT · <span id="emoji-foot">50</span> RESPONSES</div>
+  </section>
+
+  <!-- 07 SLIDER -->
+  <section class="screen" id="s-slider">
+    <div class="s-eyebrow">SLIDER</div>
+    <h1 class="s-title" id="slider-q">AI REPLACING HUMAN <b>JOBS?</b></h1>
+    <div class="pad"></div>
+    <div class="big-pct"><span id="slider-pct">72</span>%</div>
+    <div class="res-lab" id="slider-res">VERY CONCERNED</div>
+    <div class="range-wrap">
+      <input type="range" min="0" max="100" value="72" class="slider" id="slider-input">
+      <div class="range-ends"><span>0% · <span id="slider-left">not worried</span></span><span>100% · <span id="slider-right">very</span></span></div>
+    </div>
+    <div class="pad"></div>
+  </section>
+
+  <!-- 08 RANKING -->
+  <section class="screen" id="s-ranking">
+    <div class="s-eyebrow">RANKING</div>
+    <h1 class="s-title" id="rank-q">RANK BY FUTURE HAPPINESS</h1>
+    <div class="rank-list" id="rank-list"></div>
+    <div class="foot">DRAG TO RANK · <span id="rank-foot">50</span> RESPONSES</div>
+  </section>
+
+  <!-- RESULTS (fallback view when moderator shows results / ends topic) -->
+  <section class="screen" id="s-results">
+    <div class="s-eyebrow">LIVE RESULTS</div>
+    <h1 class="s-title" id="res-q">IS CONVENIENCE MAKING US <b>WEAKER?</b></h1>
+    <div class="q-stats" style="margin-top:auto;">
+      <div class="st agree"><div class="n" id="res-agree">41</div><div class="l">AGREE %</div></div>
+      <div class="st disagree"><div class="n" id="res-disagree">37</div><div class="l">DISAGREE %</div></div>
+      <div class="st unsure"><div class="n" id="res-unsure">22</div><div class="l">UNSURE %</div></div>
+    </div>
+    <div class="foot" id="res-foot">50 RESPONSES · THANK YOU</div>
+  </section>
+</div>
+
+<!-- CHALLENGE SHEET -->
+<div class="sheet-scrim" id="sheet-scrim"></div>
+<div class="sheet" id="sheet">
+  <button class="x" id="sheet-x">×</button>
+  <div class="tag"><span class="bolt">⚡</span> CHALLENGE</div>
+  <h3 id="sheet-title">WHY DO YOU <b>DISAGREE?</b></h3>
+  <p class="hint">One sentence. Make it count.</p>
+  <textarea class="field" id="sheet-text" maxlength="180" placeholder="Convenience is a tool, not the problem…"></textarea>
+  <input class="field" id="sheet-name" maxlength="40" placeholder="Your name (optional)">
+  <div class="note">The moderator may invite you to speak live.</div>
+  <div class="row">
+    <button class="btn ghost" id="sheet-cancel">CANCEL</button>
+    <button class="btn" id="sheet-submit">SUBMIT →</button>
+  </div>
+</div>
+
+<script src="/js/live.js"></script>
+<script src="/js/audience.js"></script>
+</body>
+</html>

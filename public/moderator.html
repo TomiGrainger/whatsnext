@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Upgrade LIVE — Control Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/moderator.css">
+</head>
+<body class="s-moderator">
+<div class="mod-wrap">
+  <div class="mod-head">
+    <div class="eyebrow"><span class="live-dot"></span> <u>MODERATOR</u></div>
+    <h1 class="mod-title">Control Room</h1>
+  </div>
+
+  <div class="mod-shell">
+    <!-- SIDEBAR -->
+    <aside class="side">
+      <div class="brand">THE UPGRADE <em>LIVE</em></div>
+      <div class="room-code" id="mod-room">ROOM · <b>WN25</b></div>
+      <nav class="nav">
+        <a class="act" href="#"><span class="ic"></span> Dashboard</a>
+        <a href="#" data-mode="discussion"><span class="ic"></span> Topics</a>
+        <a href="#" data-jump="interactions"><span class="ic"></span> Interactions</a>
+        <a href="#" data-jump="challenges"><span class="ic"></span> Challenges <span class="badge" id="nav-ch">6</span></a>
+        <a href="#"><span class="ic"></span> Analytics</a>
+        <a href="#"><span class="ic"></span> Settings</a>
+      </nav>
+      <div class="me">
+        <div class="avatar">TO</div>
+        <div><div class="nm">Tomi</div><div class="rl">Moderator</div></div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main">
+      <div class="topbar">
+        <div class="mode-dd">
+          <button class="mode-btn" id="mode-btn"><span id="mode-label">DISCUSSION MODE</span> ▾</button>
+          <div class="mode-menu" id="mode-menu">
+            <button data-mode="discussion">Discussion</button>
+            <button data-mode="poll">Poll</button>
+            <button data-mode="wordcloud">Word Cloud</button>
+            <button data-mode="emoji">Emoji Reactions</button>
+            <button data-mode="slider">Slider</button>
+            <button data-mode="ranking">Ranking</button>
+            <button data-mode="results">Show Results</button>
+          </div>
+        </div>
+        <div class="tb-right">
+          <div class="stat-ico"><span class="ring"></span><div><div class="v" id="in-room">50</div><div class="k">IN ROOM</div></div></div>
+          <div class="stat-ico"><span class="ring"></span><div><div class="v" id="time-rem">02:18</div><div class="k">REMAINING</div></div></div>
+          <button class="tb-btn" id="pause-btn">❚❚ PAUSE</button>
+          <button class="tb-btn danger" id="end-btn">END TOPIC</button>
+        </div>
+      </div>
+
+      <div class="topic-eyebrow">TOPIC <span id="topic-n">1</span> OF <span id="topic-t">5</span></div>
+      <h2 class="topic-q" id="topic-q">Is convenience making us weaker?</h2>
+
+      <div class="panels">
+        <!-- SENTIMENT -->
+        <div class="panel">
+          <div class="ptitle">Live Sentiment</div>
+          <div class="sent-top">
+            <svg class="donut" id="donut" viewBox="0 0 36 36"></svg>
+            <div class="sent-nums">
+              <div class="row agree"><span class="p" id="p-agree">41%</span><span class="lab">AGREE</span></div>
+              <div class="row disagree"><span class="p" id="p-disagree">37%</span><span class="lab">DISAGREE</span></div>
+              <div class="row unsure"><span class="p" id="p-unsure">22%</span><span class="lab">UNSURE</span></div>
+            </div>
+          </div>
+          <div class="spark-lab">Sentiment over time</div>
+          <svg class="spark" id="spark" viewBox="0 0 100 40" preserveAspectRatio="none"></svg>
+        </div>
+
+        <!-- WHAT'S NEXT -->
+        <div class="panel wn">
+          <div class="wn-head">🚀 What's next?</div>
+          <div class="big"><span class="num" id="wn-num">7</span><span class="den">/<span id="wn-den">10</span></span></div>
+          <div class="sub">people want to move on</div>
+          <div class="track"><div id="wn-bar"></div></div>
+          <div class="hint" id="wn-hint">3 more votes to unlock</div>
+        </div>
+
+        <!-- CHALLENGES -->
+        <div class="panel ch" id="challenges">
+          <div class="ch-head">Challenges <span class="badge" id="ch-count">6</span> in queue</div>
+          <div class="ch-list" id="ch-list"></div>
+          <button class="invite-btn" id="invite-btn">INVITE FROM QUEUE</button>
+        </div>
+      </div>
+
+      <div class="qa-lab" id="interactions">Quick Actions</div>
+      <div class="qa-row">
+        <button class="qa" data-mode="poll"><span class="qi">📊</span><span class="ql">Launch Poll</span></button>
+        <button class="qa" data-mode="wordcloud"><span class="qi">☁️</span><span class="ql">Word Cloud</span></button>
+        <button class="qa" data-mode="emoji"><span class="qi">🙂</span><span class="ql">Emoji</span></button>
+        <button class="qa" data-mode="results"><span class="qi">◉</span><span class="ql">Show Results</span></button>
+        <button class="qa" id="extend-btn"><span class="qi">＋</span><span class="ql">Extend Time</span></button>
+        <button class="qa primary" id="next-btn"><span class="qi">→</span><span class="ql">Next Topic</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/live.js"></script>
+<script src="/js/moderator.js"></script>
+</body>
+</html>
