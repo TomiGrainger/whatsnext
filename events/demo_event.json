@@ -1,0 +1,129 @@
+{
+  "brand": "THE UPGRADE",
+  "eventName": "THE BIG DEBATE",
+  "seedSimParticipants": 49,
+  "seedChallenges": [
+    { "name": "Alex R.", "text": "I disagree — convenience has freed up time for creativity.", "agoSeconds": 60 },
+    { "name": "Maya L.", "text": "But at what cost to our attention and focus?", "agoSeconds": 120 },
+    { "name": "Jordan T.", "text": "Convenience is a tool, not the problem.", "agoSeconds": 180 },
+    { "name": "Sana K.", "text": "We optimized comfort and lost resilience.", "agoSeconds": 240 },
+    { "name": "Dev P.", "text": "Every generation says this about new tech.", "agoSeconds": 300 },
+    { "name": "Riya N.", "text": "Weaker how? Define the metric first.", "agoSeconds": 360 }
+  ],
+  "topics": [
+    {
+      "id": "t-convenience",
+      "question": "Is convenience making us weaker?",
+      "settings": { "whatsNextThreshold": 10 },
+      "seed": {
+        "sentiment": { "agree": 41, "disagree": 37, "unsure": 22 },
+        "sentimentHistory": [
+          { "agree": 44, "disagree": 34 }, { "agree": 43, "disagree": 35 },
+          { "agree": 45, "disagree": 33 }, { "agree": 42, "disagree": 36 },
+          { "agree": 43, "disagree": 35 }, { "agree": 41, "disagree": 37 },
+          { "agree": 42, "disagree": 37 }, { "agree": 41, "disagree": 37 }
+        ],
+        "whatsNextVotes": 7,
+        "responses": 100
+      },
+      "interactions": [
+        {
+          "id": "i-poll-challenge",
+          "kind": "poll",
+          "question": "Biggest challenge ahead?",
+          "settings": { "duration": 60 },
+          "options": [
+            { "id": "ai", "label": "AI & technology" },
+            { "id": "climate", "label": "Climate change" },
+            { "id": "mental", "label": "Mental health" },
+            { "id": "econ", "label": "Economic inequality" }
+          ],
+          "seed": { "votes": { "ai": 42, "climate": 28, "mental": 17, "econ": 13 } }
+        },
+        {
+          "id": "i-wordcloud-future",
+          "kind": "wordcloud",
+          "question": "One word for the future?",
+          "settings": { "duration": 90 },
+          "seed": {
+            "words": {
+              "exciting": 24, "uncertain": 19, "opportunity": 21, "overwhelming": 14,
+              "hopeful": 12, "innovative": 11, "optimistic": 10, "limitless": 13,
+              "changing": 9, "freedom": 12, "scary": 7, "unknown": 6,
+              "automation": 6, "fragile": 5
+            }
+          }
+        },
+        {
+          "id": "i-emoji-feel",
+          "kind": "emoji",
+          "question": "How do you feel?",
+          "settings": { "duration": 30 },
+          "options": [
+            { "id": "fire", "char": "🔥" },
+            { "id": "clap", "char": "👏" },
+            { "id": "think", "char": "🤔" },
+            { "id": "heart", "char": "❤️" },
+            { "id": "eyes", "char": "👀" },
+            { "id": "pray", "char": "🙌" },
+            { "id": "grimace", "char": "😬" },
+            { "id": "party", "char": "🎉" },
+            { "id": "bulb", "char": "💡" }
+          ],
+          "seed": {
+            "counts": { "fire": 18, "clap": 12, "think": 9, "heart": 22, "eyes": 15, "pray": 10, "grimace": 6, "party": 4, "bulb": 3 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "t-ai-creative-rights",
+      "question": "Should AI have creative rights?",
+      "settings": { "whatsNextThreshold": 10 },
+      "interactions": [
+        {
+          "id": "i-poll-decade",
+          "kind": "poll",
+          "question": "Which will matter most in 10 years?",
+          "settings": { "duration": 60 },
+          "options": [
+            { "id": "renewable", "label": "Renewable energy" },
+            { "id": "space", "label": "Space exploration" },
+            { "id": "biotech", "label": "Biotechnology" },
+            { "id": "quantum", "label": "Quantum computing" }
+          ]
+        },
+        {
+          "id": "i-slider-ai-jobs",
+          "kind": "slider",
+          "question": "AI replacing human jobs?",
+          "leftLabel": "not worried",
+          "rightLabel": "very",
+          "resultLabel": "very concerned",
+          "settings": { "duration": 45 },
+          "seed": { "sum": 3600, "count": 50 }
+        }
+      ]
+    },
+    {
+      "id": "t-privacy-dead",
+      "question": "Is privacy already dead?",
+      "settings": { "whatsNextThreshold": 10 },
+      "interactions": [
+        {
+          "id": "i-ranking-happiness",
+          "kind": "ranking",
+          "question": "Rank by future happiness",
+          "settings": { "duration": 60 },
+          "items": [
+            { "id": "rel", "label": "Relationships" },
+            { "id": "health", "label": "Health" },
+            { "id": "purpose", "label": "Purpose / Meaning" },
+            { "id": "money", "label": "Money" },
+            { "id": "success", "label": "Success" }
+          ]
+        }
+      ]
+    }
+  ]
+}

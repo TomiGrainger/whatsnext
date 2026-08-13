@@ -29,13 +29,13 @@
 
   function showScreen(id) {
     $$(".screen").forEach((s) => s.classList.toggle("active", s.id === id));
-    const onJoin = id === "s-join";
-    $("#ph-counter").textContent = onJoin ? "THE BIG DEBATE" : null;
-    const st = Live.get();
-    if (!onJoin && st) {
-      $("#ph-counter").textContent =
-        String(st.topicIndex + 1).padStart(2, "0") + " / " + String(st.topicCount).padStart(2, "0");
-    }
+  }
+
+  function updateCounter(st) {
+    const onJoin = $(".screen.active").id === "s-join";
+    $("#ph-counter").textContent = onJoin
+      ? st.eventName
+      : String(st.topicIndex + 1).padStart(2, "0") + " / " + String(st.topicCount).padStart(2, "0");
   }
 
   // ---- join ----
@@ -114,8 +114,14 @@
 
   // ---- slider ----
   const slider = $("#slider-input");
-  const resLabels = [[25, "not worried"], [50, "somewhat concerned"], [70, "concerned"], [101, "very concerned"]];
-  function sliderResLabel(v) { for (const [t, l] of resLabels) if (v < t) return l; return "very concerned"; }
+  // The readout under the % comes from the topic's own labels: an explicit
+  // resultLabel if the event defines one, otherwise whichever end it leans to.
+  function sliderResLabel(v) {
+    const s = Live.get() && Live.get().slider;
+    if (!s) return "";
+    if (s.resultLabel) return s.resultLabel;
+    return v >= 50 ? s.rightLabel : s.leftLabel;
+  }
   function paintSlider(v) {
     $("#slider-pct").textContent = v;
     $("#slider-res").textContent = sliderResLabel(v).toUpperCase();
@@ -143,7 +149,7 @@
         cell.className = "emoji-cell";
         cell.innerHTML = '<div class="e">' + r.char + '</div><div class="c">' + r.count + "</div>";
         cell.addEventListener("click", (ev) => {
-          Live.send("emoji", { index: i });
+          Live.send("emoji", { id: r.id });
           const f = document.createElement("div");
           f.className = "float-plus"; f.textContent = "+1";
           const rect = cell.getBoundingClientRect();
@@ -221,12 +227,16 @@
   function render(st, force) {
     if (!st) return;
     $("#join-code").textContent = st.code;
+    $("#wordmark").innerHTML = st.brand + " <em>LIVE</em>";
+    $("#eyebrow-brand").textContent = st.eventName;
+    $("#closed-veil").hidden = !st.closed;
 
     // choose screen
     const targetMode = st.mode;
     const screenId = joined ? (MODE_SCREEN[targetMode] || "s-discussion") : "s-join";
     const active = $(".screen.active");
     if (!active || active.id !== screenId || force) showScreen(screenId);
+    updateCounter(st);
 
     // topic-dependent titles
     setQuestionTitle("#disc-q", st.topic, true);
@@ -255,7 +265,7 @@
     $("#wc-foot").textContent = st.responses + " RESPONSES";
 
     // emoji
-    $("#emoji-q").innerHTML = "HOW DO YOU <b>FEEL?</b>";
+    setQuestionTitle("#emoji-q", st.emoji.question, true);
     buildEmoji(st);
     $("#emoji-foot").textContent = st.responses;
 

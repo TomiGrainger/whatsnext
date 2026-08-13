@@ -100,3 +100,19 @@ body.s-projector{background:#050506;overflow:hidden;}
   .proj-grid{grid-template-columns:1fr;gap:20px;align-content:center;}
   .proj-ch .avs{grid-template-columns:repeat(4,1fr);}
 }
+
+/* room switched off */
+.closed-veil{
+  position:fixed;inset:0;z-index:900;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;
+}
+/* a class-level display beats the UA [hidden] rule, so restate it */
+.closed-veil[hidden]{display:none;}
+.closed-veil .cv-tag{
+  font-family:var(--mono);font-size:20px;letter-spacing:.3em;color:var(--red);font-weight:700;
+}
+.closed-veil .cv-big{
+  font-family:var(--display);text-transform:uppercase;font-size:96px;line-height:.92;
+  color:var(--ink);text-align:center;
+}
+.closed-veil .cv-big b{color:var(--red);}

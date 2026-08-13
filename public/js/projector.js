@@ -29,6 +29,8 @@
 
   function render(st) {
     if (!st) return;
+    $("#wordmark").innerHTML = st.brand + " <em>LIVE</em>";
+    $("#closed-veil").hidden = !st.closed;
     $("#p-n").textContent = st.topicIndex + 1;
     $("#p-t").textContent = st.topicCount;
     showView(MODE_VIEW[st.mode] || "pv-discussion");
@@ -62,7 +64,7 @@
     renderCloud(st);
 
     // emoji
-    $("#pe-q").innerHTML = "HOW DO YOU <b>FEEL?</b>";
+    $("#pe-q").innerHTML = redLast(st.emoji.question);
     $("#pe-grid").innerHTML = st.emoji.reactions.map((r) =>
       '<div class="cell"><div class="e">' + r.char + '</div><div class="c">' + r.count + '</div></div>').join("");
 
@@ -70,7 +72,7 @@
     $("#ps-q").innerHTML = redLast(st.slider.question);
     const avg = st.slider.avg;
     $("#ps-pct").textContent = avg;
-    $("#ps-lab").textContent = sliderLabel(avg).toUpperCase();
+    $("#ps-lab").textContent = sliderLabel(st, avg).toUpperCase();
     $("#ps-fill").style.width = avg + "%";
     $("#ps-knob").style.left = avg + "%";
     $("#ps-left").textContent = "0% · " + st.slider.leftLabel.toUpperCase();
@@ -90,8 +92,12 @@
     $("#pv-foot").textContent = foot;
   }
 
-  const RES = [[25, "not worried"], [50, "somewhat concerned"], [70, "concerned"], [101, "very concerned"]];
-  function sliderLabel(v) { for (const [t, l] of RES) if (v < t) return l; return "very concerned"; }
+  // The readout under the % comes from the topic's own labels: an explicit
+  // resultLabel if the event defines one, otherwise whichever end it leans to.
+  function sliderLabel(st, v) {
+    if (st.slider.resultLabel) return st.slider.resultLabel;
+    return v >= 50 ? st.slider.rightLabel : st.slider.leftLabel;
+  }
 
   function renderCloud(st) {
     const words = st.wordcloud.words.slice().sort((a, b) => b.weight - a.weight).slice(0, 22);

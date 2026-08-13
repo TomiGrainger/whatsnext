@@ -20,11 +20,11 @@
   <div class="mod-shell">
     <!-- SIDEBAR -->
     <aside class="side">
-      <div class="brand">THE UPGRADE <em>LIVE</em></div>
+      <div class="brand" id="mod-brand"></div>
       <div class="room-code" id="mod-room">ROOM · <b>WN25</b></div>
       <nav class="nav">
         <a class="act" href="#"><span class="ic"></span> Dashboard</a>
-        <a href="#" data-mode="discussion"><span class="ic"></span> Topics</a>
+        <a href="#" data-jump="interactions"><span class="ic"></span> Topics</a>
         <a href="#" data-jump="interactions"><span class="ic"></span> Interactions</a>
         <a href="#" data-jump="challenges"><span class="ic"></span> Challenges <span class="badge" id="nav-ch">6</span></a>
         <a href="#"><span class="ic"></span> Analytics</a>
@@ -39,28 +39,28 @@
     <!-- MAIN -->
     <div class="main">
       <div class="topbar">
-        <div class="mode-dd">
-          <button class="mode-btn" id="mode-btn"><span id="mode-label">DISCUSSION MODE</span> ▾</button>
-          <div class="mode-menu" id="mode-menu">
-            <button data-mode="discussion">Discussion</button>
-            <button data-mode="poll">Poll</button>
-            <button data-mode="wordcloud">Word Cloud</button>
-            <button data-mode="emoji">Emoji Reactions</button>
-            <button data-mode="slider">Slider</button>
-            <button data-mode="ranking">Ranking</button>
-            <button data-mode="results">Show Results</button>
-          </div>
-        </div>
+        <div class="mode-now" id="mode-label">DISCUSSION</div>
         <div class="tb-right">
-          <div class="stat-ico"><span class="ring"></span><div><div class="v" id="in-room">50</div><div class="k">IN ROOM</div></div></div>
-          <div class="stat-ico"><span class="ring"></span><div><div class="v" id="time-rem">02:18</div><div class="k">REMAINING</div></div></div>
+          <div class="stat-ico"><span class="ring"></span><div><div class="v" id="in-room">0</div><div class="k">IN ROOM</div></div></div>
+          <div class="stat-ico"><span class="ring"></span><div><div class="v" id="time-rem">—</div><div class="k" id="time-lab">ON SCREEN</div></div></div>
           <button class="tb-btn" id="pause-btn">❚❚ PAUSE</button>
-          <button class="tb-btn danger" id="end-btn">END TOPIC</button>
+          <button class="tb-btn danger" id="end-btn">SHOW RESULTS</button>
         </div>
       </div>
 
-      <div class="topic-eyebrow">TOPIC <span id="topic-n">1</span> OF <span id="topic-t">5</span></div>
-      <h2 class="topic-q" id="topic-q">Is convenience making us weaker?</h2>
+      <div class="closed-banner" id="closed-banner" hidden>
+        This room is switched off — phones can't vote. Turn it back on from the setup page.
+      </div>
+
+      <div class="topic-nav">
+        <button class="nav-btn" id="prev-btn">← PREV</button>
+        <div class="topic-eyebrow">TOPIC <span id="topic-n">1</span> OF <span id="topic-t">3</span></div>
+        <button class="nav-btn" id="next-btn">NEXT TOPIC →</button>
+      </div>
+      <h2 class="topic-q" id="topic-q">—</h2>
+
+      <!-- what this topic can run, straight from the event config -->
+      <div class="run-row" id="run-row"></div>
 
       <div class="panels">
         <!-- SENTIMENT -->
@@ -97,12 +97,10 @@
 
       <div class="qa-lab" id="interactions">Quick Actions</div>
       <div class="qa-row">
-        <button class="qa" data-mode="poll"><span class="qi">📊</span><span class="ql">Launch Poll</span></button>
-        <button class="qa" data-mode="wordcloud"><span class="qi">☁️</span><span class="ql">Word Cloud</span></button>
-        <button class="qa" data-mode="emoji"><span class="qi">🙂</span><span class="ql">Emoji</span></button>
-        <button class="qa" data-mode="results"><span class="qi">◉</span><span class="ql">Show Results</span></button>
+        <button class="qa" id="discussion-btn"><span class="qi">💬</span><span class="ql">Back to Discussion</span></button>
         <button class="qa" id="extend-btn"><span class="qi">＋</span><span class="ql">Extend Time</span></button>
-        <button class="qa primary" id="next-btn"><span class="qi">→</span><span class="ql">Next Topic</span></button>
+        <button class="qa" id="results-btn"><span class="qi">◉</span><span class="ql">Show Results</span></button>
+        <button class="qa primary" id="next-btn-2"><span class="qi">→</span><span class="ql">Next Topic</span></button>
       </div>
     </div>
   </div>

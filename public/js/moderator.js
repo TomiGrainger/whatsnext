@@ -4,30 +4,74 @@
   const $$ = (s) => Array.from(document.querySelectorAll(s));
 
   const MODE_LABEL = {
-    discussion: "DISCUSSION MODE", poll: "POLL MODE", wordcloud: "WORD CLOUD",
+    discussion: "DISCUSSION", poll: "POLL", wordcloud: "WORD CLOUD",
     emoji: "EMOJI REACTIONS", slider: "SLIDER", ranking: "RANKING", results: "SHOWING RESULTS",
   };
+  const KIND_ICON = {
+    poll: "📊", wordcloud: "☁️", emoji: "🙂", slider: "🎚", ranking: "↕",
+  };
 
-  // mode dropdown
-  const menu = $("#mode-menu");
-  $("#mode-btn").addEventListener("click", (e) => { e.stopPropagation(); menu.classList.toggle("open"); });
-  document.addEventListener("click", () => menu.classList.remove("open"));
-  menu.addEventListener("click", (e) => e.stopPropagation());
-  $$("#mode-menu button").forEach((b) =>
-    b.addEventListener("click", () => { Live.send("setMode", { mode: b.dataset.mode }); menu.classList.remove("open"); }));
-
-  // quick actions
-  $$(".qa[data-mode]").forEach((b) =>
-    b.addEventListener("click", () => { Live.send("setMode", { mode: b.dataset.mode }); UI.toast(b.querySelector(".ql").textContent + " launched"); }));
+  // topic flow
   $("#extend-btn").addEventListener("click", () => { Live.send("extendTime"); UI.toast("+30s added"); });
-  $("#next-btn").addEventListener("click", () => { Live.send("nextTopic"); UI.toast("Next topic"); });
+  $("#next-btn").addEventListener("click", () => Live.send("nextTopic"));
+  $("#next-btn-2").addEventListener("click", () => Live.send("nextTopic"));
+  $("#prev-btn").addEventListener("click", () => Live.send("prevTopic"));
   $("#pause-btn").addEventListener("click", () => Live.send("togglePause"));
-  $("#end-btn").addEventListener("click", () => { Live.send("endTopic"); UI.toast("Topic ended"); });
+  $("#results-btn").addEventListener("click", () => { Live.send("showResults"); UI.toast("Showing results"); });
+  $("#end-btn").addEventListener("click", () => { Live.send("showResults"); UI.toast("Showing results"); });
+  $("#discussion-btn").addEventListener("click", () => { Live.send("backToDiscussion"); UI.toast("Back to discussion"); });
   $("#invite-btn").addEventListener("click", () => { Live.send("inviteTop"); UI.toast("Invited to speak"); });
   // sidebar quick-jumps
   $$('.nav a[data-jump]').forEach((a) => a.addEventListener("click", (e) => {
     e.preventDefault(); document.getElementById(a.dataset.jump).scrollIntoView({ behavior: "smooth" });
   }));
+
+  // One button per interaction this topic was set up with, in the same order as
+  // the setup page — plus the discussion the topic always opens on.
+  function renderRunRow(st) {
+    const row = $("#run-row");
+    const key = st.topicIndex + ":" + st.interactions.map((i) => i.kind).join(",");
+    if (row.dataset.key !== key) {
+      row.dataset.key = key;
+      row.innerHTML = "";
+
+      const disc = document.createElement("button");
+      disc.className = "run-btn discussion";
+      disc.dataset.role = "discussion";
+      disc.innerHTML = '<span class="ri">💬</span><span class="rl">Discussion</span>' +
+        '<span class="rt">no timer</span>';
+      disc.addEventListener("click", () => Live.send("backToDiscussion"));
+      row.appendChild(disc);
+
+      st.interactions.forEach((it) => {
+        const b = document.createElement("button");
+        b.className = "run-btn";
+        b.dataset.index = it.index;
+        b.innerHTML = '<span class="ri">' + (KIND_ICON[it.kind] || "◆") + '</span>' +
+          '<span class="rl"></span><span class="rt">' + it.duration + 's</span>';
+        b.querySelector(".rl").textContent = it.question || it.kind;
+        b.addEventListener("click", () => {
+          Live.send("launchInteraction", { index: it.index });
+          UI.toast((it.question || it.kind) + " launched");
+        });
+        row.appendChild(b);
+      });
+
+      if (!st.interactions.length) {
+        const none = document.createElement("div");
+        none.className = "run-none";
+        none.textContent = "Discussion only — no interactions set up for this topic.";
+        row.appendChild(none);
+      }
+    }
+
+    $$("#run-row .run-btn").forEach((b) => {
+      const live = b.dataset.role === "discussion"
+        ? st.activeInteraction === null && st.mode !== "results"
+        : Number(b.dataset.index) === st.activeInteraction && st.mode !== "results";
+      b.classList.toggle("live", live);
+    });
+  }
 
   // donut: agree(white) / disagree(red) / unsure(dark)
   function drawDonut(st) {
@@ -65,16 +109,27 @@
 
   function render(st) {
     if (!st) return;
-    $("#mode-label").textContent = MODE_LABEL[st.mode] || "DISCUSSION MODE";
-    $$("#mode-menu button").forEach((b) => b.classList.toggle("on", b.dataset.mode === st.mode));
+    $("#mod-brand").innerHTML = st.brand + " <em>LIVE</em>";
+    $("#mode-label").textContent = MODE_LABEL[st.mode] || "DISCUSSION";
+    $("#closed-banner").hidden = !st.closed;
+    document.body.classList.toggle("room-closed", Boolean(st.closed));
 
     $("#in-room").textContent = st.inRoom;
-    $("#time-rem").textContent = UI.fmtTime(st.timeRemaining);
+    // a discussion has no countdown — it holds until the moderator moves on
+    $("#time-rem").textContent = st.timed ? UI.fmtTime(st.timeRemaining) : "—";
+    $("#time-lab").textContent = st.timed ? "REMAINING" : "ON SCREEN";
     $("#pause-btn").innerHTML = st.paused ? "▶ RESUME" : "❚❚ PAUSE";
+    $("#pause-btn").disabled = !st.timed;
+    $("#extend-btn").disabled = !st.timed;
+    $("#discussion-btn").disabled = st.activeInteraction === null && st.mode !== "results";
+    $("#prev-btn").disabled = st.topicIndex === 0;
+    $("#next-btn").disabled = st.topicIndex >= st.topicCount - 1;
+    $("#next-btn-2").disabled = st.topicIndex >= st.topicCount - 1;
 
     $("#topic-n").textContent = st.topicIndex + 1;
     $("#topic-t").textContent = st.topicCount;
     $("#topic-q").textContent = st.topic;
+    renderRunRow(st);
 
     $("#p-agree").textContent = st.sentiment.agreePct + "%";
     $("#p-disagree").textContent = st.sentiment.disagreePct + "%";

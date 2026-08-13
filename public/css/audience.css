@@ -134,3 +134,22 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
 .rank-item .grip{color:var(--dim);font-size:20px;letter-spacing:2px;line-height:.6;}
 
 .spacer-fill{flex:1;}
+
+/* room switched off — covers the phone, keeps the brand look */
+.closed-veil{
+  position:fixed;inset:0;z-index:900;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;padding:34px;
+}
+/* a class-level display beats the UA [hidden] rule, so restate it */
+.closed-veil[hidden]{display:none;}
+.cv-inner{text-align:center;max-width:340px;}
+.cv-tag{
+  font-family:var(--mono);font-size:12px;letter-spacing:.22em;color:var(--red);
+  font-weight:700;margin-bottom:18px;
+}
+.cv-big{
+  font-family:var(--display);text-transform:uppercase;font-size:44px;line-height:.92;
+  color:var(--ink);margin-bottom:16px;
+}
+.cv-big b{display:block;color:var(--red);}
+.cv-sub{color:var(--muted);font-size:15px;line-height:1.5;}

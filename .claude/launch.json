@@ -4,7 +4,7 @@
     {
       "name": "upgrade-live",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["server.py"],
+      "runtimeArgs": ["/private/tmp/claude-501/-Users-tomi-Documents-Whats-next/6e956893-bac9-463b-b78e-6e1f529fc6b7/scratchpad/app/server.py"],
       "port": 8000,
       "autoPort": true
     }

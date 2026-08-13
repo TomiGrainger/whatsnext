@@ -6,9 +6,41 @@ authoritative live room:
 
 | Surface | URL | Purpose |
 |---|---|---|
+| **Setup** (desktop) | `/setup` | Build an event, then open it in a room |
 | **Audience** (mobile) | `/` | Join, react, challenge, vote — 8 interaction screens |
 | **Moderator** (desktop) | `/moderator` | Control Room: sentiment, "what's next", challenge queue, launch interactions |
 | **Projector** (big screen) | `/projector` | Room Display for the audience to watch |
+
+## Starting a new event
+
+Open <http://localhost:8000/setup>:
+
+1. **New event** — enter a brand and event name, then add topics in running order.
+   A topic *is* its discussion question: every topic opens on that discussion,
+   which has no countdown and stays up until the moderator moves. Underneath each
+   topic, add the interactions you want to be able to launch during it — poll,
+   word cloud, slider, emoji, ranking — each with its own question, options and
+   seconds on screen. Save it.
+2. **Go live** — pick that event, type a room code, and hit `OPEN ROOM`. You get
+   links to the audience, moderator and projector surfaces for that room.
+
+Each event in the list also has **✎ edit** (loads it back into the builder,
+topics and nested interactions alike; `SAVE CHANGES` writes to the same file) and
+**× delete** (click once, then ✓ to confirm). Editing or deleting an event never
+disturbs a room that is already running — the room holds its own copy. The demo
+event can't be deleted, since it is the fallback for room codes that were never
+set up.
+
+Running rooms are listed at the bottom of **Go live** with a **TURN OFF / TURN ON**
+switch. A room that is off shows a "room closed" screen on the phones and the
+projector and stops accepting votes, but keeps every tally — switch it back on and
+it resumes exactly where it was.
+
+Events are stored as JSON in [`events/`](events) — one file per event, written by
+the setup page. You can also author or edit them by hand; they are picked up on
+restart. Each room takes its own copy of the event when it opens, so editing an
+event never disturbs a room that is already running, and two rooms can run two
+different events at the same time.
 
 ## Run it
 
@@ -40,32 +72,50 @@ live for everyone at once.
   - `POST /api/action` — every audience/moderator action (vote, challenge, launch
     poll, next topic, …) mutates the in-memory room, then broadcasts to all surfaces.
   - `GET /api/state` — a plain JSON snapshot (used as a fallback / for debugging).
+  - `GET /api/events` · `POST /api/events` — list events, or save a new one
+    (validated, then written to `events/<slug>.json`).
+  - `GET`/`POST`/`DELETE /api/events/<id>` — read, update, or delete one event.
+  - `GET /api/rooms` · `POST /api/rooms` — list running rooms, or open a room
+    bound to an event.
 - **Frontend** — buildless vanilla JS. All three pages share `public/js/live.js`
   (the SSE + fetch client) and `public/css/app.css` (the design system: Anton display
   type, Space Mono labels, the crimson-on-black palette).
-- **State** is seeded to match the mockups exactly (sentiment 41/37/22, poll
-  42/28/17/13, the emoji counts, the challenge queue, etc.) so every surface looks
-  alive on first load; real votes then accumulate on top.
+- **Event config vs. runtime state** — an event file holds *content only*
+  (branding, topics, questions, options). Everything that changes while the room
+  is live — votes, tallies, the challenge queue, timers, "what's next" — is
+  runtime state, tracked per topic so each poll or slider counts separately.
+- **The demo event** ships pre-seeded to match the mockups (sentiment 41/37/22,
+  poll 42/28/17/13, the emoji counts, the challenge queue) so every surface looks
+  alive on first load. That seed data belongs to `events/demo_event.json` alone —
+  events you create start from zero.
 
 ## The moderator drives the show
 
-The moderator's **mode** (Discussion / Poll / Word Cloud / Emoji / Slider / Ranking /
-Results) decides which screen every audience phone shows — switch it from the
-`DISCUSSION MODE ▾` dropdown or the Quick Actions row, and every phone follows
-instantly. Audience votes flow back the other way into the sentiment ring, the
-"what's next" counter, and the challenge queue.
+The Control Room mirrors how the event was set up. Under the current topic sits a
+row of buttons: **Discussion** (always first, no timer) followed by exactly the
+interactions that topic was given, in order, each showing its length. Tap one and
+every phone and the projector switch to it instantly and its countdown starts;
+tap Discussion to come back. `PREV` / `NEXT TOPIC` walk the running order, and
+pause/extend only apply while a timed interaction is up.
+
+Audience votes flow back the other way into the sentiment ring, the "what's next"
+counter, and the challenge queue. Each interaction keeps its own tallies, so
+returning to one later shows what it had.
 
 ## Files
 
 ```
 server.py              real-time server (stdlib only)
+events/
+  demo_event.json      the demo event — also the template for new ones
 public/
+  setup.html           event builder + room launcher
   audience.html        mobile surface — 8 interaction screens
   moderator.html       control room dashboard
   projector.html       room display
   css/app.css          shared design system
-  css/{audience,moderator,projector}.css
+  css/{audience,moderator,projector,setup}.css
   js/live.js           shared SSE + action client
-  js/{audience,moderator}.js
+  js/{audience,moderator,projector,setup}.js
 Designs/               the visual source of truth (do not redesign)
 ```

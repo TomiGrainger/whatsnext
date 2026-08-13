@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Upgrade LIVE — Event Setup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/setup.css">
+</head>
+<body class="s-setup">
+<div class="setup-wrap">
+  <div class="page-head">
+    <div class="eyebrow"><span class="live-dot"></span> <u>SETUP</u></div>
+    <h1 class="page-title">Events</h1>
+  </div>
+
+  <div class="setup-grid">
+    <!-- LAUNCH: pick an event, open a room -->
+    <section class="card pane" id="launch">
+      <div class="pane-head">
+        <h2>Go live</h2>
+        <p class="sub">Pick an event, choose a room code, and open the three surfaces.</p>
+      </div>
+
+      <label class="lab" for="launch-event">EVENT</label>
+      <div class="event-list" id="event-list"></div>
+
+      <label class="lab" for="launch-code">ROOM CODE</label>
+      <input class="field code" id="launch-code" maxlength="8" placeholder="E.G. DEBATE2"
+             autocomplete="off" spellcheck="false" autocapitalize="characters">
+      <div class="hint">Letters and numbers, up to 8. Each room runs its own copy of the event.</div>
+
+      <button class="btn" id="launch-btn">OPEN ROOM →</button>
+      <div class="msg" id="launch-msg"></div>
+
+      <div class="links" id="launch-links" hidden>
+        <div class="lab">ROOM <b id="links-code"></b></div>
+        <a class="surface-link" id="link-audience" target="_blank">Audience <span>(phones)</span></a>
+        <a class="surface-link" id="link-moderator" target="_blank">Moderator <span>(control room)</span></a>
+        <a class="surface-link" id="link-projector" target="_blank">Projector <span>(big screen)</span></a>
+      </div>
+
+      <div class="rooms-open" id="rooms-open"></div>
+    </section>
+
+    <!-- BUILD: author a new event -->
+    <section class="card pane" id="build">
+      <div class="pane-head">
+        <h2 id="build-title">New event</h2>
+        <p class="sub" id="build-sub">Add topics in the order you want to run them.</p>
+      </div>
+
+      <div class="row2">
+        <div>
+          <label class="lab" for="ev-brand">BRAND</label>
+          <input class="field" id="ev-brand" maxlength="40" placeholder="THE UPGRADE">
+        </div>
+        <div>
+          <label class="lab" for="ev-name">EVENT NAME</label>
+          <input class="field" id="ev-name" maxlength="60" placeholder="THE BIG DEBATE">
+        </div>
+      </div>
+
+      <div class="lab topics-lab">TOPICS <span class="count" id="topic-count">0</span></div>
+      <p class="note">Every topic opens as a discussion, which stays up untimed until you move on.
+        Add polls, word clouds and the rest underneath a topic to launch during it.</p>
+      <div class="topics" id="topics"></div>
+
+      <div class="add-row">
+        <button class="btn ghost" id="add-topic">+ TOPIC</button>
+      </div>
+
+      <button class="btn" id="save-btn">SAVE EVENT →</button>
+      <button class="btn ghost" id="cancel-edit" hidden>CANCEL EDIT</button>
+      <div class="msg" id="save-msg"></div>
+    </section>
+  </div>
+</div>
+
+<script src="/js/setup.js"></script>
+</body>
+</html>
