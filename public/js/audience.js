@@ -7,6 +7,7 @@
   let mySentiment = null;
   let myNextVoted = false;
   let myPoll = null;
+  let mySlider = null;
   let sliderActive = false;
   let rankBuilt = false;
   let lastMode = null;
@@ -133,7 +134,8 @@
   const endSlide = () => {
     if (!sliderActive) return;
     sliderActive = false;
-    Live.send("slider", { value: +slider.value });
+    mySlider = +slider.value;
+    Live.send("slider", { value: mySlider });
     UI.toast("Response recorded");
   };
   slider.addEventListener("pointerup", endSlide);
@@ -257,7 +259,9 @@
     // poll
     $("#poll-q").textContent = st.poll.question.toUpperCase();
     renderPoll(st);
-    $("#poll-foot").textContent = st.responses + " RESPONSES";
+    $("#poll-foot").textContent = st.revealed
+      ? st.responses + " RESPONSES"
+      : st.responses + " IN · RESULTS HIDDEN";
 
     // word cloud
     $("#wc-q").textContent = st.wordcloud.question.toUpperCase();
@@ -273,7 +277,13 @@
     $("#slider-q").textContent = st.slider.question.toUpperCase();
     $("#slider-left").textContent = st.slider.leftLabel;
     $("#slider-right").textContent = st.slider.rightLabel;
-    if (!sliderActive) { slider.value = st.slider.avg; paintSlider(st.slider.avg); }
+    // while the room average is hidden the dial shows your own answer, so the
+    // handle never gives the result away by drifting to the room's position
+    if (!sliderActive) {
+      const target = st.slider.avg === null ? (mySlider === null ? 50 : mySlider) : st.slider.avg;
+      slider.value = target;
+      paintSlider(target);
+    }
 
     // ranking (build once per entry)
     $("#rank-q").textContent = st.ranking.question.toUpperCase();
@@ -315,10 +325,13 @@
         list.appendChild(el);
       });
     }
+    // an unrevealed poll arrives with its numbers stripped — vote, then wait
+    const hidden = st.poll.options.some((o) => o.pct === null);
+    list.classList.toggle("locked", hidden);
     st.poll.options.forEach((o) => {
       const el = list.querySelector('.poll-opt[data-id="' + o.id + '"]');
-      el.querySelector(".pct").textContent = o.pct + "%";
-      el.querySelector(".fill").style.width = o.pct + "%";
+      el.querySelector(".pct").textContent = hidden ? "" : o.pct + "%";
+      el.querySelector(".fill").style.width = hidden ? "0%" : o.pct + "%";
     });
     markPoll();
   }

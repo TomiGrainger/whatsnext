@@ -163,3 +163,35 @@ body.s-projector{background:#050506;overflow:hidden;}
   .wait-grid{grid-template-columns:1fr;gap:5vh;}
   .cv-join{flex-direction:column;gap:20px;}
 }
+
+/* ---- results held back until the reveal ---- */
+.locked-note{
+  display:flex;align-items:center;gap:18px;margin-bottom:clamp(18px,3vh,32px);
+}
+.locked-note[hidden]{display:none;}
+.locked-note .lk{
+  font-family:var(--mono);font-weight:700;letter-spacing:.24em;font-size:clamp(13px,1.3vw,18px);
+  color:var(--red);border:1px solid var(--red);border-radius:999px;padding:8px 16px;
+  animation:lockpulse 2s ease-in-out infinite;
+}
+.locked-note .ct{font-family:var(--mono);letter-spacing:.2em;color:var(--muted);font-size:clamp(13px,1.3vw,18px);}
+.locked-note .ct b{color:var(--ink);}
+@keyframes lockpulse{0%,100%{opacity:1;}50%{opacity:.45;}}
+
+/* bars sit blank and inert while locked */
+.pv-bars.locked .pv-bar{border-style:dashed;opacity:.72;}
+.pv-bars.locked .pv-bar .lab{color:var(--muted);}
+
+/* the reveal itself */
+body.reveal-flash .pv-bar{animation:revealpop .55s cubic-bezier(.2,.9,.25,1);}
+@keyframes revealpop{
+  0%{transform:scale(.985);}
+  55%{transform:scale(1.012);}
+  100%{transform:scale(1);}
+}
+body.reveal-flash .pv-slider .big{animation:revealglow .9s ease;}
+@keyframes revealglow{
+  0%{text-shadow:0 0 0 rgba(255,45,70,0);}
+  40%{text-shadow:0 0 60px rgba(255,45,70,.85);}
+  100%{text-shadow:0 0 0 rgba(255,45,70,0);}
+}

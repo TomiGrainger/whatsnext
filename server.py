@@ -196,6 +196,12 @@ def _seed_challenges(config):
     return out
 
 
+# Interactions whose numbers are held back until the moderator reveals them.
+# A word cloud and emoji shower are the opposite — watching them build is the
+# whole point — and a ranking reads as a live leaderboard, so those stay open.
+HIDEABLE = ("poll", "slider")
+
+
 def _init_interaction_runtime(item, seed):
     """Runtime tallies for one interaction, shaped by its kind — never by its
     content. `seed` (demo-only) comes from the interaction's own `seed` block."""
@@ -245,6 +251,7 @@ def _activate_topic(r, index):
     r["mode"] = "discussion"
     r["paused"] = False
     r["timeRemaining"] = 0
+    r["revealed"] = True
 
 
 def _activate_interaction(r, index):
@@ -256,6 +263,8 @@ def _activate_interaction(r, index):
     r["mode"] = items[index]["kind"]
     r["paused"] = False
     r["timeRemaining"] = items[index].get("settings", {}).get("duration", 60)
+    # a poll or slider opens closed — the room votes blind until the reveal
+    r["revealed"] = items[index]["kind"] not in HIDEABLE
 
 
 def new_room(code, event_id=DEFAULT_EVENT_ID, seed=False):
@@ -596,11 +605,11 @@ SUBSCRIBERS = {}   # sid -> {"q": Queue, "role": str, "code": str}
 SUB_LOCK = threading.Lock()
 
 
-def add_subscriber(role, code):
+def add_subscriber(role, code, crew=False):
     sid = uuid.uuid4().hex
     q = queue.Queue(maxsize=50)
     with SUB_LOCK:
-        SUBSCRIBERS[sid] = {"q": q, "role": role, "code": code}
+        SUBSCRIBERS[sid] = {"q": q, "role": role, "code": code, "crew": crew}
     return sid, q
 
 
@@ -615,15 +624,20 @@ def audience_online(code):
 
 
 def broadcast(code):
-    payload = snapshot(code)
-    if payload is None:
+    """Two payloads go out: the crew sees live figures, everyone else sees an
+    unrevealed poll/slider with its numbers stripped."""
+    public = snapshot(code, crew=False)
+    if public is None:
         return
-    data = json.dumps(payload)
+    public_data = json.dumps(public)
+    crew_data = None
     with SUB_LOCK:
         subs = [s for s in SUBSCRIBERS.values() if s["code"] == code]
+    if any(s.get("crew") for s in subs):
+        crew_data = json.dumps(snapshot(code, crew=True))
     for s in subs:
         try:
-            s["q"].put_nowait(data)
+            s["q"].put_nowait(crew_data if s.get("crew") else public_data)
         except queue.Full:
             pass
 
@@ -687,7 +701,20 @@ def _interaction_payload(item, rt):
     return {}, 0
 
 
-def snapshot(code):
+def _conceal(payload, kind):
+    """Strip the numbers out of an unrevealed poll/slider. The figures are
+    withheld here rather than hidden in CSS, so a guest reading the network
+    traffic can't peek at the result before the room sees it."""
+    hidden = dict(payload)
+    if kind == "poll":
+        hidden["options"] = [{"id": o["id"], "label": o["label"], "votes": None, "pct": None}
+                             for o in payload["options"]]
+    elif kind == "slider":
+        hidden["avg"] = None
+    return hidden
+
+
+def snapshot(code, crew=False):
     with LOCK:
         r = ROOMS.get(sanitize_code(code))
         if r is None:
@@ -705,9 +732,13 @@ def snapshot(code):
         # without needing to know what else the topic has configured.
         payloads = dict(EMPTY_PAYLOADS)
         responses = disc_responses
+        revealed = r.get("revealed", True)
         if active is not None and 0 <= active < len(items):
+            kind = items[active]["kind"]
             payload, responses = _interaction_payload(items[active], rt["interactions"][active])
-            payloads[items[active]["kind"]] = payload
+            if not revealed and not crew:
+                payload = _conceal(payload, kind)
+            payloads[kind] = payload
 
         return {
             "code": r["code"],
@@ -725,6 +756,8 @@ def snapshot(code):
                              for n, i in enumerate(items)],
             "activeInteraction": active,
             "mode": r["mode"],
+            "revealed": revealed,
+            "revealable": active is not None and items[active]["kind"] in HIDEABLE and not revealed,
             "timed": active is not None and r["mode"] != "results",
             "paused": r["paused"],
             "timeRemaining": r["timeRemaining"],
@@ -853,6 +886,8 @@ def act(code, kind, pid, data):
                 _activate_interaction(r, int(data.get("index")))
             except (TypeError, ValueError):
                 pass
+        elif kind == "reveal":
+            r["revealed"] = True
         elif kind == "backToDiscussion":
             r["activeInteraction"] = None
             r["mode"] = "discussion"
@@ -1060,7 +1095,8 @@ class Handler(BaseHTTPRequestHandler):
             qs = parse_qs(parsed.query)
             code = qs.get("room", [DEFAULT_ROOM])[0]
             get_room(code)
-            return self._send(200, json.dumps(snapshot(code)), "application/json", {"Cache-Control": "no-store"})
+            return self._send(200, json.dumps(snapshot(code, crew=self.authed())), "application/json",
+                              {"Cache-Control": "no-store"})
         if path == "/api/rooms":
             with LOCK:
                 rooms = [{"code": c, "eventId": r.get("eventId", DEFAULT_EVENT_ID),
@@ -1251,7 +1287,10 @@ class Handler(BaseHTTPRequestHandler):
             role = "audience"
         code = sanitize_code(qs.get("room", [DEFAULT_ROOM])[0])
         get_room(code)
-        sid, q = add_subscriber(role, code)
+        # the crew view is decided by the passcode cookie, never by the
+        # client-supplied role — otherwise ?role=moderator would leak results
+        crew = self.authed()
+        sid, q = add_subscriber(role, code, crew=crew)
         try:
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
@@ -1260,7 +1299,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("X-Accel-Buffering", "no")
             self.end_headers()
             broadcast(code)  # refresh in-room count for everyone
-            self.wfile.write(self._sse(json.dumps(snapshot(code))))
+            self.wfile.write(self._sse(json.dumps(snapshot(code, crew=crew))))
             self.wfile.flush()
             while True:
                 try:

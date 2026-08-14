@@ -168,3 +168,9 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
   animation:netpulse 1s ease-in-out infinite;
 }
 @keyframes netpulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+
+/* poll results held back until the moderator reveals */
+.poll-list.locked .poll-opt{border-style:dashed;}
+.poll-list.locked .poll-opt .pct::after{
+  content:"·";color:var(--dim);font-family:var(--mono);
+}

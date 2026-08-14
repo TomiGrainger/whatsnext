@@ -45,8 +45,30 @@
     }
   }
 
+  // Count a number up to its target — the reveal should land, not just appear.
+  function countUp(el, target, suffix) {
+    const start = performance.now();
+    const dur = 900;
+    if (el._raf) cancelAnimationFrame(el._raf);
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(target * eased) + suffix;
+      if (t < 1) el._raf = requestAnimationFrame(step);
+    };
+    el._raf = requestAnimationFrame(step);
+  }
+
+  // true only on the frame the moderator reveals, so the animation fires once
+  let wasRevealed = true;
+  let justRevealed = false;
+
   function render(st) {
     if (!st) return;
+    justRevealed = st.revealed && !wasRevealed;
+    wasRevealed = st.revealed;
+    if (justRevealed) document.body.classList.add("reveal-flash");
+    if (justRevealed) setTimeout(() => document.body.classList.remove("reveal-flash"), 900);
     $("#wordmark").innerHTML = st.brand + " <em>LIVE</em>";
     paintJoin(st);
     $("#closed-veil").hidden = !st.closed;
@@ -72,13 +94,33 @@
     $("#p-avs").innerHTML = show.map((c) => '<div class="av">' + c.initials + '</div>').join("") +
       (extra > 0 ? '<div class="av more">+' + extra + '</div>' : "");
 
-    // poll
+    // poll — bars stay flat and blank until the moderator reveals
     $("#pp-q").innerHTML = redLast(st.poll.question);
-    const lead = Math.max.apply(null, st.poll.options.map((o) => o.pct));
-    $("#pp-bars").innerHTML = st.poll.options.map((o) =>
-      '<div class="pv-bar' + (o.pct === lead && lead > 0 ? " lead" : "") + '">' +
-        '<div class="fill" style="width:' + o.pct + '%"></div>' +
-        '<div class="lab">' + o.label + '</div><div class="pct">' + o.pct + '%</div></div>').join("");
+    const pollHidden = st.poll.options.some((o) => o.pct === null);
+    const lead = pollHidden ? -1 : Math.max.apply(null, st.poll.options.map((o) => o.pct));
+    const pollKey = st.poll.question + "|" + st.poll.options.map((o) => o.id).join(",");
+    if ($("#pp-bars").dataset.key !== pollKey) {
+      $("#pp-bars").dataset.key = pollKey;
+      $("#pp-bars").innerHTML = st.poll.options.map((o) =>
+        '<div class="pv-bar"><div class="fill"></div>' +
+        '<div class="lab"></div><div class="pct"></div></div>').join("");
+      Array.from($("#pp-bars").children).forEach((bar, i) => {
+        bar.querySelector(".lab").textContent = st.poll.options[i].label;
+      });
+    }
+    Array.from($("#pp-bars").children).forEach((bar, i) => {
+      const o = st.poll.options[i];
+      if (!o) return;
+      bar.classList.toggle("lead", !pollHidden && o.pct === lead && lead > 0);
+      bar.querySelector(".fill").style.width = pollHidden ? "0%" : o.pct + "%";
+      const pct = bar.querySelector(".pct");
+      if (pollHidden) { pct.textContent = ""; return; }
+      if (justRevealed) countUp(pct, o.pct, "%");
+      else pct.textContent = o.pct + "%";
+    });
+    $("#pp-bars").classList.toggle("locked", pollHidden);
+    $("#pp-locked").hidden = !pollHidden;
+    $("#pp-locked-n").textContent = st.responses;
 
     // word cloud
     $("#pw-q").innerHTML = redLast(st.wordcloud.question);
@@ -91,11 +133,21 @@
 
     // slider
     $("#ps-q").innerHTML = redLast(st.slider.question);
+    // the room average is withheld until the reveal
     const avg = st.slider.avg;
-    $("#ps-pct").textContent = avg;
-    $("#ps-lab").textContent = sliderLabel(st, avg).toUpperCase();
-    $("#ps-fill").style.width = avg + "%";
-    $("#ps-knob").style.left = avg + "%";
+    const sliderHidden = avg === null;
+    if (sliderHidden) {
+      $("#ps-pct").textContent = "—";
+      $("#ps-lab").textContent = st.responses + " ANSWERS IN · HIDDEN";
+      $("#ps-fill").style.width = "0%";
+      $("#ps-knob").style.left = "0%";
+    } else {
+      if (justRevealed) countUp($("#ps-pct"), avg, "");
+      else $("#ps-pct").textContent = avg;
+      $("#ps-lab").textContent = sliderLabel(st, avg).toUpperCase();
+      $("#ps-fill").style.width = avg + "%";
+      $("#ps-knob").style.left = avg + "%";
+    }
     $("#ps-left").textContent = "0% · " + st.slider.leftLabel.toUpperCase();
     $("#ps-right").textContent = "100% · " + st.slider.rightLabel.toUpperCase();
 

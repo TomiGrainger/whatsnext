@@ -20,6 +20,7 @@
   $("#results-btn").addEventListener("click", () => { Live.send("showResults"); UI.toast("Showing results"); });
   $("#end-btn").addEventListener("click", () => { Live.send("showResults"); UI.toast("Showing results"); });
   $("#discussion-btn").addEventListener("click", () => { Live.send("backToDiscussion"); UI.toast("Back to discussion"); });
+  $("#reveal-btn").addEventListener("click", () => { Live.send("reveal"); UI.toast("Results revealed"); });
   $("#invite-btn").addEventListener("click", () => { Live.send("inviteTop"); UI.toast("Invited to speak"); });
   // sidebar quick-jumps
   $$('.nav a[data-jump]').forEach((a) => a.addEventListener("click", (e) => {
@@ -110,7 +111,8 @@
   function render(st) {
     if (!st) return;
     $("#mod-brand").innerHTML = st.brand + " <em>LIVE</em>";
-    $("#mode-label").textContent = MODE_LABEL[st.mode] || "DISCUSSION";
+    $("#mode-label").textContent = (MODE_LABEL[st.mode] || "DISCUSSION") + (st.revealed ? "" : " · HIDDEN");
+    $("#mode-label").classList.toggle("hidden-state", !st.revealed);
     $("#closed-banner").hidden = !st.closed;
     document.body.classList.toggle("room-closed", Boolean(st.closed));
 
@@ -122,6 +124,11 @@
     $("#pause-btn").disabled = !st.timed;
     $("#extend-btn").disabled = !st.timed;
     $("#discussion-btn").disabled = st.activeInteraction === null && st.mode !== "results";
+    // the crew always sees real figures; this button is what lets the room see them
+    $("#reveal-btn").disabled = !st.revealable;
+    $("#reveal-btn").classList.toggle("armed", Boolean(st.revealable));
+    $("#reveal-btn").querySelector(".ql").textContent =
+      st.revealable ? "Reveal Results" : (st.revealed ? "Results Showing" : "Reveal Results");
     $("#prev-btn").disabled = st.topicIndex === 0;
     $("#next-btn").disabled = st.topicIndex >= st.topicCount - 1;
     $("#next-btn-2").disabled = st.topicIndex >= st.topicCount - 1;
