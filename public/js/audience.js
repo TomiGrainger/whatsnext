@@ -361,6 +361,49 @@
   const savedRoom = sessionStorage.getItem("upgrade_room");
   if (joined && savedRoom) Live.setRoom(savedRoom);
 
+  // ---- closing screen: the debrief sign-up ----
+  const LEAD_KEY = "upgrade_lead_done";
+  if (sessionStorage.getItem(LEAD_KEY) === "1") showLeadDone();
+
+  function showLeadDone() {
+    $("#lead-form").hidden = true;
+    $("#lead-done").hidden = false;
+  }
+
+  $("#lead-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = $("#lead-email").value.trim();
+    const note = $("#lead-note");
+    note.classList.remove("err");
+    if (!email) { $("#lead-email").focus(); return; }
+
+    const btn = $("#lead-submit");
+    btn.disabled = true;
+    btn.textContent = "SENDING…";
+    try {
+      const r = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name: $("#lead-name").value.trim(), room: Live.room() }),
+      });
+      const res = await r.json();
+      if (!res.ok) {
+        note.textContent = res.error || "Couldn't save that — try again?";
+        note.classList.add("err");
+        btn.disabled = false;
+        btn.textContent = "SEND ME THE DEBRIEF →";
+        return;
+      }
+      sessionStorage.setItem(LEAD_KEY, "1");
+      showLeadDone();
+    } catch (err) {
+      note.textContent = "No connection — try again in a moment.";
+      note.classList.add("err");
+      btn.disabled = false;
+      btn.textContent = "SEND ME THE DEBRIEF →";
+    }
+  });
+
   Live.onStatus((up) => { $("#net-chip").hidden = up; });
 
   Live.onState(render);

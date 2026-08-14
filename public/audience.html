@@ -119,9 +119,24 @@
 <!-- ROOM SWITCHED OFF -->
 <div class="closed-veil" id="closed-veil" hidden>
   <div class="cv-inner">
-    <div class="cv-tag">ROOM CLOSED</div>
+    <div class="cv-tag">THAT'S A WRAP</div>
     <div class="cv-big">THANKS FOR<b>TAKING PART</b></div>
-    <div class="cv-sub">This room has been switched off. Hold tight — it may come back.</div>
+    <div class="cv-sub">Want the debrief? We'll send the full results and what came out of tonight.</div>
+
+    <form class="cv-form" id="lead-form">
+      <input class="field" id="lead-email" type="email" inputmode="email" autocomplete="email"
+             maxlength="200" placeholder="you@email.com" aria-label="Your email">
+      <input class="field" id="lead-name" maxlength="60" placeholder="Your name (optional)"
+             autocomplete="name" aria-label="Your name">
+      <button class="btn" id="lead-submit" type="submit">SEND ME THE DEBRIEF →</button>
+      <div class="cv-note" id="lead-note">One email with the results. No list, no spam.</div>
+    </form>
+
+    <div class="cv-done" id="lead-done" hidden>
+      <div class="tick">✓</div>
+      <div class="dn">YOU'RE ON THE LIST</div>
+      <div class="ds">The debrief lands in your inbox after the event.</div>
+    </div>
   </div>
 </div>
 

@@ -156,6 +156,7 @@ body.s-projector{background:#050506;overflow:hidden;}
 .cv-join-txt .k{
   font-family:var(--mono);font-size:13px;letter-spacing:.24em;color:var(--red);font-weight:700;margin-bottom:12px;
 }
+.cv-join-txt .d{color:var(--muted);font-size:19px;line-height:1.4;max-width:24ch;margin-bottom:16px;}
 .cv-join-txt .u{font-family:var(--mono);font-size:19px;color:var(--ink);}
 .cv-join-txt .c{font-family:var(--mono);font-size:14px;letter-spacing:.2em;color:var(--muted);margin-top:10px;}
 

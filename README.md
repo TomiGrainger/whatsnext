@@ -75,6 +75,13 @@ signs the crew out, and anyone with the code has the controls.
   **REVEAL RESULTS** — the bars fill and the numbers count up on the projector.
   Word clouds, emoji and rankings stay live throughout, since watching those build
   is the point. Re-launching an interaction locks it again.
+- **The debrief sign-up** — when a room is switched off, phones show a closing
+  screen offering the debrief and full results in exchange for an email, and the
+  projector shows the same offer beside the QR so late-comers can still scan in.
+  Addresses land in `leads/<ROOM>.json` next to the event that collected them,
+  deduplicated per room and stamped with the event name. The setup page shows a
+  **✉ count** against each room; click it to download that room's sign-ups.
+  Sign-ups need no passcode (guests are not crew), but reading them does.
 - **Dropped phones** — the audience surface watches its own connection. If a phone
   loses Wi-Fi it shows a small `RECONNECTING…` chip, keeps the current screen
   usable, and rebuilds the stream by itself once the network is back (including
@@ -164,4 +171,7 @@ public/
   js/live.js           shared SSE + action client
   js/{audience,moderator,projector,setup}.js
 Designs/               the visual source of truth (do not redesign)
+events/*.json          event content — one file per event
+leads/<ROOM>.json      debrief sign-ups, written at the event (gitignored)
+rooms_state.json       live room state, so a restart doesn't lose the night
 ```

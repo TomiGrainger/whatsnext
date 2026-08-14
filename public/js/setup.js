@@ -371,6 +371,16 @@
       a.querySelector("span").textContent = r.eventName + (r.closed ? " · off" : "");
       row.appendChild(a);
 
+      // sign-ups collected in this room, downloadable as JSON
+      const leads = document.createElement("a");
+      leads.className = "room-leads" + (r.leads ? " has" : "");
+      leads.href = "/api/leads/" + encodeURIComponent(r.code) + ".json";
+      leads.title = r.leads
+        ? "Download the " + r.leads + " email sign-up(s) from this room"
+        : "No sign-ups yet";
+      leads.textContent = "✉ " + (r.leads || 0);
+      row.appendChild(leads);
+
       const toggle = document.createElement("button");
       toggle.className = "room-toggle" + (r.closed ? " on" : "");
       toggle.type = "button";

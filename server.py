@@ -45,6 +45,7 @@ PUBLIC = os.path.join(ROOT, "public")
 EVENTS_DIR = os.path.join(ROOT, "events")
 DEMO_EVENT_FILE = os.path.join(EVENTS_DIR, "demo_event.json")
 STATE_FILE = os.path.join(ROOT, "rooms_state.json")
+LEADS_DIR = os.path.join(ROOT, "leads")
 DEFAULT_ROOM = "WN25"
 
 LOCK = threading.RLock()
@@ -151,6 +152,69 @@ def event_summaries():
             "kinds": kinds,
         })
     return out
+
+
+# ---------------------------------------------------------------------------
+# Sign-ups. Guests can leave an email on the closing screen to get the debrief;
+# they land in leads/<ROOM>.json next to the event that collected them.
+# ---------------------------------------------------------------------------
+
+LEAD_LOCK = threading.Lock()
+
+
+def _leads_path(code):
+    return os.path.join(LEADS_DIR, sanitize_code(code) + ".json")
+
+
+def read_leads(code):
+    try:
+        with open(_leads_path(code)) as fh:
+            data = json.load(fh)
+        return data if isinstance(data, list) else []
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+def plausible_email(value):
+    """Deliberately loose — the point is to catch typos and junk, not to police
+    what a valid address looks like."""
+    value = (value or "").strip()
+    if not 5 <= len(value) <= 200 or value.count("@") != 1:
+        return None
+    local, _, domain = value.partition("@")
+    if not local or "." not in domain or domain.startswith(".") or domain.endswith("."):
+        return None
+    if any(ch.isspace() for ch in value):
+        return None
+    return value
+
+
+def add_lead(code, email, name):
+    """Returns True if stored, False if this address already signed up."""
+    code = sanitize_code(code)
+    with LEAD_LOCK:
+        leads = read_leads(code)
+        if any(l.get("email", "").lower() == email.lower() for l in leads):
+            return False
+        room = ROOMS.get(code) or {}
+        leads.append({
+            "email": email,
+            "name": name or "",
+            "at": time.time(),
+            "room": code,
+            "eventId": room.get("eventId", ""),
+            "eventName": room.get("eventName", ""),
+        })
+        try:
+            os.makedirs(LEADS_DIR, exist_ok=True)
+            tmp = _leads_path(code) + ".tmp"
+            with open(tmp, "w") as fh:
+                json.dump(leads, fh, indent=2)
+            os.replace(tmp, _leads_path(code))
+        except OSError as exc:
+            print("  (could not save sign-up: %s)" % exc)
+            return False
+    return True
 
 
 def html_escape(text):
@@ -1097,10 +1161,20 @@ class Handler(BaseHTTPRequestHandler):
             get_room(code)
             return self._send(200, json.dumps(snapshot(code, crew=self.authed())), "application/json",
                               {"Cache-Control": "no-store"})
+        if path.startswith("/api/leads/"):
+            if not self.authed():
+                return self._deny()
+            code = sanitize_code(path[len("/api/leads/"):].replace(".json", ""))
+            body = json.dumps(read_leads(code), indent=2)
+            return self._send(200, body, "application/json", {
+                "Cache-Control": "no-store",
+                "Content-Disposition": 'attachment; filename="leads-%s.json"' % code,
+            })
         if path == "/api/rooms":
             with LOCK:
                 rooms = [{"code": c, "eventId": r.get("eventId", DEFAULT_EVENT_ID),
-                          "eventName": r.get("eventName", ""), "closed": r.get("closed", False)}
+                          "eventName": r.get("eventName", ""), "closed": r.get("closed", False),
+                          "leads": len(read_leads(c))}
                          for c, r in sorted(ROOMS.items())]
             return self._send(200, json.dumps({"rooms": rooms}), "application/json", {"Cache-Control": "no-store"})
         if path == "/api/events":
@@ -1159,12 +1233,12 @@ class Handler(BaseHTTPRequestHandler):
 
         is_event_update = parsed.path.startswith("/api/events/")
         is_room_update = parsed.path.startswith("/api/rooms/")
-        if (parsed.path not in ("/api/action", "/api/events", "/api/rooms")
+        if (parsed.path not in ("/api/action", "/api/events", "/api/rooms", "/api/leads")
                 and not is_event_update and not is_room_update):
             return self._send(404, "Not found")
-        # everything except /api/action is crew-only; /api/action is checked
-        # per action below, since the audience posts its votes through it
-        if parsed.path != "/api/action" and not self.authed():
+        # /api/action and /api/leads are guest-facing (actions are checked per
+        # kind below); everything else is crew-only
+        if parsed.path not in ("/api/action", "/api/leads") and not self.authed():
             return self._deny()
         length = int(self.headers.get("Content-Length", "0") or 0)
         if length > 256 * 1024:
@@ -1183,6 +1257,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.create_event(data)
         if parsed.path == "/api/rooms":
             return self.create_room(data)
+        if parsed.path == "/api/leads":
+            return self.capture_lead(data)
 
         kind = data.get("type")
         if kind not in AUDIENCE_ACTIONS and not self.authed():
@@ -1193,6 +1269,19 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:
             return self._send(500, json.dumps({"ok": False, "error": str(exc)}), "application/json")
         return self._send(200, json.dumps({"ok": True}), "application/json", {"Cache-Control": "no-store"})
+
+    def capture_lead(self, data):
+        email = plausible_email(data.get("email"))
+        if not email:
+            return self._send(400, json.dumps({"ok": False, "error": "That doesn't look like an email address."}),
+                              "application/json")
+        name = (data.get("name") or "").strip()[:60]
+        code = sanitize_code(data.get("room"))
+        stored = add_lead(code, email, name)
+        # an address that already signed up still gets a yes — from the guest's
+        # side they are on the list either way
+        return self._send(200, json.dumps({"ok": True, "duplicate": not stored}),
+                          "application/json", {"Cache-Control": "no-store"})
 
     def handle_login(self):
         length = int(self.headers.get("Content-Length", "0") or 0)

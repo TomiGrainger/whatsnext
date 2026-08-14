@@ -163,6 +163,13 @@
 }
 .room-chip:hover{color:var(--ink);border-color:var(--line-2);}
 .room-chip b{color:var(--ink);}
+.room-leads{
+  flex-shrink:0;font-family:var(--mono);font-size:11px;letter-spacing:.1em;font-weight:700;
+  color:var(--dim);background:var(--bg-2);border:1px solid var(--line);
+  border-radius:8px;padding:8px 10px;text-decoration:none;
+}
+.room-leads.has{color:var(--ink);border-color:var(--line-2);}
+.room-leads.has:hover{color:var(--red);border-color:var(--red);}
 .room-toggle{
   flex-shrink:0;font-family:var(--mono);font-size:10px;letter-spacing:.12em;font-weight:700;
   color:var(--muted);background:var(--card-2);border:1px solid var(--line);
