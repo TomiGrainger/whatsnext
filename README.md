@@ -40,6 +40,26 @@ topic 1, keeping the room and its event — that's the one to use after a rehear
 before the doors open. Note a reset room starts genuinely empty, demo seed numbers
 included.
 
+## Passcode
+
+The **moderator** and **setup** pages are crew-only, behind one shared passcode.
+The server prints it at startup; set your own with `PASSCODE=…`:
+
+```bash
+PASSCODE=4821 python3 server.py
+```
+
+Signing in once per device covers both pages for a day (`/logout` ends it). The
+**audience page and the projector stay open** — guests just scan and join, and the
+projector is usually on a machine nobody can type on.
+
+The passcode also guards every write: creating, editing and deleting events,
+opening/closing/resetting rooms, and all the moderator's own actions (next topic,
+launch interaction, reveal, pause…). Audience actions — voting, words, emoji,
+challenges — stay open, so the gate never gets between a guest and the debate.
+It's one shared code held in memory, not an account system: restarting the server
+signs the crew out, and anyone with the code has the controls.
+
 ## On the night
 
 - **Joining** — the projector shows a **SCAN TO JOIN** screen with a QR code

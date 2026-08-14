@@ -90,6 +90,10 @@ window.Live = (function () {
           body: JSON.stringify(body),
         });
         if (r.ok) return true;
+        if (r.status === 401) {          // crew session lapsed — go sign in again
+          location.href = "/login?next=" + encodeURIComponent(location.pathname + location.search);
+          return false;
+        }
       } catch (e) { /* offline — fall through to the retry */ }
       setOnline(false);
       await new Promise((res) => setTimeout(res, 400 * (attempt + 1)));

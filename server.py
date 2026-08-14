@@ -24,9 +24,11 @@ Features
 """
 
 import copy
+import hmac
 import json
 import os
 import queue
+import secrets
 import socket
 import threading
 import time
@@ -46,6 +48,33 @@ STATE_FILE = os.path.join(ROOT, "rooms_state.json")
 DEFAULT_ROOM = "WN25"
 
 LOCK = threading.RLock()
+
+# ---------------------------------------------------------------------------
+# Passcode. One shared code guards the moderator and setup surfaces and every
+# write; the audience surface stays open so guests just scan and join. Set
+# PASSCODE to choose it, otherwise one is generated and printed at startup.
+# Sessions are opaque tokens held in memory — restarting the server logs the
+# crew out, which is fine for a single-evening tool.
+# ---------------------------------------------------------------------------
+
+PASSCODE = os.environ.get("PASSCODE") or "".join(secrets.choice("0123456789") for _ in range(6))
+SESSIONS = set()
+SESSION_LOCK = threading.Lock()
+COOKIE = "upgrade_crew"
+
+
+def new_session():
+    token = secrets.token_urlsafe(24)
+    with SESSION_LOCK:
+        SESSIONS.add(token)
+    return token
+
+
+def valid_session(token):
+    if not token:
+        return False
+    with SESSION_LOCK:
+        return token in SESSIONS
 
 
 DEFAULT_EVENT_ID = "demo_event"
@@ -122,6 +151,11 @@ def event_summaries():
             "kinds": kinds,
         })
     return out
+
+
+def html_escape(text):
+    return (str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            .replace('"', "&quot;").replace("'", "&#39;"))
 
 
 def lan_host():
@@ -908,6 +942,45 @@ STATIC_TYPES = {
 }
 PAGES = {"/": "audience.html", "/moderator": "moderator.html",
          "/projector": "projector.html", "/setup": "setup.html"}
+# The crew surfaces. The audience page and the projector stay open: the projector
+# is a passive display, often on a machine nobody can type on.
+PROTECTED_PAGES = ("/moderator", "/setup")
+
+LOGIN_PAGE = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Upgrade LIVE — Crew</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<style>
+body{display:flex;align-items:center;justify-content:center;min-height:100dvh;padding:28px;
+  background:radial-gradient(120% 60% at 50% 0%, rgba(255,45,70,.10), transparent 60%),#0a0a0b;}
+.card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);
+  border-radius:22px;padding:30px 26px;text-align:center;}
+.eyebrow{font-family:var(--mono);color:var(--red);letter-spacing:.28em;font-size:12px;font-weight:700;}
+h1{font-family:var(--display);text-transform:uppercase;font-size:44px;line-height:.92;margin:14px 0 6px;color:var(--ink);}
+h1 b{color:var(--red);font-weight:400;display:block;}
+p{color:var(--muted);font-size:14.5px;line-height:1.5;margin:0 0 22px;}
+input.code{width:100%;background:#0d0d0f;border:1px solid var(--line-2);border-radius:14px;color:var(--ink);
+  padding:16px;font-size:22px;outline:none;text-align:center;font-family:var(--mono);letter-spacing:.3em;}
+input.code:focus{border-color:var(--red);}
+button{width:100%;margin-top:14px;}
+.err{color:var(--red);font-family:var(--mono);font-size:12px;letter-spacing:.1em;margin-top:14px;min-height:16px;}
+</style></head>
+<body>
+<form class="card" method="POST" action="/login">
+  <div class="eyebrow">CREW ONLY</div>
+  <h1>THE<b>UPGRADE</b></h1>
+  <p>Enter the passcode to reach the control room and event setup.</p>
+  <input class="code" name="passcode" type="password" inputmode="numeric"
+         autocomplete="current-password" autofocus aria-label="Passcode" placeholder="******">
+  <input type="hidden" name="next" value="__NEXT__">
+  <button class="btn" type="submit">UNLOCK &rarr;</button>
+  <div class="err">__ERROR__</div>
+</form>
+</body></html>
+"""
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -915,6 +988,39 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, *args):
         pass
+
+    # ---- passcode ------------------------------------------------------
+    def _cookie_token(self):
+        raw = self.headers.get("Cookie") or ""
+        for part in raw.split(";"):
+            name, _, value = part.strip().partition("=")
+            if name == COOKIE:
+                return value
+        return None
+
+    def authed(self):
+        return valid_session(self._cookie_token())
+
+    def _send_login(self, next_path="/setup", error=""):
+        page = (LOGIN_PAGE
+                .replace("__NEXT__", html_escape(next_path))
+                .replace("__ERROR__", html_escape(error)))
+        return self._send(200, page, "text/html; charset=utf-8", {"Cache-Control": "no-store"})
+
+    def _deny(self):
+        return self._send(401, json.dumps({"ok": False, "error": "Passcode required — reload and sign in."}),
+                          "application/json", {"Cache-Control": "no-store"})
+
+    def _redirect(self, location, cookie=None, clear_cookie=False):
+        self.send_response(303)
+        self.send_header("Location", location)
+        self.send_header("Content-Length", "0")
+        if cookie:
+            self.send_header("Set-Cookie",
+                             "%s=%s; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400" % (COOKIE, cookie))
+        if clear_cookie:
+            self.send_header("Set-Cookie", "%s=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0" % COOKIE)
+        self.end_headers()
 
     def _send(self, code, body, ctype="text/plain; charset=utf-8", extra=None):
         if isinstance(body, str):
@@ -931,6 +1037,23 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
+        if path == "/login":
+            if self.authed():
+                return self._redirect("/setup")
+            return self._send_login(parse_qs(parsed.query).get("next", ["/setup"])[0])
+        if path == "/logout":
+            token = self._cookie_token()
+            with SESSION_LOCK:
+                SESSIONS.discard(token)
+            return self._redirect("/login", clear_cookie=True)
+        if path in PROTECTED_PAGES and not self.authed():
+            return self._send_login(path)
+        if path == "/api/events" and not self.authed():
+            return self._deny()
+        if path.startswith("/api/events/") and not self.authed():
+            return self._deny()
+        if path == "/api/rooms" and not self.authed():
+            return self._deny()
         if path == "/events":
             return self.handle_sse(parsed)
         if path == "/api/state":
@@ -976,6 +1099,8 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         if not path.startswith("/api/events/"):
             return self._send(404, "Not found")
+        if not self.authed():
+            return self._deny()
         event_id = path[len("/api/events/"):]
         with LOCK:
             if event_id not in EVENTS:
@@ -993,11 +1118,18 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/login":
+            return self.handle_login()
+
         is_event_update = parsed.path.startswith("/api/events/")
         is_room_update = parsed.path.startswith("/api/rooms/")
         if (parsed.path not in ("/api/action", "/api/events", "/api/rooms")
                 and not is_event_update and not is_room_update):
             return self._send(404, "Not found")
+        # everything except /api/action is crew-only; /api/action is checked
+        # per action below, since the audience posts its votes through it
+        if parsed.path != "/api/action" and not self.authed():
+            return self._deny()
         length = int(self.headers.get("Content-Length", "0") or 0)
         if length > 256 * 1024:
             return self._send(413, json.dumps({"ok": False, "error": "Payload too large"}), "application/json")
@@ -1016,12 +1148,30 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/rooms":
             return self.create_room(data)
 
+        kind = data.get("type")
+        if kind not in AUDIENCE_ACTIONS and not self.authed():
+            return self._deny()   # driving the show is crew-only
         code = data.get("room") or DEFAULT_ROOM
         try:
-            act(code, data.get("type"), data.get("pid") or "anon", data)
+            act(code, kind, data.get("pid") or "anon", data)
         except Exception as exc:
             return self._send(500, json.dumps({"ok": False, "error": str(exc)}), "application/json")
         return self._send(200, json.dumps({"ok": True}), "application/json", {"Cache-Control": "no-store"})
+
+    def handle_login(self):
+        length = int(self.headers.get("Content-Length", "0") or 0)
+        if length > 4096:
+            return self._send(413, "Too large")
+        body = self.rfile.read(length).decode("utf-8", "replace") if length else ""
+        fields = parse_qs(body)
+        given = (fields.get("passcode", [""])[0] or "").strip()
+        next_path = fields.get("next", ["/setup"])[0] or "/setup"
+        if not next_path.startswith("/") or next_path.startswith("//"):
+            next_path = "/setup"          # never bounce off-site
+        # constant-time compare so the passcode can't be probed by timing
+        if not hmac.compare_digest(given, PASSCODE):
+            return self._send_login(next_path, "That passcode didn't match.")
+        return self._redirect(next_path, cookie=new_session())
 
     def create_event(self, data):
         try:
@@ -1139,10 +1289,13 @@ def main():
     threading.Thread(target=ticker, daemon=True).start()
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     server.daemon_threads = True
-    print("  • Set up     http://localhost:%d/setup" % PORT)
-    print("  • Audience   http://localhost:%d/" % PORT)
-    print("  • Moderator  http://localhost:%d/moderator" % PORT)
+    host = lan_host()
+    print("  • Set up     http://localhost:%d/setup       (crew)" % PORT)
+    print("  • Moderator  http://localhost:%d/moderator   (crew)" % PORT)
     print("  • Projector  http://localhost:%d/projector" % PORT)
+    print("  • Audience   http://%s:%d/   ← what phones scan" % (host, PORT))
+    print("\n  CREW PASSCODE: %s%s" % (
+        PASSCODE, "" if os.environ.get("PASSCODE") else "   (set PASSCODE=… to choose your own)"))
     print("  Default room: %s   (add ?room=CODE for others)   Ctrl+C to stop\n" % DEFAULT_ROOM)
     try:
         server.serve_forever()

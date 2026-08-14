@@ -445,8 +445,16 @@
   });
 
   // ---------------- helpers ----------------
+  // the passcode session can expire under us (server restart) — send the crew
+  // back to the login screen rather than failing quietly
+  function checkAuth(r) {
+    if (r.status === 401) { location.href = "/login?next=/setup"; return false; }
+    return true;
+  }
+
   async function get(url) {
     const r = await fetch(url, { headers: { "Cache-Control": "no-store" } });
+    if (!checkAuth(r)) return { ok: false, events: [], rooms: [] };
     return r.json();
   }
   async function send(url, method, body) {
@@ -456,6 +464,7 @@
         headers: { "Content-Type": "application/json" },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
+      if (!checkAuth(r)) return { ok: false, error: "Signing in…" };
       return await r.json();
     } catch (e) {
       return { ok: false, error: "Could not reach the server." };
