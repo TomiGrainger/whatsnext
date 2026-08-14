@@ -231,7 +231,12 @@
     $("#join-code").textContent = st.code;
     $("#wordmark").innerHTML = st.brand + " <em>LIVE</em>";
     $("#eyebrow-brand").textContent = st.eventName;
-    $("#closed-veil").hidden = !st.closed;
+    // a code nobody opened: say so plainly instead of a dead-looking screen
+    const missing = st.exists === false;
+    $("#nosuch-veil").hidden = !missing;
+    $("#nosuch-code").textContent = st.code;
+    $("#closed-veil").hidden = missing || !st.closed;
+    if (missing) return;
 
     // choose screen
     const targetMode = st.mode;
@@ -360,6 +365,13 @@
   // if this tab already joined a room, reconnect to it after a reload
   const savedRoom = sessionStorage.getItem("upgrade_room");
   if (joined && savedRoom) Live.setRoom(savedRoom);
+
+  // back to the join screen to retype a code
+  $("#nosuch-retry").addEventListener("click", () => {
+    sessionStorage.removeItem("upgrade_joined");
+    sessionStorage.removeItem("upgrade_room");
+    location.href = "/";
+  });
 
   // ---- closing screen: the debrief sign-up ----
   const LEAD_KEY = "upgrade_lead_done";

@@ -90,10 +90,13 @@ window.Live = (function () {
           body: JSON.stringify(body),
         });
         if (r.ok) return true;
-        if (r.status === 401) {          // crew session lapsed — go sign in again
+        // only the crew surfaces have a login to go back to — never bounce a
+        // guest's phone to a passcode screen
+        if (r.status === 401 && role === "moderator") {
           location.href = "/login?next=" + encodeURIComponent(location.pathname + location.search);
           return false;
         }
+        if (r.status === 401 || r.status === 404) return false;
       } catch (e) { /* offline — fall through to the retry */ }
       setOnline(false);
       await new Promise((res) => setTimeout(res, 400 * (attempt + 1)));

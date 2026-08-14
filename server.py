@@ -15,9 +15,10 @@ Features
                      branding) lives in events/demo_event.json, not in this file.
                      A topic's own `type`/`interaction` decides what screen the
                      audience/moderator/projector render for it.
-    • Multi-room   — independent rooms keyed by code, auto-created on demand.
-                     WN25 is seeded with demo numbers; other rooms start fresh
-                     (same event config, zeroed counts).
+    • Multi-room   — independent rooms keyed by code, opened deliberately from
+                     /setup. An unopened code renders a "room not open" screen
+                     rather than springing a room into being. WN25 is the demo
+                     room and the only one seeded with the mockup's numbers.
     • Persistence  — every room is saved to rooms_state.json and reloaded on start.
     • Real-time    — Server-Sent Events (/events) push each room's snapshot to its
                      surfaces; clients send actions via POST /api/action.
@@ -613,13 +614,24 @@ def reset_room(room):
     mark_dirty()
 
 
-def get_room(code, create=True, event_id=None):
+def get_room(code):
+    """Look up a room. Rooms are only brought into being by open_room() from the
+    setup page, so a stray ?room=CODE from a stale tab or a mistyped code can no
+    longer conjure one mid-event."""
+    with LOCK:
+        return ROOMS.get(sanitize_code(code))
+
+
+def open_room(code, event_id=None, seed=None):
+    """Create a room deliberately — the setup page's OPEN ROOM, or the demo room
+    at startup. Returns the existing room untouched if the code is already live."""
     code = sanitize_code(code)
     with LOCK:
         room = ROOMS.get(code)
-        if room is None and create:
-            # A code nobody set up yet still works — it runs the default event.
-            room = new_room(code, event_id or DEFAULT_EVENT_ID, seed=(code == DEFAULT_ROOM))
+        if room is None:
+            if seed is None:
+                seed = code == DEFAULT_ROOM
+            room = new_room(code, event_id or DEFAULT_EVENT_ID, seed=seed)
             ROOMS[code] = room
             mark_dirty()
         return room
@@ -643,7 +655,7 @@ def save_state():
 
 def load_state():
     if not os.path.isfile(STATE_FILE):
-        get_room(DEFAULT_ROOM)  # seed default
+        open_room(DEFAULT_ROOM)  # the demo room is always there
         return
     try:
         with open(STATE_FILE) as fh:
@@ -653,12 +665,12 @@ def load_state():
             for code, room in loaded.items():
                 ROOMS[sanitize_code(code)] = room
         if DEFAULT_ROOM not in ROOMS:
-            get_room(DEFAULT_ROOM)
+            open_room(DEFAULT_ROOM)
         print("  Restored %d room(s) from %s" % (len(ROOMS), os.path.basename(STATE_FILE)))
     except Exception as exc:
         print("  (could not load saved state: %s — starting fresh)" % exc)
         ROOMS.clear()
-        get_room(DEFAULT_ROOM)
+        open_room(DEFAULT_ROOM)
 
 
 # ---------------------------------------------------------------------------
@@ -778,11 +790,36 @@ def _conceal(payload, kind):
     return hidden
 
 
+def missing_snapshot(code):
+    """A room code nobody opened. Same shape as a real snapshot so every surface
+    can render it without special-casing every field — just `exists: false`."""
+    payloads = dict(EMPTY_PAYLOADS)
+    return {
+        "exists": False,
+        "code": sanitize_code(code),
+        "brand": "THE UPGRADE", "eventName": "",
+        "closed": False, "joinUrl": join_url(code),
+        "topic": "", "topicIndex": 0, "topicCount": 0,
+        "interactions": [], "activeInteraction": None,
+        "mode": "discussion", "revealed": True, "revealable": False,
+        "timed": False, "paused": False, "timeRemaining": 0,
+        "inRoom": 0, "responses": 0,
+        "sentiment": {"agree": 0, "disagree": 0, "unsure": 0,
+                      "agreePct": 0, "disagreePct": 0, "unsurePct": 0},
+        "sentimentHistory": [],
+        "whatsNext": {"votes": 0, "threshold": 10, "remaining": 10, "unlocked": False},
+        "challenges": [], "invited": [],
+        "poll": payloads["poll"], "wordcloud": payloads["wordcloud"],
+        "emoji": payloads["emoji"], "slider": payloads["slider"],
+        "ranking": payloads["ranking"],
+    }
+
+
 def snapshot(code, crew=False):
     with LOCK:
         r = ROOMS.get(sanitize_code(code))
         if r is None:
-            return None
+            return missing_snapshot(code)
         in_room = r["simParticipants"] + audience_online(r["code"])
         topic = r["topics"][r["topicIndex"]]
         rt = r["topicRuntime"][r["topicIndex"]]
@@ -805,6 +842,7 @@ def snapshot(code, crew=False):
             payloads[kind] = payload
 
         return {
+            "exists": True,
             "code": r["code"],
             "brand": r["brand"],
             "eventName": r["eventName"],
@@ -844,12 +882,15 @@ def snapshot(code, crew=False):
 # Actions
 # ---------------------------------------------------------------------------
 
-AUDIENCE_ACTIONS = ("sentiment", "whatsnext", "challenge", "poll", "word", "emoji", "slider", "ranking")
+AUDIENCE_ACTIONS = ("join", "sentiment", "whatsnext", "challenge", "poll", "word",
+                    "emoji", "slider", "ranking")
 
 
 def act(code, kind, pid, data):
     with LOCK:
         r = get_room(code)
+        if r is None:
+            return False   # no such room — nothing to act on
         if r.get("closed") and kind in AUDIENCE_ACTIONS:
             return  # a closed room stops taking part; tallies are left as they are
 
@@ -1146,7 +1187,8 @@ class Handler(BaseHTTPRequestHandler):
                 SESSIONS.discard(token)
             return self._redirect("/login", clear_cookie=True)
         if path in PROTECTED_PAGES and not self.authed():
-            return self._send_login(path)
+            # keep the query (?room=…) so signing in returns to the right room
+            return self._send_login(self.path)
         if path == "/api/events" and not self.authed():
             return self._deny()
         if path.startswith("/api/events/") and not self.authed():
@@ -1158,7 +1200,6 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/state":
             qs = parse_qs(parsed.query)
             code = qs.get("room", [DEFAULT_ROOM])[0]
-            get_room(code)
             return self._send(200, json.dumps(snapshot(code, crew=self.authed())), "application/json",
                               {"Cache-Control": "no-store"})
         if path.startswith("/api/leads/"):
@@ -1264,6 +1305,9 @@ class Handler(BaseHTTPRequestHandler):
         if kind not in AUDIENCE_ACTIONS and not self.authed():
             return self._deny()   # driving the show is crew-only
         code = data.get("room") or DEFAULT_ROOM
+        if get_room(code) is None:
+            return self._send(404, json.dumps({"ok": False, "error": "That room isn't open."}),
+                              "application/json", {"Cache-Control": "no-store"})
         try:
             act(code, kind, data.get("pid") or "anon", data)
         except Exception as exc:
@@ -1277,6 +1321,9 @@ class Handler(BaseHTTPRequestHandler):
                               "application/json")
         name = (data.get("name") or "").strip()[:60]
         code = sanitize_code(data.get("room"))
+        if get_room(code) is None:
+            return self._send(404, json.dumps({"ok": False, "error": "That room isn't open."}),
+                              "application/json")
         stored = add_lead(code, email, name)
         # an address that already signed up still gets a yes — from the guest's
         # side they are on the list either way
@@ -1355,8 +1402,9 @@ class Handler(BaseHTTPRequestHandler):
             if code in ROOMS:
                 return self._send(409, json.dumps(
                     {"ok": False, "error": "Room %s is already in use" % code}), "application/json")
-            ROOMS[code] = new_room(code, event_id)
-            mark_dirty()
+            open_room(code, event_id, seed=False)
+        # surfaces already parked on this code flip from "not open" to live
+        broadcast(code)
         body = {"ok": True, "code": code, "eventId": event_id}
         return self._send(200, json.dumps(body), "application/json", {"Cache-Control": "no-store"})
 
@@ -1375,7 +1423,8 @@ class Handler(BaseHTTPRequestHandler):
         if role not in ("audience", "moderator", "projector"):
             role = "audience"
         code = sanitize_code(qs.get("room", [DEFAULT_ROOM])[0])
-        get_room(code)
+        # note: no room is created here — an unknown code just streams the
+        # "no such room" snapshot until the crew opens it from setup
         # the crew view is decided by the passcode cookie, never by the
         # client-supplied role — otherwise ?role=moderator would leak results
         crew = self.authed()

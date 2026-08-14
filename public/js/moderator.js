@@ -113,8 +113,18 @@
     $("#mod-brand").innerHTML = st.brand + " <em>LIVE</em>";
     $("#mode-label").textContent = (MODE_LABEL[st.mode] || "DISCUSSION") + (st.revealed ? "" : " · HIDDEN");
     $("#mode-label").classList.toggle("hidden-state", !st.revealed);
-    $("#closed-banner").hidden = !st.closed;
+    const missing = st.exists === false;
+    $("#closed-banner").hidden = !missing && !st.closed;
+    $("#closed-banner").textContent = missing
+      ? "Room " + st.code + " isn't open. Open it from the setup page to start driving the event."
+      : "This room is switched off — phones can't vote. Turn it back on from the setup page.";
     document.body.classList.toggle("room-closed", Boolean(st.closed));
+    if (missing) {
+      $("#topic-q").textContent = "—";
+      $("#run-row").innerHTML = "";
+      $("#run-row").dataset.key = "";
+      return;
+    }
 
     $("#in-room").textContent = st.inRoom;
     // a discussion has no countdown — it holds until the moderator moves on

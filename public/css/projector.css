@@ -196,3 +196,4 @@ body.reveal-flash .pv-slider .big{animation:revealglow .9s ease;}
   40%{text-shadow:0 0 60px rgba(255,45,70,.85);}
   100%{text-shadow:0 0 0 rgba(255,45,70,0);}
 }
+.closed-veil .cv-hint{color:var(--muted);font-size:22px;margin-top:8px;}

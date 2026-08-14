@@ -70,6 +70,15 @@
     if (justRevealed) document.body.classList.add("reveal-flash");
     if (justRevealed) setTimeout(() => document.body.classList.remove("reveal-flash"), 900);
     $("#wordmark").innerHTML = st.brand + " <em>LIVE</em>";
+    // a code nobody opened — nothing to display until setup opens it
+    const missing = st.exists === false;
+    $("#nosuch-veil").hidden = !missing;
+    $("#nosuch-code").textContent = st.code;
+    if (missing) {
+      $("#closed-veil").hidden = true;
+      $("#waiting-veil").hidden = true;
+      return;
+    }
     paintJoin(st);
     $("#closed-veil").hidden = !st.closed;
     // nobody in the room yet — show the join code rather than an empty stage

@@ -24,6 +24,13 @@ Open <http://localhost:8000/setup>:
 2. **Go live** — pick that event, type a room code, and hit `OPEN ROOM`. You get
    links to the audience, moderator and projector surfaces for that room.
 
+Rooms exist only once you open them here. A `?room=CODE` nobody has opened — a
+stale tab, a mistyped code — shows a plain "room not open" screen and is refused
+by the API, so nothing can conjure a room mid-event. Surfaces already parked on a
+code switch themselves on the moment you open it, so the projector can be set up
+before the room exists. `WN25` is the built-in demo room, and it's the only one
+that starts with the mockup's numbers in it.
+
 Each event in the list also has **✎ edit** (loads it back into the builder,
 topics and nested interactions alike; `SAVE CHANGES` writes to the same file) and
 **× delete** (click once, then ✓ to confirm). Editing or deleting an event never
