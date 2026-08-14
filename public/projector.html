@@ -15,6 +15,31 @@
   <div class="closed-veil" id="closed-veil" hidden>
     <div class="cv-tag">ROOM CLOSED</div>
     <div class="cv-big">THANKS FOR <b>TAKING PART</b></div>
+    <div class="cv-join">
+      <img class="qr" id="closed-qr" alt="Scan to join">
+      <div class="cv-join-txt">
+        <div class="k">STILL WANT IN?</div>
+        <div class="u" id="closed-url"></div>
+        <div class="c">ROOM <b id="closed-code"></b></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WAITING: shown before anyone has joined, so the screen is never empty -->
+  <div class="waiting-veil" id="waiting-veil" hidden>
+    <div class="wordmark" id="wait-wordmark"></div>
+    <div class="wait-grid">
+      <div>
+        <div class="wait-tag" id="wait-event"></div>
+        <div class="wait-big">SCAN TO<b>JOIN</b></div>
+        <div class="wait-sub">Point your camera at the code — no app, no sign-up.</div>
+        <div class="wait-url" id="wait-url"></div>
+      </div>
+      <div class="wait-qr">
+        <img class="qr" id="wait-qr" alt="Scan to join">
+        <div class="wait-code">ROOM <b id="wait-code"></b></div>
+      </div>
+    </div>
   </div>
 
   <div class="proj-top">

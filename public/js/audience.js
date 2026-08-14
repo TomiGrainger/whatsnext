@@ -348,6 +348,8 @@
   const savedRoom = sessionStorage.getItem("upgrade_room");
   if (joined && savedRoom) Live.setRoom(savedRoom);
 
+  Live.onStatus((up) => { $("#net-chip").hidden = up; });
+
   Live.onState(render);
   Live.connect("audience");
   render(Live.get());

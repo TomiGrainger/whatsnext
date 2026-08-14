@@ -153,3 +153,18 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
 }
 .cv-big b{display:block;color:var(--red);}
 .cv-sub{color:var(--muted);font-size:15px;line-height:1.5;}
+
+/* connection lost — small, non-blocking, stays out of the way */
+.net-chip{
+  position:fixed;left:50%;transform:translateX(-50%);top:14px;z-index:950;
+  display:flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;font-weight:700;
+  color:var(--red);background:rgba(10,10,11,.94);border:1px solid var(--red);
+  border-radius:999px;padding:8px 14px;box-shadow:0 8px 30px rgba(0,0,0,.6);
+}
+.net-chip[hidden]{display:none;}
+.net-chip .dot{
+  width:7px;height:7px;border-radius:50%;background:var(--red);
+  animation:netpulse 1s ease-in-out infinite;
+}
+@keyframes netpulse{0%,100%{opacity:1;}50%{opacity:.25;}}

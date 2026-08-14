@@ -61,6 +61,8 @@ input,textarea{font-family:inherit;}
 }
 .btn:hover{filter:brightness(1.08);}
 .btn:active{transform:scale(.98);}
+/* a class-level display beats the UA [hidden] rule, so restate it */
+.btn[hidden]{display:none;}
 .btn.ghost{background:var(--card-2);color:var(--ink);border:1px solid var(--line);}
 .btn.outline{background:transparent;border:1px solid var(--red);color:var(--red);}
 

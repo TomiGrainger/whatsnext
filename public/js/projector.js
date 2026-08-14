@@ -27,10 +27,31 @@
     document.querySelectorAll(".pview").forEach((v) => v.classList.toggle("active", v.id === id));
   }
 
+  // The QR is rendered by the server; only reload it when the room changes.
+  let qrCode = null;
+  function paintJoin(st) {
+    const pretty = (st.joinUrl || "").replace(/^https?:\/\//, "");
+    $("#wait-wordmark").innerHTML = st.brand + " <em>LIVE</em>";
+    $("#wait-event").textContent = st.eventName;
+    $("#wait-url").textContent = pretty;
+    $("#closed-url").textContent = pretty;
+    $("#wait-code").textContent = st.code;
+    $("#closed-code").textContent = st.code;
+    if (qrCode !== st.code) {
+      qrCode = st.code;
+      const src = "/qr.svg?room=" + encodeURIComponent(st.code);
+      $("#wait-qr").src = src;
+      $("#closed-qr").src = src;
+    }
+  }
+
   function render(st) {
     if (!st) return;
     $("#wordmark").innerHTML = st.brand + " <em>LIVE</em>";
+    paintJoin(st);
     $("#closed-veil").hidden = !st.closed;
+    // nobody in the room yet — show the join code rather than an empty stage
+    $("#waiting-veil").hidden = st.closed || st.inRoom > 0;
     $("#p-n").textContent = st.topicIndex + 1;
     $("#p-t").textContent = st.topicCount;
     showView(MODE_VIEW[st.mode] || "pv-discussion");

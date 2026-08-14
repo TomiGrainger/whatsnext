@@ -14,6 +14,7 @@
   let selectedEvent = null; // highlighted in the launch list
   let defaultEventId = null;
   let confirmingDelete = null;
+  let confirmingReset = null;
 
   // ---------------- build: topic model ----------------
   // A topic is a discussion question plus the interactions you can launch while
@@ -382,6 +383,32 @@
         loadRooms();
       });
       row.appendChild(toggle);
+
+      // wiping a rehearsal is destructive, so it takes two taps
+      const confirming = confirmingReset === r.code;
+      const reset = document.createElement("button");
+      reset.className = "room-toggle reset" + (confirming ? " confirming" : "");
+      reset.type = "button";
+      reset.textContent = confirming ? "CONFIRM WIPE" : "RESET";
+      reset.title = "Clear every vote, tally and challenge in this room";
+      reset.addEventListener("click", async () => {
+        if (!confirming) { confirmingReset = r.code; loadRooms(); return; }
+        confirmingReset = null;
+        await post("/api/rooms/" + encodeURIComponent(r.code), { reset: true });
+        const msg = $("#launch-msg");
+        msg.className = "msg ok";
+        msg.textContent = "Room " + r.code + " wiped — every tally back to zero.";
+        loadRooms();
+      });
+      row.appendChild(reset);
+
+      if (confirming) {
+        const warn = document.createElement("div");
+        warn.className = "del-warn";
+        warn.textContent = "Wipe every vote, tally and challenge in " + r.code +
+          "? The event stays; only the numbers are cleared.";
+        row.appendChild(warn);
+      }
 
       host.appendChild(row);
     });

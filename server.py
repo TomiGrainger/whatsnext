@@ -27,11 +27,14 @@ import copy
 import json
 import os
 import queue
+import socket
 import threading
 import time
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
+
+import qr
 
 HOST = "0.0.0.0"
 PORT = int(os.environ.get("PORT", "8000"))
@@ -119,6 +122,25 @@ def event_summaries():
             "kinds": kinds,
         })
     return out
+
+
+def lan_host():
+    """The address phones on the same Wi-Fi should use. Opening a UDP socket
+    to a public address asks the OS which local interface it would route
+    through — nothing is actually sent."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(("8.8.8.8", 80))
+            return s.getsockname()[0]
+        finally:
+            s.close()
+    except OSError:
+        return "localhost"
+
+
+def join_url(code, host=None):
+    return "http://%s:%d/?room=%s" % (host or lan_host(), PORT, sanitize_code(code))
 
 
 def _cid():
@@ -472,6 +494,18 @@ def mark_dirty():
     _dirty = True
 
 
+def reset_room(room):
+    """Wipe every tally back to zero, keeping the room, its code and its event.
+    Used to clear a rehearsal before the doors open — note this always clears
+    fully, including the demo seed numbers, so a reset room starts truly empty."""
+    room["topicRuntime"] = [_init_topic_runtime(t, seed=False) for t in room["topics"]]
+    room["challenges"] = []
+    room["invited"] = []
+    room["simParticipants"] = 0
+    _activate_topic(room, 0)
+    mark_dirty()
+
+
 def get_room(code, create=True, event_id=None):
     code = sanitize_code(code)
     with LOCK:
@@ -646,6 +680,7 @@ def snapshot(code):
             "brand": r["brand"],
             "eventName": r["eventName"],
             "closed": r.get("closed", False),
+            "joinUrl": join_url(r["code"]),
             "topic": topic.get("question", ""),
             "topicIndex": r["topicIndex"],
             "topicCount": r["topicCount"],
@@ -925,6 +960,14 @@ class Handler(BaseHTTPRequestHandler):
             return self.serve_static(PAGES[path])
         if path.startswith("/css/") or path.startswith("/js/") or path.startswith("/assets/"):
             return self.serve_static(path.lstrip("/"))
+        if path == "/qr.svg":
+            qs = parse_qs(parsed.query)
+            code = sanitize_code(qs.get("room", [DEFAULT_ROOM])[0])
+            try:
+                svg = qr.render_svg(join_url(code), size_px=420)
+            except ValueError as exc:
+                return self._send(500, str(exc))
+            return self._send(200, svg, "image/svg+xml", {"Cache-Control": "no-store"})
         if path == "/favicon.ico":
             return self._send(204, b"")
         return self._send(404, "Not found")
@@ -1018,7 +1061,10 @@ class Handler(BaseHTTPRequestHandler):
             room = ROOMS.get(code)
             if room is None:
                 return self._send(404, json.dumps({"ok": False, "error": "Unknown room"}), "application/json")
-            room["closed"] = bool(data.get("closed"))
+            if data.get("reset"):
+                reset_room(room)
+            if "closed" in data:
+                room["closed"] = bool(data.get("closed"))
             mark_dirty()
             closed = room["closed"]
         broadcast(code)
