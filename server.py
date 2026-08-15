@@ -30,6 +30,7 @@ import json
 import os
 import queue
 import secrets
+import signal
 import socket
 import threading
 import time
@@ -43,14 +44,18 @@ HOST = "0.0.0.0"
 PORT = int(os.environ.get("PORT", "8000"))
 ROOT = os.path.dirname(os.path.abspath(__file__))
 PUBLIC = os.path.join(ROOT, "public")
-EVENTS_DIR = os.path.join(ROOT, "events")
-DEMO_EVENT_FILE = os.path.join(EVENTS_DIR, "demo_event.json")
+BUNDLED_EVENTS_DIR = os.path.join(ROOT, "events")
 
 # Anything written at run time lives under DATA_DIR so it can sit on a mounted
 # volume when hosted. Defaults to the repo, which is what you want locally.
 DATA_DIR = os.environ.get("DATA_DIR") or ROOT
 STATE_FILE = os.path.join(DATA_DIR, "rooms_state.json")
 LEADS_DIR = os.path.join(DATA_DIR, "leads")
+
+# Events are authored through /setup, so they belong with the other things
+# written at run time. Hosted, that puts them on the volume and they survive a
+# redeploy; locally DATA_DIR is the repo, so they stay in git as before.
+EVENTS_DIR = BUNDLED_EVENTS_DIR if DATA_DIR == ROOT else os.path.join(DATA_DIR, "events")
 
 # Where the audience reaches this server from. Set PUBLIC_URL when hosted
 # (e.g. https://debate.example.com) so the QR sends phones to the public
@@ -128,6 +133,26 @@ def upgrade_config(cfg):
     cfg = dict(cfg)
     cfg["topics"] = upgraded
     return cfg
+
+
+def seed_events():
+    """Copy the events shipped with the app into the data directory, but only
+    ones that aren't there yet. A fresh volume gets the demo event; an event the
+    crew authored or edited is never overwritten by a later deploy."""
+    if EVENTS_DIR == BUNDLED_EVENTS_DIR:
+        return []
+    os.makedirs(EVENTS_DIR, exist_ok=True)
+    copied = []
+    for name in sorted(os.listdir(BUNDLED_EVENTS_DIR)):
+        if not name.endswith(".json"):
+            continue
+        target = os.path.join(EVENTS_DIR, name)
+        if os.path.exists(target):
+            continue
+        with open(os.path.join(BUNDLED_EVENTS_DIR, name)) as src, open(target, "w") as dst:
+            dst.write(src.read())
+        copied.append(name)
+    return copied
 
 
 def load_events():
@@ -1490,14 +1515,18 @@ class Handler(BaseHTTPRequestHandler):
 def main():
     try:
         os.makedirs(DATA_DIR, exist_ok=True)
+        copied = seed_events()
     except OSError as exc:
         raise SystemExit("  Cannot write to DATA_DIR %s: %s" % (DATA_DIR, exc))
     load_events()
     if DEFAULT_EVENT_ID not in EVENTS:
-        raise SystemExit("  No events/%s.json found — cannot start." % DEFAULT_EVENT_ID)
+        raise SystemExit("  No %s.json found in %s — cannot start."
+                         % (DEFAULT_EVENT_ID, EVENTS_DIR))
     print("\n  THE UPGRADE LIVE  —  real-time server running")
     print("  Loaded %d event(s): %s" % (len(EVENTS), ", ".join(sorted(EVENTS))))
-    print("  Data dir: %s" % DATA_DIR)
+    if copied:
+        print("  Seeded onto the data dir: %s" % ", ".join(copied))
+    print("  Data dir: %s   Events: %s" % (DATA_DIR, EVENTS_DIR))
     load_state()
     threading.Thread(target=ticker, daemon=True).start()
     server = ThreadingHTTPServer((HOST, PORT), Handler)
@@ -1516,13 +1545,20 @@ def main():
     print("\n  CREW PASSCODE: %s%s" % (
         PASSCODE, "" if os.environ.get("PASSCODE") else "   (set PASSCODE=… to choose your own)"))
     print("  Default room: %s   (add ?room=CODE for others)   Ctrl+C to stop\n" % DEFAULT_ROOM)
+    # A host redeploying sends SIGTERM, not Ctrl+C. Without this, anything since
+    # the last autosave — a room opened seconds ago, the last votes cast — would
+    # be lost on every deploy and restart.
+    def stop(signum, _frame):
+        print("\n  Saving & stopping (%s)…" % signal.Signals(signum).name)
+        mark_dirty()
+        save_state()
+        os._exit(0)
+
+    signal.signal(signal.SIGTERM, stop)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\n  Saving & stopping…")
-        mark_dirty()
-        save_state()
-        server.shutdown()
+        stop(signal.SIGINT, None)
 
 
 if __name__ == "__main__":

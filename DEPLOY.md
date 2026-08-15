@@ -131,14 +131,18 @@ fly ssh console -C "cat /data/leads/CODE.json"
 
 - **Keep it to one machine.** `fly scale count 1`. Two machines would each hold
   their own rooms in memory and the audience would land on whichever answered.
-- **Deploying restarts the app.** Rooms and tallies survive on the volume, but
-  the crew is signed out (sessions are in memory) and phones reconnect on their
-  own. Don't deploy during an event.
-- **The events you author are stored in the image, not on the volume.** An event
-  created through `/setup` on the deployed app lives in the container's
-  `events/`, so a redeploy resets it to what's in git. For anything you want to
-  keep, build it locally and commit the JSON. (Moving `events/` onto the volume
-  would fix that — a small change, not done here.)
+- **Deploying restarts the app.** Rooms, tallies, events and sign-ups all live on
+  the volume and survive; the app saves on shutdown, so even the last few seconds
+  are kept. The crew is signed out (sessions are in memory) and phones reconnect
+  on their own. Still, don't deploy during an event.
+- **Events live on the volume too.** An event you author through `/setup` on the
+  deployed app persists across deploys, and a later deploy will not overwrite it
+  even if a file of the same name ships in the image. The bundled events are
+  copied onto the volume only when they aren't already there, so the demo event
+  appears on first boot and your edits are never clobbered. The trade-off: an
+  updated bundled event won't reach a volume that already has that file — delete
+  it there (`fly ssh console -C "rm /data/events/NAME.json"`) and redeploy if you
+  want the shipped version back.
 - **Back up sign-ups** after each event; the volume is a single disk, not a
   managed database.
 
@@ -148,7 +152,7 @@ fly ssh console -C "cat /data/leads/CODE.json"
 |---|---|---|
 | `PASSCODE` | Crew passcode for `/moderator` and `/setup` | random 6 digits, printed at startup |
 | `PUBLIC_URL` | Public base URL used by the QR and join links | detected LAN address |
-| `DATA_DIR` | Where `rooms_state.json` and `leads/` are written | the project directory |
+| `DATA_DIR` | Where `rooms_state.json`, `leads/` and `events/` are written | the project directory |
 | `PORT` | Port to listen on | `8000` (`8080` in Docker) |
 
 Locally you need none of them — `python3 server.py` still works exactly as it did,

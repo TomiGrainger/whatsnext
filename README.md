@@ -59,7 +59,7 @@ Configuration is all environment variables; you need none of them locally:
 |---|---|---|
 | `PASSCODE` | Crew passcode for `/moderator` and `/setup` | random 6 digits, printed at startup |
 | `PUBLIC_URL` | Public base URL the QR and join links point at | detected LAN address |
-| `DATA_DIR` | Where `rooms_state.json` and `leads/` are written | the project directory |
+| `DATA_DIR` | Where `rooms_state.json`, `leads/` and `events/` are written | the project directory |
 | `PORT` | Port to listen on | `8000` |
 
 The app keeps room state in memory and in one file, so it must run as a **single
