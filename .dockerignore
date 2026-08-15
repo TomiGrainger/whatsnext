@@ -1,0 +1,16 @@
+.git
+.gitignore
+.claude
+.DS_Store
+__pycache__/
+*.pyc
+
+# design references — not needed at run time, and they're the bulk of the repo
+Designs/
+
+# local run-time state; the deployed app keeps its own on the volume
+rooms_state.json
+leads/
+
+DEPLOY.md
+README.md

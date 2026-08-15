@@ -45,8 +45,18 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 PUBLIC = os.path.join(ROOT, "public")
 EVENTS_DIR = os.path.join(ROOT, "events")
 DEMO_EVENT_FILE = os.path.join(EVENTS_DIR, "demo_event.json")
-STATE_FILE = os.path.join(ROOT, "rooms_state.json")
-LEADS_DIR = os.path.join(ROOT, "leads")
+
+# Anything written at run time lives under DATA_DIR so it can sit on a mounted
+# volume when hosted. Defaults to the repo, which is what you want locally.
+DATA_DIR = os.environ.get("DATA_DIR") or ROOT
+STATE_FILE = os.path.join(DATA_DIR, "rooms_state.json")
+LEADS_DIR = os.path.join(DATA_DIR, "leads")
+
+# Where the audience reaches this server from. Set PUBLIC_URL when hosted
+# (e.g. https://debate.example.com) so the QR sends phones to the public
+# address; unset, we detect the LAN address for same-Wi-Fi use.
+PUBLIC_URL = (os.environ.get("PUBLIC_URL") or "").strip().rstrip("/")
+
 DEFAULT_ROOM = "WN25"
 
 LOCK = threading.RLock()
@@ -239,7 +249,12 @@ def lan_host():
 
 
 def join_url(code, host=None):
-    return "http://%s:%d/?room=%s" % (host or lan_host(), PORT, sanitize_code(code))
+    """The URL a phone should open. Hosted, that's the public address; locally,
+    this machine's address on the Wi-Fi (localhost would be useless on a phone)."""
+    code = sanitize_code(code)
+    if PUBLIC_URL:
+        return "%s/?room=%s" % (PUBLIC_URL, code)
+    return "http://%s:%d/?room=%s" % (host or lan_host(), PORT, code)
 
 
 def _cid():
@@ -1130,6 +1145,16 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     # ---- passcode ------------------------------------------------------
+    def is_secure(self):
+        """True when the browser's connection is HTTPS, so the session cookie can
+        be marked Secure. Behind a reverse proxy the TLS ends at the proxy, so the
+        evidence is the header it adds (Fly, Render, Railway, nginx and Caddy all
+        send it). We deliberately trust nothing else: guessing Secure from
+        PUBLIC_URL would make the cookie unusable — and login impossible — if the
+        app were ever reached over plain HTTP."""
+        proto = (self.headers.get("X-Forwarded-Proto") or "").split(",")[0].strip().lower()
+        return proto == "https"
+
     def _cookie_token(self):
         raw = self.headers.get("Cookie") or ""
         for part in raw.split(";"):
@@ -1152,14 +1177,18 @@ class Handler(BaseHTTPRequestHandler):
                           "application/json", {"Cache-Control": "no-store"})
 
     def _redirect(self, location, cookie=None, clear_cookie=False):
+        # Location stays a relative path so it works whatever host or scheme the
+        # proxy in front of us is serving on.
+        secure = "; Secure" if self.is_secure() else ""
         self.send_response(303)
         self.send_header("Location", location)
         self.send_header("Content-Length", "0")
         if cookie:
-            self.send_header("Set-Cookie",
-                             "%s=%s; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400" % (COOKIE, cookie))
+            self.send_header("Set-Cookie", "%s=%s; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400%s"
+                             % (COOKIE, cookie, secure))
         if clear_cookie:
-            self.send_header("Set-Cookie", "%s=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0" % COOKIE)
+            self.send_header("Set-Cookie", "%s=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0%s"
+                             % (COOKIE, secure))
         self.end_headers()
 
     def _send(self, code, body, ctype="text/plain; charset=utf-8", extra=None):
@@ -1242,6 +1271,8 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError as exc:
                 return self._send(500, str(exc))
             return self._send(200, svg, "image/svg+xml", {"Cache-Control": "no-store"})
+        if path == "/healthz":          # for the host's health check
+            return self._send(200, "ok")
         if path == "/favicon.ico":
             return self._send(204, b"")
         return self._send(404, "Not found")
@@ -1457,20 +1488,31 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+    except OSError as exc:
+        raise SystemExit("  Cannot write to DATA_DIR %s: %s" % (DATA_DIR, exc))
     load_events()
     if DEFAULT_EVENT_ID not in EVENTS:
         raise SystemExit("  No events/%s.json found — cannot start." % DEFAULT_EVENT_ID)
     print("\n  THE UPGRADE LIVE  —  real-time server running")
     print("  Loaded %d event(s): %s" % (len(EVENTS), ", ".join(sorted(EVENTS))))
+    print("  Data dir: %s" % DATA_DIR)
     load_state()
     threading.Thread(target=ticker, daemon=True).start()
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     server.daemon_threads = True
-    host = lan_host()
-    print("  • Set up     http://localhost:%d/setup       (crew)" % PORT)
-    print("  • Moderator  http://localhost:%d/moderator   (crew)" % PORT)
-    print("  • Projector  http://localhost:%d/projector" % PORT)
-    print("  • Audience   http://%s:%d/   ← what phones scan" % (host, PORT))
+    if PUBLIC_URL:
+        print("  • Set up     %s/setup       (crew)" % PUBLIC_URL)
+        print("  • Moderator  %s/moderator   (crew)" % PUBLIC_URL)
+        print("  • Projector  %s/projector" % PUBLIC_URL)
+        print("  • Audience   %s/   ← what phones scan" % PUBLIC_URL)
+    else:
+        print("  • Set up     http://localhost:%d/setup       (crew)" % PORT)
+        print("  • Moderator  http://localhost:%d/moderator   (crew)" % PORT)
+        print("  • Projector  http://localhost:%d/projector" % PORT)
+        print("  • Audience   http://%s:%d/   ← what phones scan" % (lan_host(), PORT))
+        print("    (set PUBLIC_URL when hosted so the QR points at the public address)")
     print("\n  CREW PASSCODE: %s%s" % (
         PASSCODE, "" if os.environ.get("PASSCODE") else "   (set PASSCODE=… to choose your own)"))
     print("  Default room: %s   (add ?room=CODE for others)   Ctrl+C to stop\n" % DEFAULT_ROOM)

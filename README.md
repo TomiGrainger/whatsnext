@@ -47,6 +47,24 @@ topic 1, keeping the room and its event — that's the one to use after a rehear
 before the doors open. Note a reset room starts genuinely empty, demo seed numbers
 included.
 
+## Hosting it
+
+Locally, phones have to be on the same Wi-Fi. Host it and they can join over
+their own mobile data instead — no venue network, no captive portal. See
+[DEPLOY.md](DEPLOY.md) for the steps (Fly.io, roughly $3–5/month).
+
+Configuration is all environment variables; you need none of them locally:
+
+| Variable | What it does | Default |
+|---|---|---|
+| `PASSCODE` | Crew passcode for `/moderator` and `/setup` | random 6 digits, printed at startup |
+| `PUBLIC_URL` | Public base URL the QR and join links point at | detected LAN address |
+| `DATA_DIR` | Where `rooms_state.json` and `leads/` are written | the project directory |
+| `PORT` | Port to listen on | `8000` |
+
+The app keeps room state in memory and in one file, so it must run as a **single
+instance** — don't scale it out.
+
 ## Passcode
 
 The **moderator** and **setup** pages are crew-only, behind one shared passcode.
@@ -166,6 +184,8 @@ returning to one later shows what it had.
 ```
 server.py              real-time server (stdlib only)
 qr.py                  minimal QR encoder for the projector's join code
+Dockerfile             container image for hosting
+fly.toml               Fly.io config — see DEPLOY.md
 events/
   demo_event.json      the demo event — also the template for new ones
 public/
