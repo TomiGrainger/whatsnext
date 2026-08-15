@@ -163,6 +163,62 @@
     $("#ch-count").textContent = st.challenges.length;
     $("#nav-ch").textContent = st.challenges.length;
     renderChallenges(st);
+    renderQuestions(st);
+  }
+
+  // Questions arrive already ranked by votes. PUT UP sends one to the big
+  // screen; DONE greys it out so the moderator can see what's been covered.
+  function renderQuestions(st) {
+    const questions = st.questions || [];
+    $("#qa-count").textContent = questions.length;
+
+    const list = $("#mod-qa-list");
+    const key = questions.map((q) => q.id + ":" + q.votes + ":" + q.answered).join("|")
+      + "|" + (st.featuredQuestion || "");
+    if (list.dataset.key === key) return;
+    list.dataset.key = key;
+    list.innerHTML = "";
+
+    if (!questions.length) {
+      const empty = document.createElement("div");
+      empty.className = "qa-empty";
+      empty.textContent = "Nothing asked yet.";
+      list.appendChild(empty);
+      return;
+    }
+
+    questions.forEach((q) => {
+      const live = st.featuredQuestion === q.id;
+      const row = document.createElement("div");
+      row.className = "mq" + (q.answered ? " answered" : "") + (live ? " live" : "");
+
+      const votes = document.createElement("div");
+      votes.className = "mq-votes";
+      votes.innerHTML = '<span class="ar">▲</span><span class="n">' + q.votes + "</span>";
+
+      const body = document.createElement("div");
+      body.className = "mq-body";
+      body.innerHTML = '<div class="qt"></div><div class="qm"></div>';
+      body.querySelector(".qt").textContent = q.text;
+      body.querySelector(".qm").textContent =
+        q.name + " · " + UI.ago(q.at) + (q.answered ? " · ANSWERED" : "");
+
+      const acts = document.createElement("div");
+      acts.className = "mq-acts";
+      const feature = document.createElement("button");
+      feature.className = "mq-btn" + (live ? " on" : "");
+      feature.textContent = live ? "ON SCREEN" : "PUT UP";
+      feature.title = "Show this question on the projector";
+      feature.addEventListener("click", () => Live.send("featureQuestion", { id: q.id }));
+      const done = document.createElement("button");
+      done.className = "mq-btn";
+      done.textContent = q.answered ? "REOPEN" : "DONE";
+      done.addEventListener("click", () => Live.send("answerQuestion", { id: q.id }));
+      acts.append(feature, done);
+
+      row.append(votes, body, acts);
+      list.appendChild(row);
+    });
   }
 
   function renderChallenges(st) {

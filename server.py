@@ -396,6 +396,10 @@ def new_room(code, event_id=DEFAULT_EVENT_ID, seed=False):
         "closed": False,
         "challenges": _seed_challenges(config) if seed else [],
         "invited": [],
+        # audience Q&A — open all night, ranked by upvotes, separate from the
+        # challenge queue (a challenge asks for the mic, a question asks for an answer)
+        "questions": [],
+        "featuredQuestion": None,
         "simParticipants": config.get("seedSimParticipants", 0) if seed else 0,
     }
     _activate_topic(room, 0)
@@ -649,6 +653,8 @@ def reset_room(room):
     room["topicRuntime"] = [_init_topic_runtime(t, seed=False) for t in room["topics"]]
     room["challenges"] = []
     room["invited"] = []
+    room["questions"] = []
+    room["featuredQuestion"] = None
     room["simParticipants"] = 0
     _activate_topic(room, 0)
     mark_dirty()
@@ -849,6 +855,7 @@ def missing_snapshot(code):
         "sentimentHistory": [],
         "whatsNext": {"votes": 0, "threshold": 10, "remaining": 10, "unlocked": False},
         "challenges": [], "invited": [],
+        "questions": [], "featuredQuestion": None,
         "poll": payloads["poll"], "wordcloud": payloads["wordcloud"],
         "emoji": payloads["emoji"], "slider": payloads["slider"],
         "ranking": payloads["ranking"],
@@ -910,6 +917,11 @@ def snapshot(code, crew=False):
             "whatsNext": whats_next,
             "challenges": r["challenges"],
             "invited": r["invited"],
+            # ranked by votes, newest first among ties; _voters never goes out
+            "questions": [{k: v for k, v in q.items() if k != "_voters"}
+                          for q in sorted(r.get("questions", []),
+                                          key=lambda q: (-q["votes"], -q["at"]))],
+            "featuredQuestion": r.get("featuredQuestion"),
             "poll": payloads["poll"],
             "wordcloud": payloads["wordcloud"],
             "emoji": payloads["emoji"],
@@ -923,7 +935,9 @@ def snapshot(code, crew=False):
 # ---------------------------------------------------------------------------
 
 AUDIENCE_ACTIONS = ("join", "sentiment", "whatsnext", "challenge", "poll", "word",
-                    "emoji", "slider", "ranking")
+                    "emoji", "slider", "ranking", "ask", "upvote")
+
+MAX_QUESTIONS = 200
 
 
 def act(code, kind, pid, data):
@@ -975,6 +989,32 @@ def act(code, kind, pid, data):
                     "initials": _initials(name) if name else "?", "text": text, "at": time.time(),
                 })
                 r["challenges"] = r["challenges"][:24]
+
+        elif kind == "ask":
+            text = (data.get("text") or "").strip()[:200]
+            name = (data.get("name") or "").strip()[:40]
+            if text and len(r["questions"]) < MAX_QUESTIONS:
+                r["questions"].append({
+                    "id": _cid(), "name": name or "Anonymous",
+                    "initials": _initials(name) if name else "?",
+                    "text": text, "at": time.time(),
+                    "votes": 1,          # asking counts as your own upvote
+                    "answered": False,
+                    "topicIndex": r["topicIndex"],
+                    "_voters": [pid],
+                })
+
+        elif kind == "upvote":
+            qid = data.get("id")
+            for q in r["questions"]:
+                if q["id"] == qid:
+                    if pid in q["_voters"]:
+                        q["_voters"].remove(pid)      # tapping again takes it back
+                        q["votes"] = max(0, q["votes"] - 1)
+                    else:
+                        q["_voters"].append(pid)
+                        q["votes"] += 1
+                    break
 
         elif kind == "poll":
             if live("poll"):
@@ -1053,6 +1093,19 @@ def act(code, kind, pid, data):
         elif kind == "togglePause":
             if active is not None:
                 r["paused"] = not r["paused"]
+        elif kind == "featureQuestion":
+            qid = data.get("id")
+            # tapping the live one again takes it off the big screen
+            r["featuredQuestion"] = None if r.get("featuredQuestion") == qid else qid
+        elif kind == "answerQuestion":
+            qid = data.get("id")
+            for q in r["questions"]:
+                if q["id"] == qid:
+                    q["answered"] = not q["answered"]
+                    if q["answered"] and r.get("featuredQuestion") == qid:
+                        r["featuredQuestion"] = None
+                    break
+
         elif kind == "invite":
             cid = data.get("id")
             if cid and cid not in r["invited"]:

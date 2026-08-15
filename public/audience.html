@@ -47,6 +47,7 @@
       <button class="react" data-choice="unsure"><div class="emo">😐</div><div class="lab">UNSURE</div></button>
       <button class="react fight" id="fight-btn"><div class="emo">⚡</div><div class="lab">FIGHT</div></button>
     </div>
+    <button class="qa-bar" id="qa-bar">🙋 ASK A QUESTION <span id="qa-count"></span></button>
     <button class="next-bar" id="next-bar">→ WHAT'S NEXT?&nbsp; 7/10</button>
   </section>
 
@@ -149,6 +150,20 @@
       <div class="ds">The debrief lands in your inbox after the event.</div>
     </div>
   </div>
+</div>
+
+<!-- Q&A SHEET -->
+<div class="sheet-scrim" id="qa-scrim"></div>
+<div class="sheet qa-sheet" id="qa-sheet">
+  <button class="x" id="qa-x">×</button>
+  <div class="tag"><span class="bolt">🙋</span> AUDIENCE Q&amp;A</div>
+  <h3>ASK THE <b>ROOM</b></h3>
+  <p class="hint">Questions the room votes up go to the front of the queue.</p>
+  <div class="qa-compose">
+    <input class="field" id="qa-text" maxlength="200" placeholder="What do you want answered?">
+    <button class="btn" id="qa-send">ASK →</button>
+  </div>
+  <div class="qa-list" id="qa-list"></div>
 </div>
 
 <!-- CHALLENGE SHEET -->

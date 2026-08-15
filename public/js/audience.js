@@ -80,6 +80,80 @@
       b.classList.toggle("sel", b.dataset.choice === mySentiment));
   }
 
+  // ---- Q&A ----
+  // which questions this phone has upvoted; the server never sends voter ids
+  const myVotes = new Set(JSON.parse(sessionStorage.getItem("upgrade_qvotes") || "[]"));
+  const rememberVote = (id) => {
+    myVotes.has(id) ? myVotes.delete(id) : myVotes.add(id);
+    sessionStorage.setItem("upgrade_qvotes", JSON.stringify([...myVotes]));
+  };
+
+  function openQa() {
+    $("#qa-sheet").classList.add("show");
+    $("#qa-scrim").classList.add("show");
+  }
+  function closeQa() {
+    $("#qa-sheet").classList.remove("show");
+    $("#qa-scrim").classList.remove("show");
+  }
+  $("#qa-bar").addEventListener("click", openQa);
+  $("#qa-x").addEventListener("click", closeQa);
+  $("#qa-scrim").addEventListener("click", closeQa);
+
+  function submitQuestion() {
+    const text = $("#qa-text").value.trim();
+    if (!text) { $("#qa-text").focus(); return; }
+    Live.send("ask", { text });
+    $("#qa-text").value = "";
+    UI.toast("Question added");
+  }
+  $("#qa-send").addEventListener("click", submitQuestion);
+  $("#qa-text").addEventListener("keydown", (e) => { if (e.key === "Enter") submitQuestion(); });
+
+  function renderQa(st) {
+    const questions = st.questions || [];
+    $("#qa-count").textContent = questions.length ? "· " + questions.length : "";
+
+    const list = $("#qa-list");
+    const key = questions.map((q) => q.id + ":" + q.votes + ":" + q.answered).join("|");
+    if (list.dataset.key === key) return;   // nothing moved; leave the DOM alone
+    list.dataset.key = key;
+    list.innerHTML = "";
+
+    if (!questions.length) {
+      const empty = document.createElement("div");
+      empty.className = "qa-empty";
+      empty.textContent = "No questions yet — be first.";
+      list.appendChild(empty);
+      return;
+    }
+
+    questions.forEach((q) => {
+      const row = document.createElement("div");
+      row.className = "qa-item" + (q.answered ? " answered" : "");
+      const mine = myVotes.has(q.id);
+
+      const vote = document.createElement("button");
+      vote.className = "qa-vote" + (mine ? " on" : "");
+      vote.innerHTML = '<span class="ar">▲</span><span class="n">' + q.votes + "</span>";
+      vote.setAttribute("aria-label", (mine ? "Remove upvote from" : "Upvote") + ": " + q.text);
+      vote.addEventListener("click", () => {
+        rememberVote(q.id);
+        vote.classList.toggle("on");
+        Live.send("upvote", { id: q.id });
+      });
+
+      const body = document.createElement("div");
+      body.className = "qa-body";
+      body.innerHTML = '<div class="qt"></div><div class="qm"></div>';
+      body.querySelector(".qt").textContent = q.text;
+      body.querySelector(".qm").textContent = q.answered ? "ANSWERED · " + q.name : q.name;
+
+      row.append(vote, body);
+      list.appendChild(row);
+    });
+  }
+
   // ---- challenge sheet ----
   function openSheet() {
     $("#sheet").classList.add("show");
@@ -248,6 +322,8 @@
     // topic-dependent titles
     setQuestionTitle("#disc-q", st.topic, true);
     setQuestionTitle("#res-q", st.topic, true);
+
+    renderQa(st);
 
     // discussion stats
     $("#st-agree").textContent = st.sentiment.agree;

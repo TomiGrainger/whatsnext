@@ -27,6 +27,16 @@
     document.querySelectorAll(".pview").forEach((v) => v.classList.toggle("active", v.id === id));
   }
 
+  // A question the moderator has put up sits over whatever else is showing.
+  function paintFeaturedQuestion(st) {
+    const q = (st.questions || []).find((x) => x.id === st.featuredQuestion);
+    $("#q-veil").hidden = !q;
+    if (!q) return;
+    $("#qv-text").textContent = q.text;
+    $("#qv-name").textContent = q.name;
+    $("#qv-votes").textContent = q.votes;
+  }
+
   // The QR is rendered by the server; only reload it when the room changes.
   let qrCode = null;
   function paintJoin(st) {
@@ -80,6 +90,7 @@
       return;
     }
     paintJoin(st);
+    paintFeaturedQuestion(st);
     $("#closed-veil").hidden = !st.closed;
     // nobody in the room yet — show the join code rather than an empty stage
     $("#waiting-veil").hidden = st.closed || st.inRoom > 0;

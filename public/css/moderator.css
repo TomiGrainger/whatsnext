@@ -65,7 +65,7 @@ body.s-moderator{background:#060607;min-height:100vh;}
 .run-btn.live .rt{color:var(--red);}
 .run-none{color:var(--dim);font-size:13.5px;padding:10px 2px;}
 
-.panels{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;flex:1;min-height:0;}
+.panels{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;flex:1;min-height:0;}
 .panel{background:#0e0e11;border:1px solid var(--line);border-radius:18px;padding:24px;display:flex;flex-direction:column;min-height:0;}
 .panel .ptitle{font-family:var(--mono);letter-spacing:.18em;font-size:12px;color:var(--muted);text-transform:uppercase;}
 
@@ -124,3 +124,22 @@ body.s-moderator{background:#060607;min-height:100vh;}
   .panels{grid-template-columns:1fr;} .qa-row{grid-template-columns:repeat(3,1fr);}
 }
 .mode-now.hidden-state{background:#1a1013;color:var(--red);border:1px solid var(--red);}
+
+/* ---- moderator: audience Q&A panel ---- */
+.qa-empty{color:var(--dim);font-size:13.5px;padding:14px 2px;}
+.panel.qpanel .qa-list{margin:16px 0 0;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1;}
+.mq{display:flex;gap:12px;align-items:flex-start;}
+.mq.answered{opacity:.45;}
+.mq.live{background:var(--red-dim);border:1px solid var(--red);border-radius:12px;padding:10px;margin:-10px -10px 0;}
+.mq-votes{flex:0 0 auto;width:40px;text-align:center;}
+.mq-votes .ar{display:block;font-size:10px;color:var(--muted);line-height:1;}
+.mq-votes .n{font-family:var(--display);font-size:20px;color:var(--ink);line-height:1.1;}
+.mq.live .mq-votes .n,.mq.live .mq-votes .ar{color:var(--red);}
+.mq-body{flex:1;min-width:0;}
+.mq-body .qt{font-size:14.5px;line-height:1.35;color:var(--ink);}
+.mq-body .qm{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--dim);margin-top:4px;text-transform:uppercase;}
+.mq-acts{display:flex;flex-direction:column;gap:5px;flex:0 0 auto;}
+.mq-btn{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;font-weight:700;
+  padding:6px 8px;border-radius:8px;background:var(--card-2);border:1px solid var(--line);color:var(--muted);}
+.mq-btn:hover{color:var(--ink);border-color:var(--line-2);}
+.mq-btn.on{background:var(--red);border-color:var(--red);color:#fff;}
