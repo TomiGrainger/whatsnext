@@ -156,3 +156,12 @@ body.s-moderator{background:#060607;min-height:100vh;}
 .who-txt .fact{font-size:12px;color:var(--muted);line-height:1.35;font-style:italic;}
 .who .mq-btn{flex:0 0 auto;}
 .ch-item .av{background-size:cover;background-position:center;}
+
+/* removing something from the room */
+.mq-btn.drop{color:var(--dim);}
+.mq-btn.drop:hover{color:#fff;background:var(--red);border-color:var(--red);}
+.ch-drop{
+  margin-left:8px;font-size:11px;line-height:1;color:var(--dim);
+  background:transparent;border:none;padding:2px 4px;border-radius:6px;
+}
+.ch-drop:hover{color:#fff;background:var(--red);}

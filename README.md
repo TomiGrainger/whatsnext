@@ -121,6 +121,11 @@ signs the crew out, and anyone with the code has the controls.
   screen; the moderator's ranked panel can throw one over the projector (`PUT UP`)
   or grey it off once covered (`DONE`). Separate from the challenge queue: a
   challenge asks for the mic, a question asks for an answer.
+- **Taking something down** — every question and challenge has a **REMOVE**, and
+  every profile an **✕**. One click, no confirmation, because when something
+  needs to come off the screen it needs to come off now. Removal is total: it
+  disappears from the phones, the projector and the public recap, and a removed
+  profile's photo is deleted from disk. Crew-only, like every other control.
 - **Reactions** — hold an emoji on the phone and it streams up the projector.
   Only a fixed set is accepted and each room is capped at 40 a second, so the big
   screen can't be flooded or made to show arbitrary text.

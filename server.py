@@ -1482,6 +1482,30 @@ def act(code, kind, pid, data):
         elif kind == "togglePause":
             if active is not None:
                 r["paused"] = not r["paused"]
+        # ---- moderation ----
+        # A live room takes free text and photos from strangers, some of which
+        # ends up on a public screen and in the public recap. These remove it
+        # outright rather than just hiding it from one surface.
+        elif kind == "removeQuestion":
+            qid = data.get("id")
+            r["questions"] = [q for q in r["questions"] if q["id"] != qid]
+            if r.get("featuredQuestion") == qid:
+                r["featuredQuestion"] = None
+        elif kind == "removeChallenge":
+            cid = data.get("id")
+            r["challenges"] = [c for c in r["challenges"] if c["id"] != cid]
+            r["invited"] = [i for i in r["invited"] if i != cid]
+        elif kind == "removeProfile":
+            target = re_pid(data.get("pid"))
+            profile = r["profiles"].pop(target, None)
+            if r.get("featuredProfile") == target:
+                r["featuredProfile"] = None
+            if profile and profile.get("avatar"):
+                try:
+                    os.remove(os.path.join(avatars_dir(), os.path.basename(profile["avatar"])))
+                except OSError:
+                    pass
+
         elif kind == "featureProfile":
             target = data.get("pid")
             if target in r["profiles"]:

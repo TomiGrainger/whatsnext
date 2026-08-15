@@ -200,7 +200,18 @@
     btn.title = "Put this person on the projector";
     btn.addEventListener("click", () => Live.send("featureProfile", { pid }));
 
-    card.append(face, txt, btn);
+    // clears the name, occupation, fact and photo outright — for when what
+    // someone put in their profile shouldn't be anywhere near the big screen
+    const drop = document.createElement("button");
+    drop.className = "mq-btn drop";
+    drop.textContent = "✕";
+    drop.title = "Delete this person's profile and photo";
+    drop.addEventListener("click", () => {
+      Live.send("removeProfile", { pid });
+      UI.toast("Profile removed");
+    });
+
+    card.append(face, txt, btn, drop);
     return card;
   }
 
@@ -254,7 +265,18 @@
       done.className = "mq-btn";
       done.textContent = q.answered ? "REOPEN" : "DONE";
       done.addEventListener("click", () => Live.send("answerQuestion", { id: q.id }));
-      acts.append(feature, done);
+
+      // one click, no confirm: when something needs to come off the screen it
+      // needs to come off now
+      const drop = document.createElement("button");
+      drop.className = "mq-btn drop";
+      drop.textContent = "REMOVE";
+      drop.title = "Delete this question — it disappears from phones and the recap";
+      drop.addEventListener("click", () => {
+        Live.send("removeQuestion", { id: q.id });
+        UI.toast("Question removed");
+      });
+      acts.append(feature, done, drop);
 
       row.append(votes, body, acts);
       list.appendChild(row);
@@ -282,6 +304,17 @@
           (invited ? ' <span class="tag-invited">· INVITED</span>' : '') +
         '</span><span class="t">' + UI.ago(c.at) + '</span></div>' +
         '<div class="tx">' + escapeHtml(c.text) + '</div>';
+
+      const drop = document.createElement("button");
+      drop.className = "ch-drop";
+      drop.textContent = "✕";
+      drop.title = "Remove this challenge";
+      drop.addEventListener("click", () => {
+        Live.send("removeChallenge", { id: c.id });
+        UI.toast("Challenge removed");
+      });
+      body.querySelector(".nm").appendChild(drop);
+
       if (profile) body.appendChild(profileCard(st, c.pid, profile));
 
       el.append(av, body);
