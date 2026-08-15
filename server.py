@@ -314,7 +314,10 @@ def _init_interaction_runtime(item, seed):
     kind = item["kind"]
     if kind == "poll":
         seed_votes = seed_data.get("votes", {})
-        return {"votes": {o["id"]: seed_votes.get(o["id"], 0) for o in item["options"]}, "_votes": {}}
+        # `rounds` holds finished runs of the same poll, so the room can be asked
+        # again after the discussion and see how far it moved
+        return {"votes": {o["id"]: seed_votes.get(o["id"], 0) for o in item["options"]},
+                "rounds": [], "_votes": {}}
     if kind == "wordcloud":
         return {"words": dict(seed_data.get("words", {})), "_votes": {}}
     if kind == "emoji":
@@ -785,7 +788,7 @@ def _discussion_payload(rt):
 
 
 EMPTY_PAYLOADS = {
-    "poll": {"question": "", "options": []},
+    "poll": {"question": "", "options": [], "round": 1, "rounds": 1},
     "wordcloud": {"question": "", "words": []},
     "emoji": {"question": "", "reactions": []},
     "slider": {"question": "", "leftLabel": "", "rightLabel": "", "resultLabel": "", "avg": 0, "count": 0},
@@ -800,7 +803,18 @@ def _interaction_payload(item, rt):
         total = max(1, sum(rt["votes"].values()))
         options = [{"id": o["id"], "label": o["label"], "votes": rt["votes"][o["id"]],
                     "pct": round(100 * rt["votes"][o["id"]] / total)} for o in item["options"]]
-        return {"question": item["question"], "options": options}, sum(rt["votes"].values())
+        rounds = rt.get("rounds", [])
+        payload = {"question": item["question"], "options": options,
+                   "round": len(rounds) + 1, "rounds": len(rounds) + 1}
+        if rounds:
+            # only the run immediately before, and only if the room already saw it
+            prev = rounds[-1]
+            if prev.get("revealed"):
+                ptotal = max(1, sum(prev["votes"].values()))
+                payload["before"] = [{"id": o["id"],
+                                      "pct": round(100 * prev["votes"].get(o["id"], 0) / ptotal)}
+                                     for o in item["options"]]
+        return payload, sum(rt["votes"].values())
     if kind == "wordcloud":
         words = [{"text": w, "weight": c} for w, c in rt["words"].items()]
         return {"question": item["question"], "words": words}, sum(rt["words"].values())
@@ -847,7 +861,7 @@ def missing_snapshot(code):
         "closed": False, "joinUrl": join_url(code),
         "topic": "", "topicIndex": 0, "topicCount": 0,
         "interactions": [], "activeInteraction": None,
-        "mode": "discussion", "revealed": True, "revealable": False,
+        "mode": "discussion", "revealed": True, "revealable": False, "rerunnable": False,
         "timed": False, "paused": False, "timeRemaining": 0,
         "inRoom": 0, "responses": 0,
         "sentiment": {"agree": 0, "disagree": 0, "unsure": 0,
@@ -907,6 +921,8 @@ def snapshot(code, crew=False):
             "mode": r["mode"],
             "revealed": revealed,
             "revealable": active is not None and items[active]["kind"] in HIDEABLE and not revealed,
+            # the same poll can be put back to the room after the discussion
+            "rerunnable": active is not None and items[active]["kind"] == "poll",
             "timed": active is not None and r["mode"] != "results",
             "paused": r["paused"],
             "timeRemaining": r["timeRemaining"],
@@ -1073,6 +1089,17 @@ def act(code, kind, pid, data):
                 pass
         elif kind == "reveal":
             r["revealed"] = True
+        elif kind == "askAgain":
+            # Put the same poll back to the room. The run just finished is kept
+            # as the "before", and everyone votes again from scratch.
+            if item is not None and item["kind"] == "poll":
+                irt["rounds"].append({"votes": dict(irt["votes"]),
+                                      "revealed": r.get("revealed", False)})
+                irt["votes"] = {k: 0 for k in irt["votes"]}
+                irt["_votes"] = {}
+                r["revealed"] = False
+                r["paused"] = False
+                r["timeRemaining"] = item.get("settings", {}).get("duration", 60)
         elif kind == "backToDiscussion":
             r["activeInteraction"] = None
             r["mode"] = "discussion"

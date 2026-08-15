@@ -116,14 +116,19 @@
 
     // poll — bars stay flat and blank until the moderator reveals
     $("#pp-q").innerHTML = redLast(st.poll.question);
+    $("#pp-round").textContent = st.poll.round > 1 ? "ROUND " + st.poll.round + " · AFTER THE DEBATE" : "";
+    $("#pp-round").hidden = st.poll.round <= 1;
     const pollHidden = st.poll.options.some((o) => o.pct === null);
     const lead = pollHidden ? -1 : Math.max.apply(null, st.poll.options.map((o) => o.pct));
     const pollKey = st.poll.question + "|" + st.poll.options.map((o) => o.id).join(",");
-    if ($("#pp-bars").dataset.key !== pollKey) {
-      $("#pp-bars").dataset.key = pollKey;
-      $("#pp-bars").innerHTML = st.poll.options.map((o) =>
-        '<div class="pv-bar"><div class="fill"></div>' +
-        '<div class="lab"></div><div class="pct"></div></div>').join("");
+    const before = st.poll.before || null;
+    const barKey = pollKey + "|r" + st.poll.round + "|" + (before ? "b" : "");
+    if ($("#pp-bars").dataset.key !== barKey) {
+      $("#pp-bars").dataset.key = barKey;
+      $("#pp-bars").innerHTML = st.poll.options.map(() =>
+        '<div class="pv-bar"><div class="ghost"></div><div class="fill"></div>' +
+        '<div class="lab"></div><div class="nums"><span class="shift"></span>' +
+        '<span class="pct"></span></div></div>').join("");
       Array.from($("#pp-bars").children).forEach((bar, i) => {
         bar.querySelector(".lab").textContent = st.poll.options[i].label;
       });
@@ -133,10 +138,23 @@
       if (!o) return;
       bar.classList.toggle("lead", !pollHidden && o.pct === lead && lead > 0);
       bar.querySelector(".fill").style.width = pollHidden ? "0%" : o.pct + "%";
+
+      // where the room stood before the discussion, as a ghost mark on the bar
+      const wasPct = before ? before[i].pct : null;
+      const ghost = bar.querySelector(".ghost");
+      ghost.style.width = wasPct === null ? "0%" : wasPct + "%";
+      ghost.hidden = wasPct === null;
+
       const pct = bar.querySelector(".pct");
-      if (pollHidden) { pct.textContent = ""; return; }
+      const shift = bar.querySelector(".shift");
+      if (pollHidden) { pct.textContent = ""; shift.textContent = ""; return; }
       if (justRevealed) countUp(pct, o.pct, "%");
       else pct.textContent = o.pct + "%";
+
+      if (wasPct === null) { shift.textContent = ""; shift.className = "shift"; return; }
+      const d = o.pct - wasPct;
+      shift.textContent = d === 0 ? "±0" : (d > 0 ? "▲ +" + d : "▼ " + d);
+      shift.className = "shift " + (d > 0 ? "up" : d < 0 ? "down" : "flat");
     });
     $("#pp-bars").classList.toggle("locked", pollHidden);
     $("#pp-locked").hidden = !pollHidden;

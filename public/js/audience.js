@@ -340,9 +340,11 @@
     // poll
     $("#poll-q").textContent = st.poll.question.toUpperCase();
     renderPoll(st);
-    $("#poll-foot").textContent = st.revealed
-      ? st.responses + " RESPONSES"
-      : st.responses + " IN · RESULTS HIDDEN";
+    const again = st.poll.round > 1;
+    $("#poll-eyebrow").textContent = again ? "POLL · ROUND " + st.poll.round : "POLL";
+    $("#poll-foot").textContent = again && !st.revealed
+      ? "SAME QUESTION — HAS THE ROOM MOVED?"
+      : st.revealed ? st.responses + " RESPONSES" : st.responses + " IN · RESULTS HIDDEN";
 
     // word cloud
     $("#wc-q").textContent = st.wordcloud.question.toUpperCase();
@@ -392,6 +394,11 @@
 
   function renderPoll(st) {
     const list = $("#poll-list");
+    // a second round is a fresh vote — drop the previous selection
+    if (list.dataset.round !== String(st.poll.round)) {
+      list.dataset.round = String(st.poll.round);
+      myPoll = null;
+    }
     const ids = st.poll.options.map((o) => o.id).join(",");
     if (list.dataset.ids !== ids) {
       list.innerHTML = "";

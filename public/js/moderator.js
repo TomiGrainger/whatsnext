@@ -21,6 +21,7 @@
   $("#end-btn").addEventListener("click", () => { Live.send("showResults"); UI.toast("Showing results"); });
   $("#discussion-btn").addEventListener("click", () => { Live.send("backToDiscussion"); UI.toast("Back to discussion"); });
   $("#reveal-btn").addEventListener("click", () => { Live.send("reveal"); UI.toast("Results revealed"); });
+  $("#again-btn").addEventListener("click", () => { Live.send("askAgain"); UI.toast("Same poll, round two"); });
   $("#invite-btn").addEventListener("click", () => { Live.send("inviteTop"); UI.toast("Invited to speak"); });
   // sidebar quick-jumps
   $$('.nav a[data-jump]').forEach((a) => a.addEventListener("click", (e) => {
@@ -139,6 +140,10 @@
     $("#reveal-btn").classList.toggle("armed", Boolean(st.revealable));
     $("#reveal-btn").querySelector(".ql").textContent =
       st.revealable ? "Reveal Results" : (st.revealed ? "Results Showing" : "Reveal Results");
+    // asking again only makes sense once the room has seen the first result
+    $("#again-btn").disabled = !st.rerunnable;
+    $("#again-btn").querySelector(".ql").textContent =
+      st.poll.round > 1 ? "Round " + st.poll.round : "Ask Again";
     $("#prev-btn").disabled = st.topicIndex === 0;
     $("#next-btn").disabled = st.topicIndex >= st.topicCount - 1;
     $("#next-btn-2").disabled = st.topicIndex >= st.topicCount - 1;

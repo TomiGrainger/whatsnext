@@ -218,3 +218,24 @@ body.reveal-flash .pv-slider .big{animation:revealglow .9s ease;}
   color:var(--muted);text-transform:uppercase;
 }
 .qv-meta b{color:var(--red);}
+
+/* ---- mind-change: the same poll, before and after ---- */
+.round-note{
+  font-family:var(--mono);font-size:clamp(13px,1.4vw,20px);letter-spacing:.24em;
+  color:var(--red);font-weight:700;margin:-10px 0 clamp(18px,3vh,30px);
+}
+.round-note[hidden]{display:none;}
+/* where the room stood before the discussion */
+.pv-bar .ghost{
+  position:absolute;left:0;top:0;bottom:0;width:0;
+  border-right:2px dashed rgba(245,243,239,.55);
+  background:rgba(245,243,239,.05);
+}
+.pv-bar .ghost[hidden]{display:none;}
+.pv-bar .nums{position:relative;display:flex;align-items:baseline;gap:clamp(10px,1.4vw,22px);}
+.pv-bar .shift{
+  font-family:var(--mono);font-weight:700;font-size:clamp(14px,1.5vw,24px);letter-spacing:.08em;
+}
+.pv-bar .shift.up{color:#5fd08a;}
+.pv-bar .shift.down{color:var(--red);}
+.pv-bar .shift.flat{color:var(--dim);}
