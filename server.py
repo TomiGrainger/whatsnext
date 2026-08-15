@@ -31,10 +31,13 @@ import os
 import queue
 import secrets
 import signal
+import smtplib
 import socket
 import threading
 import time
 import uuid
+from email.message import EmailMessage
+from email.utils import formataddr, formatdate
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
@@ -63,6 +66,25 @@ EVENTS_DIR = BUNDLED_EVENTS_DIR if DATA_DIR == ROOT else os.path.join(DATA_DIR, 
 PUBLIC_URL = (os.environ.get("PUBLIC_URL") or "").strip().rstrip("/")
 
 DEFAULT_ROOM = "WN25"
+
+# ---------------------------------------------------------------------------
+# Email. The closing screen promises people a debrief, so there has to be
+# something that actually sends it. Any SMTP provider works — set these and the
+# SEND DEBRIEF button in setup goes live; leave them unset and it stays disabled
+# rather than silently doing nothing.
+# ---------------------------------------------------------------------------
+
+SMTP_HOST = os.environ.get("SMTP_HOST", "").strip()
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+SMTP_USER = os.environ.get("SMTP_USER", "").strip()
+SMTP_PASS = os.environ.get("SMTP_PASS", "")
+SMTP_TLS = (os.environ.get("SMTP_TLS", "starttls") or "starttls").strip().lower()
+MAIL_FROM = os.environ.get("MAIL_FROM", "").strip() or SMTP_USER
+MAIL_REPLY_TO = os.environ.get("MAIL_REPLY_TO", "").strip()
+
+
+def mail_configured():
+    return bool(SMTP_HOST and MAIL_FROM)
 
 LOCK = threading.RLock()
 
@@ -251,6 +273,126 @@ def add_lead(code, email, name):
             print("  (could not save sign-up: %s)" % exc)
             return False
     return True
+
+
+def _smtp_connect():
+    if SMTP_TLS == "ssl":
+        smtp = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=20)
+    else:
+        smtp = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20)
+        if SMTP_TLS == "starttls":
+            smtp.starttls()
+    if SMTP_USER:
+        smtp.login(SMTP_USER, SMTP_PASS)
+    return smtp
+
+
+def _debrief_message(to_addr, name, event_name, brand, recap_url):
+    msg = EmailMessage()
+    msg["Subject"] = "%s — the debrief" % event_name
+    msg["From"] = formataddr((brand, MAIL_FROM))
+    msg["To"] = to_addr
+    msg["Date"] = formatdate(localtime=True)
+    if MAIL_REPLY_TO:
+        msg["Reply-To"] = MAIL_REPLY_TO
+
+    hello = "Hi %s," % name if name else "Hi,"
+    text = (
+        "%s\n\n"
+        "Thanks for being part of %s.\n\n"
+        "Here's the debrief — every topic, how the room voted, what changed after\n"
+        "the discussion, and the questions you put up:\n\n"
+        "%s\n\n"
+        "— %s\n"
+    ) % (hello, event_name, recap_url, brand)
+    msg.set_content(text)
+
+    # A plain, readable HTML part in the same voice as the app
+    msg.add_alternative("""<!doctype html>
+<html><body style="margin:0;padding:28px;background:#08080a;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#f5f3ef;">
+  <div style="max-width:520px;margin:0 auto;">
+    <div style="font-size:13px;letter-spacing:.24em;color:#FF2D46;font-weight:700;">THE DEBRIEF</div>
+    <h1 style="font-size:30px;line-height:1.15;margin:14px 0 18px;color:#f5f3ef;">%s</h1>
+    <p style="font-size:16px;line-height:1.6;color:#a9a9b2;margin:0 0 14px;">%s</p>
+    <p style="font-size:16px;line-height:1.6;color:#a9a9b2;margin:0 0 24px;">
+      Thanks for being part of it. Here's everything the room said and decided —
+      how it voted, what changed after the discussion, and the questions you put up.
+    </p>
+    <a href="%s" style="display:inline-block;background:#FF2D46;color:#fff;text-decoration:none;
+      font-weight:700;letter-spacing:.08em;padding:15px 24px;border-radius:12px;">SEE THE RESULTS &rarr;</a>
+    <p style="font-size:13px;line-height:1.6;color:#6e6e78;margin:26px 0 0;">
+      Or paste this in: <br><span style="color:#a9a9b2;">%s</span>
+    </p>
+    <p style="font-size:12px;color:#6e6e78;margin:26px 0 0;border-top:1px solid #26262b;padding-top:16px;">
+      You're getting this because you asked for the debrief at %s.
+    </p>
+  </div>
+</body></html>""" % (html_escape(event_name), html_escape(hello), html_escape(recap_url),
+                     html_escape(recap_url), html_escape(event_name)), subtype="html")
+    return msg
+
+
+def send_debrief(code):
+    """Send the recap link to everyone who signed up in this room. Returns a
+    summary; already-sent addresses are skipped so pressing the button twice
+    doesn't mail anyone again."""
+    code = sanitize_code(code)
+    with LOCK:
+        room = ROOMS.get(code)
+        event_name = room.get("eventName", "The event") if room else "The event"
+        brand = room.get("brand", "THE UPGRADE") if room else "THE UPGRADE"
+    recap_url = "%s/recap?room=%s" % (PUBLIC_URL or ("http://%s:%d" % (lan_host(), PORT)), code)
+
+    with LEAD_LOCK:
+        leads = read_leads(code)
+    pending = [l for l in leads if not l.get("sentAt")]
+    if not pending:
+        return {"ok": True, "sent": 0, "failed": 0, "skipped": len(leads),
+                "message": "Everyone on this list has already had it."}
+
+    sent, failed, errors = 0, 0, []
+    try:
+        smtp = _smtp_connect()
+    except Exception as exc:
+        return {"ok": False, "error": "Couldn't reach the mail server: %s" % exc}
+
+    try:
+        for lead in pending:
+            try:
+                smtp.send_message(_debrief_message(
+                    lead["email"], lead.get("name", ""), event_name, brand, recap_url))
+                lead["sentAt"] = time.time()
+                sent += 1
+            except Exception as exc:
+                failed += 1
+                if len(errors) < 3:
+                    errors.append("%s: %s" % (lead["email"], exc))
+    finally:
+        try:
+            smtp.quit()
+        except Exception:
+            pass
+
+    # record who has had it, so a second press doesn't double-send
+    with LEAD_LOCK:
+        stored = read_leads(code)
+        by_email = {l["email"].lower(): l for l in pending}
+        for l in stored:
+            match = by_email.get(l["email"].lower())
+            if match and match.get("sentAt"):
+                l["sentAt"] = match["sentAt"]
+        try:
+            os.makedirs(LEADS_DIR, exist_ok=True)
+            tmp = _leads_path(code) + ".tmp"
+            with open(tmp, "w") as fh:
+                json.dump(stored, fh, indent=2)
+            os.replace(tmp, _leads_path(code))
+        except OSError as exc:
+            errors.append("could not record who was sent to: %s" % exc)
+
+    return {"ok": failed == 0, "sent": sent, "failed": failed,
+            "skipped": len(leads) - len(pending), "errors": errors}
 
 
 def html_escape(text):
@@ -1462,11 +1604,17 @@ class Handler(BaseHTTPRequestHandler):
             })
         if path == "/api/rooms":
             with LOCK:
-                rooms = [{"code": c, "eventId": r.get("eventId", DEFAULT_EVENT_ID),
-                          "eventName": r.get("eventName", ""), "closed": r.get("closed", False),
-                          "leads": len(read_leads(c))}
-                         for c, r in sorted(ROOMS.items())]
-            return self._send(200, json.dumps({"rooms": rooms}), "application/json", {"Cache-Control": "no-store"})
+                rooms = []
+                for c, r in sorted(ROOMS.items()):
+                    leads = read_leads(c)
+                    rooms.append({
+                        "code": c, "eventId": r.get("eventId", DEFAULT_EVENT_ID),
+                        "eventName": r.get("eventName", ""), "closed": r.get("closed", False),
+                        "leads": len(leads),
+                        "unsent": sum(1 for l in leads if not l.get("sentAt")),
+                    })
+            return self._send(200, json.dumps({"rooms": rooms, "mailConfigured": mail_configured()}),
+                              "application/json", {"Cache-Control": "no-store"})
         if path == "/api/events":
             with LOCK:
                 payload = {"events": event_summaries(), "defaultId": DEFAULT_EVENT_ID}
@@ -1531,8 +1679,9 @@ class Handler(BaseHTTPRequestHandler):
 
         is_event_update = parsed.path.startswith("/api/events/")
         is_room_update = parsed.path.startswith("/api/rooms/")
+        is_debrief = parsed.path.startswith("/api/debrief/")
         if (parsed.path not in ("/api/action", "/api/events", "/api/rooms", "/api/leads")
-                and not is_event_update and not is_room_update):
+                and not is_event_update and not is_room_update and not is_debrief):
             return self._send(404, "Not found")
         # /api/action and /api/leads are guest-facing (actions are checked per
         # kind below); everything else is crew-only
@@ -1551,6 +1700,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.update_event_route(parsed.path[len("/api/events/"):], data)
         if is_room_update:
             return self.update_room_route(parsed.path[len("/api/rooms/"):], data)
+        if is_debrief:
+            return self.send_debrief_route(parsed.path[len("/api/debrief/"):])
         if parsed.path == "/api/events":
             return self.create_event(data)
         if parsed.path == "/api/rooms":
@@ -1641,6 +1792,21 @@ class Handler(BaseHTTPRequestHandler):
                               "application/json")
         body = {"ok": True, "eventId": event_id, "eventName": config["eventName"]}
         return self._send(200, json.dumps(body), "application/json", {"Cache-Control": "no-store"})
+
+    def send_debrief_route(self, code):
+        """Mails the recap link to this room's sign-ups. Crew-only, and it goes
+        to real people — the setup page asks for a second click before calling it."""
+        code = sanitize_code(code)
+        if get_room(code) is None:
+            return self._send(404, json.dumps({"ok": False, "error": "That room isn't open."}),
+                              "application/json")
+        if not mail_configured():
+            return self._send(400, json.dumps({"ok": False,
+                              "error": "No mail server configured — set SMTP_HOST and MAIL_FROM."}),
+                              "application/json")
+        result = send_debrief(code)
+        status = 200 if result.get("ok") else 502
+        return self._send(status, json.dumps(result), "application/json", {"Cache-Control": "no-store"})
 
     def update_room_route(self, code, data):
         """Turn a room off or back on. Closing keeps every tally, so the same

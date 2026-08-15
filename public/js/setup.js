@@ -15,6 +15,8 @@
   let defaultEventId = null;
   let confirmingDelete = null;
   let confirmingReset = null;
+  let confirmingSend = null;
+  let mailConfigured = false;
 
   // ---------------- build: topic model ----------------
   // A topic is a discussion question plus the interactions you can launch while
@@ -355,6 +357,7 @@
 
   async function loadRooms() {
     const data = await get("/api/rooms");
+    mailConfigured = Boolean(data.mailConfigured);
     const host = $("#rooms-open");
     if (!data.rooms.length) { host.innerHTML = ""; return; }
     host.innerHTML = '<div class="rl">Rooms</div>';
@@ -420,11 +423,50 @@
       });
       row.appendChild(reset);
 
+      // sending the debrief reaches real inboxes, so it takes two clicks
+      if (r.leads) {
+        const sendingNow = confirmingSend === r.code;
+        const send = document.createElement("button");
+        send.className = "room-toggle send" + (sendingNow ? " confirming" : "");
+        send.type = "button";
+        send.disabled = !mailConfigured || !r.unsent;
+        send.textContent = !r.unsent ? "SENT"
+          : sendingNow ? "CONFIRM SEND" : "SEND DEBRIEF (" + r.unsent + ")";
+        send.title = !mailConfigured
+          ? "No mail server configured — set SMTP_HOST and MAIL_FROM"
+          : !r.unsent ? "Everyone on this list has already had the debrief"
+          : "Email the recap link to the " + r.unsent + " who signed up";
+        send.addEventListener("click", async () => {
+          if (!sendingNow) { confirmingSend = r.code; loadRooms(); return; }
+          confirmingSend = null;
+          const msg = $("#launch-msg");
+          msg.className = "msg";
+          msg.textContent = "Sending…";
+          const res = await post("/api/debrief/" + encodeURIComponent(r.code), {});
+          msg.className = "msg " + (res.ok ? "ok" : "err");
+          msg.textContent = res.ok
+            ? "Debrief sent to " + res.sent + (res.sent === 1 ? " person" : " people") +
+              (res.skipped ? " (" + res.skipped + " already had it)" : "")
+            : (res.error || ("Sent " + res.sent + ", failed " + res.failed +
+                             (res.errors && res.errors.length ? " — " + res.errors[0] : "")));
+          loadRooms();
+        });
+        row.appendChild(send);
+      }
+
       if (confirming) {
         const warn = document.createElement("div");
         warn.className = "del-warn";
         warn.textContent = "Wipe every vote, tally and challenge in " + r.code +
           "? The event stays; only the numbers are cleared.";
+        row.appendChild(warn);
+      }
+      if (confirmingSend === r.code) {
+        const warn = document.createElement("div");
+        warn.className = "del-warn";
+        warn.textContent = "Email the debrief to " + r.unsent + " " +
+          (r.unsent === 1 ? "person" : "people") + " who signed up in " + r.code +
+          "? This goes to their real inboxes.";
         row.appendChild(warn);
       }
 

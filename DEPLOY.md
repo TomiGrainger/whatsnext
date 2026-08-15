@@ -121,7 +121,25 @@ Same as locally, just at the public URL:
 3. Open `/moderator?room=CODE` on your laptop.
 4. Rehearse, then **RESET** the room in setup before doors open.
 
-Afterwards, download the debrief sign-ups from the ✉ link in setup, or:
+Afterwards, hit **SEND DEBRIEF** against the room in setup — it emails everyone
+who signed up a link to the public recap. It takes two clicks (the second says
+`CONFIRM SEND`) because it goes to real inboxes, and it records who has had it,
+so pressing it again only reaches people who signed up since.
+
+For that button to work you need a mail server. Any SMTP provider does — a
+Fastmail or Gmail app password, or a transactional service like Postmark,
+Mailgun or SendGrid, which is the better choice if you're sending to more than a
+handful of people, since mail from a fresh domain otherwise tends to land in spam:
+
+```bash
+fly secrets set SMTP_HOST=smtp.postmarkapp.com SMTP_PORT=587 SMTP_USER=your-token SMTP_PASS=your-token MAIL_FROM=hello@yourdomain.com MAIL_REPLY_TO=you@yourdomain.com
+```
+
+Send yourself a test first: sign up with your own address on the closing screen
+of a test room, then send. Without these set, the button stays disabled and says
+so rather than pretending to send.
+
+You can also download the raw sign-ups from the ✉ link in setup, or:
 
 ```bash
 fly ssh console -C "cat /data/leads/CODE.json"
@@ -153,6 +171,12 @@ fly ssh console -C "cat /data/leads/CODE.json"
 | `PASSCODE` | Crew passcode for `/moderator` and `/setup` | random 6 digits, printed at startup |
 | `PUBLIC_URL` | Public base URL used by the QR and join links | detected LAN address |
 | `DATA_DIR` | Where `rooms_state.json`, `leads/` and `events/` are written | the project directory |
+| `SMTP_HOST` | Mail server for the debrief email | unset — sending disabled |
+| `SMTP_PORT` | Mail server port | `587` |
+| `SMTP_USER` / `SMTP_PASS` | Mail server login | unset |
+| `SMTP_TLS` | `starttls`, `ssl` or `none` | `starttls` |
+| `MAIL_FROM` | Address the debrief comes from | `SMTP_USER` |
+| `MAIL_REPLY_TO` | Where replies should go | unset |
 | `PORT` | Port to listen on | `8000` (`8080` in Docker) |
 
 Locally you need none of them — `python3 server.py` still works exactly as it did,

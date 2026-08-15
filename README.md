@@ -61,6 +61,7 @@ Configuration is all environment variables; you need none of them locally:
 | `PASSCODE` | Crew passcode for `/moderator` and `/setup` | random 6 digits, printed at startup |
 | `PUBLIC_URL` | Public base URL the QR and join links point at | detected LAN address |
 | `DATA_DIR` | Where `rooms_state.json`, `leads/` and `events/` are written | the project directory |
+| `SMTP_*` / `MAIL_FROM` | Mail server for the debrief email — see [DEPLOY.md](DEPLOY.md) | unset — sending disabled |
 | `PORT` | Port to listen on | `8000` |
 
 The app keeps room state in memory and in one file, so it must run as a **single
@@ -124,6 +125,11 @@ signs the crew out, and anyone with the code has the controls.
   link the debrief email carries — and it deliberately carries no personal data:
   no emails, and questions appear without the names attached. The audience's
   closing screen links straight to it, and each room in setup has an `↗ recap`.
+- **Sending the debrief** — **SEND DEBRIEF** against a room in setup emails the
+  recap link to everyone who signed up. Two clicks, because it reaches real
+  inboxes, and it remembers who has had it so a second press only catches people
+  who signed up since. Needs `SMTP_HOST` and `MAIL_FROM`; without them the button
+  is disabled and says why rather than quietly doing nothing.
 - **Dropped phones** — the audience surface watches its own connection. If a phone
   loses Wi-Fi it shows a small `RECONNECTING…` chip, keeps the current screen
   usable, and rebuilds the stream by itself once the network is back (including

@@ -178,3 +178,7 @@
 .room-toggle:hover{color:var(--red);border-color:var(--red);}
 .room-toggle.on{color:var(--red);border-color:var(--red);}
 .room-toggle.on:hover{filter:brightness(1.2);}
+.room-toggle.send{color:var(--ink);}
+.room-toggle.send:hover:not(:disabled){color:var(--red);border-color:var(--red);}
+.room-toggle.send:disabled{opacity:.4;cursor:not-allowed;}
+.room-toggle.send.confirming{background:var(--red);border-color:var(--red);color:#fff;}
