@@ -248,3 +248,4 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
   0%{opacity:.9;transform:translate(-50%,0) scale(.8);}
   100%{opacity:0;transform:translate(-50%,-44px) scale(1.25);}
 }
+.cv-recap{width:100%;margin-top:18px;}

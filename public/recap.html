@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Upgrade LIVE — The Debrief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/recap.css">
+</head>
+<body class="s-recap">
+
+<div class="rc-wrap" id="rc-wrap" hidden>
+  <header class="rc-head">
+    <div class="wordmark" id="rc-brand"></div>
+    <div class="rc-eyebrow">THE DEBRIEF</div>
+    <h1 class="rc-title" id="rc-event"></h1>
+    <div class="rc-sub">Everything the room said, decided and argued about.</div>
+    <div class="rc-stats" id="rc-stats"></div>
+  </header>
+
+  <main id="rc-topics"></main>
+
+  <section class="rc-block" id="rc-questions-block" hidden>
+    <h2 class="rc-h2">From the floor</h2>
+    <p class="rc-note">The questions the room put up, ranked by how many wanted them answered.</p>
+    <div class="rc-qs" id="rc-questions"></div>
+  </section>
+
+  <footer class="rc-foot">
+    <div class="rc-foot-mark" id="rc-foot-brand"></div>
+    <div class="rc-foot-code">ROOM <b id="rc-code"></b></div>
+  </footer>
+</div>
+
+<div class="rc-empty" id="rc-empty" hidden>
+  <div class="rc-eyebrow">NO DEBRIEF YET</div>
+  <h1 class="rc-title">NOTHING TO<b>SHOW</b></h1>
+  <p>There's no event on this link. Check the address from your invite.</p>
+</div>
+
+<script src="/js/recap.js"></script>
+</body>
+</html>

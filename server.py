@@ -883,6 +883,87 @@ def _conceal(payload, kind):
     return hidden
 
 
+def _recap_interaction(item, rt):
+    """Final numbers for one interaction, for the public recap."""
+    kind = item["kind"]
+    out = {"kind": kind, "question": item["question"]}
+    if kind == "poll":
+        total = max(1, sum(rt["votes"].values()))
+        out["options"] = [{"label": o["label"], "votes": rt["votes"][o["id"]],
+                           "pct": round(100 * rt["votes"][o["id"]] / total)} for o in item["options"]]
+        out["responses"] = sum(rt["votes"].values())
+        rounds = rt.get("rounds", [])
+        if rounds:
+            prev = rounds[-1]
+            ptotal = max(1, sum(prev["votes"].values()))
+            out["before"] = [{"label": o["label"],
+                              "pct": round(100 * prev["votes"].get(o["id"], 0) / ptotal)}
+                             for o in item["options"]]
+            out["rounds"] = len(rounds) + 1
+    elif kind == "wordcloud":
+        words = sorted(rt["words"].items(), key=lambda kv: -kv[1])[:30]
+        out["words"] = [{"text": w, "weight": c} for w, c in words]
+        out["responses"] = sum(rt["words"].values())
+    elif kind == "emoji":
+        out["reactions"] = [{"char": o["char"], "count": rt["counts"][o["id"]]} for o in item["options"]]
+        out["responses"] = sum(rt["counts"].values())
+    elif kind == "slider":
+        out["avg"] = round(rt["sum"] / rt["count"]) if rt["count"] else 0
+        out["leftLabel"] = item.get("leftLabel", "")
+        out["rightLabel"] = item.get("rightLabel", "")
+        out["responses"] = rt["count"]
+    elif kind == "ranking":
+        items = sorted(({"label": i["label"], "score": rt["scores"][i["id"]]} for i in item["items"]),
+                       key=lambda i: -i["score"])
+        out["items"] = items
+        out["responses"] = rt.get("submissions", 0)
+    return out
+
+
+def recap_payload(code):
+    """Everything the public recap page shows. Deliberately built from scratch
+    rather than reusing the live snapshot: it covers every topic, not just the
+    active one, and it carries no personal data — no emails, and questions and
+    challenges appear without the names attached to them."""
+    with LOCK:
+        r = ROOMS.get(sanitize_code(code))
+        if r is None:
+            return {"exists": False, "code": sanitize_code(code)}
+
+        topics = []
+        for i, topic in enumerate(r["topics"]):
+            rt = r["topicRuntime"][i]
+            s = rt["sentiment"]
+            total = max(1, s["agree"] + s["disagree"] + s["unsure"])
+            topics.append({
+                "question": topic["question"],
+                "sentiment": {
+                    "agree": s["agree"], "disagree": s["disagree"], "unsure": s["unsure"],
+                    "agreePct": round(100 * s["agree"] / total),
+                    "disagreePct": round(100 * s["disagree"] / total),
+                    "unsurePct": round(100 * s["unsure"] / total),
+                    "any": s["agree"] + s["disagree"] + s["unsure"] > 0,
+                },
+                "responses": rt["responses"],
+                "interactions": [_recap_interaction(item, rt["interactions"][n])
+                                 for n, item in enumerate(topic.get("interactions", []))],
+            })
+
+        questions = sorted(r.get("questions", []), key=lambda q: (-q["votes"], -q["at"]))
+        return {
+            "exists": True,
+            "code": r["code"],
+            "brand": r["brand"],
+            "eventName": r["eventName"],
+            "topics": topics,
+            # text and votes only — who asked what stays in the room
+            "questions": [{"text": q["text"], "votes": q["votes"], "answered": q["answered"]}
+                          for q in questions[:20]],
+            "challengeCount": len(r["challenges"]),
+            "topicCount": len(topics),
+        }
+
+
 def missing_snapshot(code):
     """A room code nobody opened. Same shape as a real snapshot so every surface
     can render it without special-casing every field — just `exists: false`."""
@@ -1234,7 +1315,8 @@ STATIC_TYPES = {
     ".png": "image/png", ".ico": "image/x-icon", ".json": "application/json",
 }
 PAGES = {"/": "audience.html", "/moderator": "moderator.html",
-         "/projector": "projector.html", "/setup": "setup.html"}
+         "/projector": "projector.html", "/setup": "setup.html",
+         "/recap": "recap.html"}
 # The crew surfaces. The audience page and the projector stay open: the projector
 # is a passive display, often on a machine nobody can type on.
 PROTECTED_PAGES = ("/moderator", "/setup")
@@ -1401,6 +1483,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.serve_static(PAGES[path])
         if path.startswith("/css/") or path.startswith("/js/") or path.startswith("/assets/"):
             return self.serve_static(path.lstrip("/"))
+        if path == "/api/recap":
+            # public on purpose — this link goes out in the debrief email
+            qs = parse_qs(parsed.query)
+            code = qs.get("room", [DEFAULT_ROOM])[0]
+            return self._send(200, json.dumps(recap_payload(code)), "application/json",
+                              {"Cache-Control": "no-store"})
         if path == "/qr.svg":
             qs = parse_qs(parsed.query)
             code = sanitize_code(qs.get("room", [DEFAULT_ROOM])[0])

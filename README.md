@@ -10,6 +10,7 @@ authoritative live room:
 | **Audience** (mobile) | `/` | Join, react, challenge, vote — 8 interaction screens |
 | **Moderator** (desktop) | `/moderator` | Control Room: sentiment, "what's next", challenge queue, launch interactions |
 | **Projector** (big screen) | `/projector` | Room Display for the audience to watch |
+| **Recap** (public) | `/recap?room=CODE` | The debrief — results from the whole event |
 
 ## Starting a new event
 
@@ -107,6 +108,22 @@ signs the crew out, and anyone with the code has the controls.
   deduplicated per room and stamped with the event name. The setup page shows a
   **✉ count** against each room; click it to download that room's sign-ups.
   Sign-ups need no passcode (guests are not crew), but reading them does.
+- **Questions from the floor** — guests ask and upvote from the discussion
+  screen; the moderator's ranked panel can throw one over the projector (`PUT UP`)
+  or grey it off once covered (`DONE`). Separate from the challenge queue: a
+  challenge asks for the mic, a question asks for an answer.
+- **Reactions** — hold an emoji on the phone and it streams up the projector.
+  Only a fixed set is accepted and each room is capped at 40 a second, so the big
+  screen can't be flooded or made to show arbitrary text.
+- **Ask again** — re-run the live poll after the discussion. The room votes
+  blind a second time, and the reveal shows the shift per option against where it
+  started, so a change of mind is visible.
+- **The recap** — `/recap?room=CODE` builds itself from the room: every topic
+  with its sentiment, each interaction's final numbers, mind-change shifts, word
+  clouds and the questions that were asked. It's public on purpose — that's the
+  link the debrief email carries — and it deliberately carries no personal data:
+  no emails, and questions appear without the names attached. The audience's
+  closing screen links straight to it, and each room in setup has an `↗ recap`.
 - **Dropped phones** — the audience surface watches its own connection. If a phone
   loses Wi-Fi it shows a small `RECONNECTING…` chip, keeps the current screen
   usable, and rebuilds the stream by itself once the network is back (including

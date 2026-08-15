@@ -372,6 +372,14 @@
       row.appendChild(a);
 
       // sign-ups collected in this room, downloadable as JSON
+      const recap = document.createElement("a");
+      recap.className = "room-leads";
+      recap.href = "/recap?room=" + encodeURIComponent(r.code);
+      recap.target = "_blank";
+      recap.title = "Open the public debrief page for this room";
+      recap.textContent = "↗ recap";
+      row.appendChild(recap);
+
       const leads = document.createElement("a");
       leads.className = "room-leads" + (r.leads ? " has" : "");
       leads.href = "/api/leads/" + encodeURIComponent(r.code) + ".json";

@@ -354,6 +354,7 @@
     $("#nosuch-veil").hidden = !missing;
     $("#nosuch-code").textContent = st.code;
     $("#closed-veil").hidden = missing || !st.closed;
+    $("#recap-link").href = "/recap?room=" + encodeURIComponent(st.code);
     if (missing) return;
 
     // choose screen
