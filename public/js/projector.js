@@ -227,6 +227,30 @@
     });
   }
 
+  // ---- reaction bursts ----
+  // Each one is a short-lived element that drifts up and fades. Capped so a
+  // very enthusiastic room can't pile up thousands of nodes on the display.
+  const MAX_FLOATERS = 70;
+  const layer = $("#burst-layer");
+
+  Live.onBurst((emoji) => {
+    if (document.hidden) return;
+    if (layer.childElementCount >= MAX_FLOATERS) return;
+
+    const el = document.createElement("span");
+    el.className = "floater";
+    el.textContent = emoji;
+    // spread them across the width, vary size, speed and drift so a stream of
+    // the same emoji doesn't look like a single column
+    el.style.left = (4 + Math.random() * 92).toFixed(2) + "%";
+    el.style.fontSize = (34 + Math.random() * 34).toFixed(0) + "px";
+    const dur = 3.4 + Math.random() * 2.2;
+    el.style.animationDuration = dur.toFixed(2) + "s";
+    el.style.setProperty("--drift", (Math.random() * 120 - 60).toFixed(0) + "px");
+    layer.appendChild(el);
+    setTimeout(() => el.remove(), dur * 1000 + 120);
+  });
+
   Live.onState(render);
   Live.connect("projector");
 })();

@@ -25,6 +25,7 @@ window.Live = (function () {
   // server pings every 15s and pushes a snapshot every second while live.
   const QUIET_MS = 20000;
   const statusListeners = [];
+  const burstListeners = [];
   let online = false;
   let lastMessage = 0;
   let watchdog = null;
@@ -44,7 +45,13 @@ window.Live = (function () {
       lastMessage = Date.now();
       setOnline(true);
       try {
-        state = JSON.parse(ev.data);
+        const msg = JSON.parse(ev.data);
+        // most messages are the room snapshot; tagged ones are one-off blips
+        if (msg && msg.t === "burst") {
+          burstListeners.forEach((fn) => { try { fn(msg.emoji); } catch (e) { console.error(e); } });
+          return;
+        }
+        state = msg;
         listeners.forEach((fn) => { try { fn(state); } catch (e) { console.error(e); } });
       } catch (e) { /* heartbeat / non-json */ }
     };
@@ -69,7 +76,19 @@ window.Live = (function () {
 
   function connect(r) { role = r || "audience"; open(); startWatchdog(); }
   function onStatus(fn) { statusListeners.push(fn); fn(online); }
+  function onBurst(fn) { burstListeners.push(fn); }
   function isOnline() { return online; }
+
+  // Reactions fire while a finger is held down, so they skip the retry queue —
+  // a dropped one is simply a lost blip, and retrying would pile them up.
+  function burst(emoji) {
+    fetch("/api/action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "burst", emoji, pid: pid(), room: roomCode }),
+      keepalive: true,
+    }).catch(() => {});
+  }
 
   // switch rooms live (used by the audience join screen)
   function setRoom(code) {
@@ -108,7 +127,7 @@ window.Live = (function () {
   function get() { return state; }
   function room() { return roomCode; }
 
-  return { connect, send, onState, onStatus, isOnline, get, pid, setRoom, room };
+  return { connect, send, burst, onState, onStatus, onBurst, isOnline, get, pid, setRoom, room };
 })();
 
 // small helpers shared by pages

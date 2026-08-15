@@ -748,6 +748,39 @@ def audience_online(code):
         return sum(1 for s in SUBSCRIBERS.values() if s["role"] == "audience" and s["code"] == code)
 
 
+# Reaction bursts. Anything here lands on the projector, so the set is fixed —
+# a guest can't post arbitrary text to the big screen.
+BURST_EMOJI = ("🔥", "👏", "❤️", "😂", "🤯", "🙌")
+BURST_LIMIT = 40          # per room per second, plenty for a full room
+_bursts = {}              # code -> [timestamps]
+BURST_LOCK = threading.Lock()
+
+
+def burst_allowed(code):
+    now = time.time()
+    with BURST_LOCK:
+        recent = [t for t in _bursts.get(code, []) if now - t < 1.0]
+        if len(recent) >= BURST_LIMIT:
+            _bursts[code] = recent
+            return False
+        recent.append(now)
+        _bursts[code] = recent
+        return True
+
+
+def broadcast_burst(code, emoji):
+    """A reaction is a one-off blip, not room state: it goes out as its own tiny
+    message rather than re-sending the whole snapshot to everyone."""
+    data = json.dumps({"t": "burst", "emoji": emoji})
+    with SUB_LOCK:
+        subs = [s for s in SUBSCRIBERS.values() if s["code"] == code]
+    for s in subs:
+        try:
+            s["q"].put_nowait(data)
+        except queue.Full:
+            pass
+
+
 def broadcast(code):
     """Two payloads go out: the crew sees live figures, everyone else sees an
     unrevealed poll/slider with its numbers stripped."""
@@ -951,7 +984,7 @@ def snapshot(code, crew=False):
 # ---------------------------------------------------------------------------
 
 AUDIENCE_ACTIONS = ("join", "sentiment", "whatsnext", "challenge", "poll", "word",
-                    "emoji", "slider", "ranking", "ask", "upvote")
+                    "emoji", "slider", "ranking", "ask", "upvote", "burst")
 
 MAX_QUESTIONS = 200
 
@@ -1441,9 +1474,19 @@ class Handler(BaseHTTPRequestHandler):
         if kind not in AUDIENCE_ACTIONS and not self.authed():
             return self._deny()   # driving the show is crew-only
         code = data.get("room") or DEFAULT_ROOM
-        if get_room(code) is None:
+        room = get_room(code)
+        if room is None:
             return self._send(404, json.dumps({"ok": False, "error": "That room isn't open."}),
                               "application/json", {"Cache-Control": "no-store"})
+
+        if kind == "burst":
+            # deliberately not part of act(): a reaction changes no state and
+            # must not push a full snapshot to every surface
+            emoji = data.get("emoji")
+            if emoji in BURST_EMOJI and not room.get("closed") and burst_allowed(sanitize_code(code)):
+                broadcast_burst(sanitize_code(code), emoji)
+            return self._send(200, json.dumps({"ok": True}), "application/json",
+                              {"Cache-Control": "no-store"})
         try:
             act(code, kind, data.get("pid") or "anon", data)
         except Exception as exc:

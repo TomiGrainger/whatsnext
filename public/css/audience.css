@@ -228,3 +228,23 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
 .qa-body .qt{font-size:15px;line-height:1.35;color:var(--ink);}
 .qa-body .qm{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--dim);
   margin-top:6px;text-transform:uppercase;}
+
+/* ---------- live reaction bursts ---------- */
+.burst-row{display:flex;gap:8px;justify-content:space-between;margin-top:auto;margin-bottom:12px;}
+.burst{
+  position:relative;flex:1;aspect-ratio:1/1;max-height:52px;border-radius:14px;
+  background:var(--card);border:1px solid var(--line);font-size:22px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .08s,border-color .15s,background .15s;
+  touch-action:none;              /* holding shouldn't scroll the page */
+  -webkit-user-select:none;user-select:none;
+}
+.burst.held{border-color:var(--red);background:var(--red-dim);transform:scale(.94);}
+.burst-puff{
+  position:absolute;left:50%;top:0;font-size:18px;pointer-events:none;
+  animation:burstPuff .7s ease-out forwards;
+}
+@keyframes burstPuff{
+  0%{opacity:.9;transform:translate(-50%,0) scale(.8);}
+  100%{opacity:0;transform:translate(-50%,-44px) scale(1.25);}
+}

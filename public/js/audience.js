@@ -80,6 +80,50 @@
       b.classList.toggle("sel", b.dataset.choice === mySentiment));
   }
 
+  // ---- live reaction bursts ----
+  // Hold a reaction down and it keeps flowing to the projector. The set is
+  // fixed here and re-checked on the server, since these land on the big screen.
+  const BURSTS = ["🔥", "👏", "❤️", "😂", "🤯", "🙌"];
+  const BURST_EVERY = 160;   // ms between sends while held — fast enough to feel live
+
+  (function buildBursts() {
+    const row = $("#burst-row");
+    BURSTS.forEach((emoji) => {
+      const b = document.createElement("button");
+      b.className = "burst";
+      b.type = "button";
+      b.textContent = emoji;
+      b.setAttribute("aria-label", "React " + emoji);
+
+      let timer = null;
+      const fire = () => {
+        Live.burst(emoji);
+        const puff = document.createElement("span");
+        puff.className = "burst-puff";
+        puff.textContent = emoji;
+        b.appendChild(puff);
+        setTimeout(() => puff.remove(), 700);
+      };
+      const start = (e) => {
+        e.preventDefault();
+        if (timer) return;
+        b.classList.add("held");
+        fire();
+        timer = setInterval(fire, BURST_EVERY);
+      };
+      const stop = () => {
+        b.classList.remove("held");
+        clearInterval(timer);
+        timer = null;
+      };
+      b.addEventListener("pointerdown", start);
+      b.addEventListener("pointerup", stop);
+      b.addEventListener("pointercancel", stop);
+      b.addEventListener("pointerleave", stop);
+      row.appendChild(b);
+    });
+  })();
+
   // ---- Q&A ----
   // which questions this phone has upvoted; the server never sends voter ids
   const myVotes = new Set(JSON.parse(sessionStorage.getItem("upgrade_qvotes") || "[]"));
