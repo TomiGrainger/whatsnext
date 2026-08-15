@@ -27,6 +27,23 @@
     document.querySelectorAll(".pview").forEach((v) => v.classList.toggle("active", v.id === id));
   }
 
+  // Someone the moderator has brought in. Profiles reach this screen only when
+  // the crew deliberately features them.
+  function paintFeaturedProfile(st) {
+    const p = st.featuredProfile;
+    $("#who-veil").hidden = !p;
+    if (!p) return;
+    const face = $("#wv-face");
+    face.style.backgroundImage = p.avatar ? "url(/avatars/" + p.avatar + ")" : "";
+    face.classList.toggle("has", Boolean(p.avatar));
+    $("#wv-initials").textContent = p.avatar ? "" : (p.initials || "?");
+    $("#wv-name").textContent = p.name || "From the floor";
+    $("#wv-occ").textContent = p.occupation || "";
+    $("#wv-occ").hidden = !p.occupation;
+    $("#wv-fact").textContent = p.fact ? "“" + p.fact + "”" : "";
+    $("#wv-fact").hidden = !p.fact;
+  }
+
   // A question the moderator has put up sits over whatever else is showing.
   function paintFeaturedQuestion(st) {
     const q = (st.questions || []).find((x) => x.id === st.featuredQuestion);
@@ -91,6 +108,7 @@
     }
     paintJoin(st);
     paintFeaturedQuestion(st);
+    paintFeaturedProfile(st);
     $("#closed-veil").hidden = !st.closed;
     // nobody in the room yet — show the join code rather than an empty stage
     $("#waiting-veil").hidden = st.closed || st.inRoom > 0;

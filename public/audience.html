@@ -15,7 +15,12 @@
   <div class="grabber"></div>
   <div class="ph-head">
     <div class="wordmark" id="wordmark"></div>
-    <div class="counter" id="ph-counter"></div>
+    <div class="head-right">
+      <button class="me-btn" id="me-btn" title="Your profile" aria-label="Your profile">
+        <span id="me-initials">+</span>
+      </button>
+      <div class="counter" id="ph-counter"></div>
+    </div>
   </div>
 
   <!-- 01 JOIN -->
@@ -154,6 +159,30 @@
 
     <a class="btn ghost cv-recap" id="recap-link" href="/recap">SEE TONIGHT'S RESULTS →</a>
   </div>
+</div>
+
+<!-- PROFILE SHEET -->
+<div class="sheet-scrim" id="me-scrim"></div>
+<div class="sheet me-sheet" id="me-sheet">
+  <button class="x" id="me-x">×</button>
+  <div class="tag"><span class="bolt">🙂</span> YOUR PROFILE</div>
+  <h3>WHO ARE <b>YOU?</b></h3>
+  <p class="hint">Optional. If the moderator brings you in, this is what the room sees.</p>
+
+  <div class="me-photo-row">
+    <div class="me-photo" id="me-photo"><span id="me-photo-initials">?</span></div>
+    <div class="me-photo-actions">
+      <label class="btn ghost" for="me-file">ADD A PHOTO</label>
+      <input type="file" id="me-file" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
+      <div class="me-photo-note" id="me-photo-note">JPEG or PNG, up to 3MB</div>
+    </div>
+  </div>
+
+  <input class="field" id="me-name" maxlength="40" placeholder="Your name" autocomplete="name">
+  <input class="field" id="me-occupation" maxlength="60" placeholder="What you do">
+  <input class="field" id="me-fact" maxlength="120" placeholder="A quirky fact about you">
+  <div class="note">Only the crew sees this, unless they put you on the big screen.</div>
+  <button class="btn" id="me-save">SAVE →</button>
 </div>
 
 <!-- Q&A SHEET -->

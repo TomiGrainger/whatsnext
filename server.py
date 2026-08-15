@@ -395,6 +395,68 @@ def send_debrief(code):
             "skipped": len(leads) - len(pending), "errors": errors}
 
 
+# ---------------------------------------------------------------------------
+# Profiles. Optional, per phone, per room: a name, what they do, something
+# quirky, and a photo. The moderator sees them next to that person's questions
+# and challenges; the projector shows one only when the moderator features it.
+# They never reach the public recap.
+# ---------------------------------------------------------------------------
+
+AVATAR_DIR_NAME = "avatars"
+MAX_AVATAR_BYTES = 3 * 1024 * 1024
+
+# Magic bytes -> extension. Only real raster photos: notably no SVG, which is a
+# document that can carry script, and no HTML sneaking in under an image name.
+IMAGE_SIGNATURES = (
+    (b"\xff\xd8\xff", "jpg", "image/jpeg"),
+    (b"\x89PNG\r\n\x1a\n", "png", "image/png"),
+    (b"GIF87a", "gif", "image/gif"),
+    (b"GIF89a", "gif", "image/gif"),
+)
+
+
+def sniff_image(blob):
+    """Identify a photo by what it actually is, not what it claims to be."""
+    for magic, ext, ctype in IMAGE_SIGNATURES:
+        if blob.startswith(magic):
+            return ext, ctype
+    # WEBP is RIFF....WEBP
+    if len(blob) >= 12 and blob[:4] == b"RIFF" and blob[8:12] == b"WEBP":
+        return "webp", "image/webp"
+    return None, None
+
+
+def avatars_dir():
+    return os.path.join(DATA_DIR, AVATAR_DIR_NAME)
+
+
+def save_avatar(pid, blob):
+    ext, ctype = sniff_image(blob)
+    if not ext:
+        return None, "That file isn't a photo we can use — try a JPEG or PNG."
+    if len(blob) > MAX_AVATAR_BYTES:
+        return None, "That photo is too big — keep it under 3MB."
+    # the filename is built from our own ids, never from anything uploaded
+    name = "%s.%s" % (re_pid(pid), ext)
+    try:
+        os.makedirs(avatars_dir(), exist_ok=True)
+        path = os.path.join(avatars_dir(), name)
+        tmp = path + ".tmp"
+        with open(tmp, "wb") as fh:
+            fh.write(blob)
+        os.replace(tmp, path)
+    except OSError as exc:
+        return None, "Couldn't save that photo: %s" % exc
+    return name, None
+
+
+def re_pid(pid):
+    """Participant ids come from the client, so reduce them to a safe token
+    before they are ever used in a filename."""
+    clean = "".join(ch for ch in (pid or "") if ch.isalnum() or ch in "-_")[:40]
+    return clean or "anon"
+
+
 def html_escape(text):
     return (str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
             .replace('"', "&quot;").replace("'", "&#39;"))
@@ -545,6 +607,9 @@ def new_room(code, event_id=DEFAULT_EVENT_ID, seed=False):
         # challenge queue (a challenge asks for the mic, a question asks for an answer)
         "questions": [],
         "featuredQuestion": None,
+        # pid -> {name, occupation, fact, avatar}
+        "profiles": {},
+        "featuredProfile": None,
         "simParticipants": config.get("seedSimParticipants", 0) if seed else 0,
     }
     _activate_topic(room, 0)
@@ -800,6 +865,8 @@ def reset_room(room):
     room["invited"] = []
     room["questions"] = []
     room["featuredQuestion"] = None
+    room["profiles"] = {}
+    room["featuredProfile"] = None
     room["simParticipants"] = 0
     _activate_topic(room, 0)
     mark_dirty()
@@ -1126,10 +1193,23 @@ def missing_snapshot(code):
         "whatsNext": {"votes": 0, "threshold": 10, "remaining": 10, "unlocked": False},
         "challenges": [], "invited": [],
         "questions": [], "featuredQuestion": None,
+        "profiles": {}, "featuredProfile": None, "featuredProfilePid": None,
         "poll": payloads["poll"], "wordcloud": payloads["wordcloud"],
         "emoji": payloads["emoji"], "slider": payloads["slider"],
         "ranking": payloads["ranking"],
     }
+
+
+def _featured_profile(r):
+    pid = r.get("featuredProfile")
+    if not pid:
+        return None
+    p = r.get("profiles", {}).get(pid)
+    if not p:
+        return None
+    return {"name": p.get("name", ""), "occupation": p.get("occupation", ""),
+            "fact": p.get("fact", ""), "initials": p.get("initials", "?"),
+            "avatar": p.get("avatar")}
 
 
 def snapshot(code, crew=False):
@@ -1194,6 +1274,13 @@ def snapshot(code, crew=False):
                           for q in sorted(r.get("questions", []),
                                           key=lambda q: (-q["votes"], -q["at"]))],
             "featuredQuestion": r.get("featuredQuestion"),
+            # profiles are personal, so the whole set is crew-only; everyone
+            # else sees just the one the moderator has deliberately put up
+            "profiles": r.get("profiles", {}) if crew else {},
+            "featuredProfile": _featured_profile(r),
+            # the crew needs to know *which* person is up, to light the right
+            # card; the pid stays out of the public payload
+            "featuredProfilePid": r.get("featuredProfile") if crew else None,
             "poll": payloads["poll"],
             "wordcloud": payloads["wordcloud"],
             "emoji": payloads["emoji"],
@@ -1207,7 +1294,7 @@ def snapshot(code, crew=False):
 # ---------------------------------------------------------------------------
 
 AUDIENCE_ACTIONS = ("join", "sentiment", "whatsnext", "challenge", "poll", "word",
-                    "emoji", "slider", "ranking", "ask", "upvote", "burst")
+                    "emoji", "slider", "ranking", "ask", "upvote", "burst", "profile")
 
 MAX_QUESTIONS = 200
 
@@ -1254,21 +1341,40 @@ def act(code, kind, pid, data):
 
         elif kind == "challenge":
             text = (data.get("text") or "").strip()[:180]
-            name = (data.get("name") or "").strip()[:40]
+            profile = r["profiles"].get(pid, {})
+            name = (data.get("name") or "").strip()[:40] or profile.get("name", "")
             if text:
                 r["challenges"].insert(0, {
                     "id": _cid(), "name": name or "Anonymous",
                     "initials": _initials(name) if name else "?", "text": text, "at": time.time(),
+                    "pid": pid,
                 })
                 r["challenges"] = r["challenges"][:24]
 
+        elif kind == "profile":
+            name = (data.get("name") or "").strip()[:40]
+            occupation = (data.get("occupation") or "").strip()[:60]
+            fact = (data.get("fact") or "").strip()[:120]
+            existing = r["profiles"].get(pid, {})
+            if name or occupation or fact:
+                r["profiles"][pid] = {
+                    "name": name, "occupation": occupation, "fact": fact,
+                    "initials": _initials(name) if name else "?",
+                    "avatar": existing.get("avatar"),
+                }
+            elif existing:
+                # cleared every field — drop everything but a photo they kept
+                existing.update({"name": "", "occupation": "", "fact": "", "initials": "?"})
+
         elif kind == "ask":
             text = (data.get("text") or "").strip()[:200]
-            name = (data.get("name") or "").strip()[:40]
+            profile = r["profiles"].get(pid, {})
+            name = (data.get("name") or "").strip()[:40] or profile.get("name", "")
             if text and len(r["questions"]) < MAX_QUESTIONS:
                 r["questions"].append({
                     "id": _cid(), "name": name or "Anonymous",
                     "initials": _initials(name) if name else "?",
+                    "pid": pid,
                     "text": text, "at": time.time(),
                     "votes": 1,          # asking counts as your own upvote
                     "answered": False,
@@ -1376,6 +1482,10 @@ def act(code, kind, pid, data):
         elif kind == "togglePause":
             if active is not None:
                 r["paused"] = not r["paused"]
+        elif kind == "featureProfile":
+            target = data.get("pid")
+            if target in r["profiles"]:
+                r["featuredProfile"] = None if r.get("featuredProfile") == target else target
         elif kind == "featureQuestion":
             qid = data.get("id")
             # tapping the live one again takes it off the big screen
@@ -1645,6 +1755,26 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError as exc:
                 return self._send(500, str(exc))
             return self._send(200, svg, "image/svg+xml", {"Cache-Control": "no-store"})
+        if path.startswith("/avatars/"):
+            # served with nosniff and an image type we determined ourselves, so
+            # an uploaded file can never be interpreted as markup or script
+            name = os.path.basename(path[len("/avatars/"):])
+            full = os.path.join(avatars_dir(), name)
+            if not name or not os.path.isfile(full):
+                return self._send(404, "Not found")
+            try:
+                with open(full, "rb") as fh:
+                    blob = fh.read()
+            except OSError:
+                return self._send(404, "Not found")
+            _, ctype = sniff_image(blob)
+            if not ctype:
+                return self._send(404, "Not found")
+            return self._send(200, blob, ctype, {
+                "Cache-Control": "private, max-age=60",
+                "X-Content-Type-Options": "nosniff",
+                "Content-Security-Policy": "default-src 'none'; sandbox",
+            })
         if path == "/healthz":          # for the host's health check
             return self._send(200, "ok")
         if path == "/favicon.ico":
@@ -1680,6 +1810,8 @@ class Handler(BaseHTTPRequestHandler):
         is_event_update = parsed.path.startswith("/api/events/")
         is_room_update = parsed.path.startswith("/api/rooms/")
         is_debrief = parsed.path.startswith("/api/debrief/")
+        if parsed.path == "/api/avatar":
+            return self.handle_avatar(parsed)
         if (parsed.path not in ("/api/action", "/api/events", "/api/rooms", "/api/leads")
                 and not is_event_update and not is_room_update and not is_debrief):
             return self._send(404, "Not found")
@@ -1727,10 +1859,44 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, json.dumps({"ok": True}), "application/json",
                               {"Cache-Control": "no-store"})
         try:
-            act(code, kind, data.get("pid") or "anon", data)
+            # participant ids come from the client, so they're reduced to a safe,
+            # bounded token before they key anything (votes, profiles, filenames)
+            act(code, kind, re_pid(data.get("pid")), data)
         except Exception as exc:
             return self._send(500, json.dumps({"ok": False, "error": str(exc)}), "application/json")
         return self._send(200, json.dumps({"ok": True}), "application/json", {"Cache-Control": "no-store"})
+
+    def handle_avatar(self, parsed):
+        """The photo arrives as the raw request body — no multipart parsing, and
+        nothing from the upload is trusted: the type comes from sniffing the
+        bytes and the filename is built from our own participant id."""
+        qs = parse_qs(parsed.query)
+        code = sanitize_code(qs.get("room", [DEFAULT_ROOM])[0])
+        pid = re_pid(qs.get("pid", [""])[0])
+        room = get_room(code)
+        if room is None:
+            return self._send(404, json.dumps({"ok": False, "error": "That room isn't open."}),
+                              "application/json")
+        length = int(self.headers.get("Content-Length", "0") or 0)
+        if length <= 0:
+            return self._send(400, json.dumps({"ok": False, "error": "No photo received."}),
+                              "application/json")
+        if length > MAX_AVATAR_BYTES:
+            return self._send(413, json.dumps(
+                {"ok": False, "error": "That photo is too big — keep it under 3MB."}),
+                "application/json")
+        blob = self.rfile.read(length)
+        name, err = save_avatar(pid, blob)
+        if err:
+            return self._send(400, json.dumps({"ok": False, "error": err}), "application/json")
+        with LOCK:
+            profile = room["profiles"].setdefault(
+                pid, {"name": "", "occupation": "", "fact": "", "initials": "?", "avatar": None})
+            profile["avatar"] = name
+            mark_dirty()
+        broadcast(code)
+        return self._send(200, json.dumps({"ok": True, "avatar": name}), "application/json",
+                          {"Cache-Control": "no-store"})
 
     def capture_lead(self, data):
         email = plausible_email(data.get("email"))

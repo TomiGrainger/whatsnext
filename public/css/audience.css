@@ -249,3 +249,31 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
   100%{opacity:0;transform:translate(-50%,-44px) scale(1.25);}
 }
 .cv-recap{width:100%;margin-top:18px;}
+
+/* ---------- your profile ---------- */
+.ph-head .head-right{display:flex;align-items:center;gap:12px;}
+.me-btn{
+  width:34px;height:34px;border-radius:50%;flex:0 0 auto;
+  background:var(--card) center/cover no-repeat;border:1px solid var(--line-2);
+  color:var(--muted);font-family:var(--mono);font-weight:700;font-size:12px;
+  display:flex;align-items:center;justify-content:center;
+}
+.me-btn.has{border-color:var(--red);color:var(--red);}
+.me-btn:active{transform:scale(.94);}
+
+.me-sheet{max-height:90dvh;overflow-y:auto;}
+.me-sheet .field{margin-bottom:10px;}
+.me-photo-row{display:flex;align-items:center;gap:16px;margin-bottom:18px;}
+.me-photo{
+  width:72px;height:72px;border-radius:50%;flex:0 0 auto;
+  background:var(--card) center/cover no-repeat;border:1px solid var(--line-2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:700;font-size:20px;color:var(--muted);
+}
+.me-photo.has{border-color:var(--red);}
+.me-photo.has span{display:none;}
+.me-photo-actions{flex:1;min-width:0;}
+.me-photo-actions .btn{width:100%;margin:0;cursor:pointer;font-size:12px;padding:12px 14px;}
+.me-photo-note{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+  color:var(--dim);margin-top:8px;line-height:1.4;}
+.me-photo-note.err{color:var(--red);}

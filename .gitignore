@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 rooms_state.json
 leads/
+avatars/

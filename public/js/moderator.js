@@ -173,13 +173,45 @@
 
   // Questions arrive already ranked by votes. PUT UP sends one to the big
   // screen; DONE greys it out so the moderator can see what's been covered.
+  // Who this person is, and a button to put them on the big screen. Profiles
+  // only ever reach the projector through this deliberate action.
+  function profileCard(st, pid, p) {
+    const live = st.featuredProfilePid === pid;
+    const card = document.createElement("div");
+    card.className = "who" + (live ? " live" : "");
+
+    const face = document.createElement("div");
+    face.className = "who-face";
+    if (p.avatar) face.style.backgroundImage = "url(/avatars/" + p.avatar + ")";
+    else face.textContent = p.initials || "?";
+
+    const txt = document.createElement("div");
+    txt.className = "who-txt";
+    if (p.fact) {
+      const fact = document.createElement("div");
+      fact.className = "fact";
+      fact.textContent = "“" + p.fact + "”";
+      txt.appendChild(fact);
+    }
+
+    const btn = document.createElement("button");
+    btn.className = "mq-btn" + (live ? " on" : "");
+    btn.textContent = live ? "ON SCREEN" : "SHOW WHO";
+    btn.title = "Put this person on the projector";
+    btn.addEventListener("click", () => Live.send("featureProfile", { pid }));
+
+    card.append(face, txt, btn);
+    return card;
+  }
+
   function renderQuestions(st) {
     const questions = st.questions || [];
     $("#qa-count").textContent = questions.length;
 
     const list = $("#mod-qa-list");
     const key = questions.map((q) => q.id + ":" + q.votes + ":" + q.answered).join("|")
-      + "|" + (st.featuredQuestion || "");
+      + "|" + (st.featuredQuestion || "") + "|" + (st.featuredProfilePid || "")
+      + "|" + Object.keys(st.profiles || {}).length;
     if (list.dataset.key === key) return;
     list.dataset.key = key;
     list.innerHTML = "";
@@ -205,8 +237,11 @@
       body.className = "mq-body";
       body.innerHTML = '<div class="qt"></div><div class="qm"></div>';
       body.querySelector(".qt").textContent = q.text;
+      const profile = (st.profiles || {})[q.pid];
       body.querySelector(".qm").textContent =
-        q.name + " · " + UI.ago(q.at) + (q.answered ? " · ANSWERED" : "");
+        q.name + (profile && profile.occupation ? " · " + profile.occupation : "") +
+        " · " + UI.ago(q.at) + (q.answered ? " · ANSWERED" : "");
+      if (profile) body.appendChild(profileCard(st, q.pid, profile));
 
       const acts = document.createElement("div");
       acts.className = "mq-acts";
@@ -231,16 +266,25 @@
     list.innerHTML = "";
     st.challenges.slice(0, 8).forEach((c) => {
       const invited = st.invited.includes(c.id);
+      const profile = (st.profiles || {})[c.pid];
       const el = document.createElement("div");
       el.className = "ch-item" + (invited ? " invited" : "");
-      el.innerHTML =
-        '<div class="av">' + c.initials + '</div>' +
-        '<div style="flex:1;min-width:0">' +
-          '<div class="nm"><span>' + escapeHtml(c.name) +
-            (invited ? ' <span class="tag-invited">· INVITED</span>' : '') +
-          '</span><span class="t">' + UI.ago(c.at) + '</span></div>' +
-          '<div class="tx">' + escapeHtml(c.text) + '</div>' +
-        '</div>';
+
+      const av = document.createElement("div");
+      av.className = "av";
+      if (profile && profile.avatar) av.style.backgroundImage = "url(/avatars/" + profile.avatar + ")";
+      else av.textContent = c.initials;
+
+      const body = document.createElement("div");
+      body.style.cssText = "flex:1;min-width:0";
+      body.innerHTML =
+        '<div class="nm"><span>' + escapeHtml(c.name) +
+          (invited ? ' <span class="tag-invited">· INVITED</span>' : '') +
+        '</span><span class="t">' + UI.ago(c.at) + '</span></div>' +
+        '<div class="tx">' + escapeHtml(c.text) + '</div>';
+      if (profile) body.appendChild(profileCard(st, c.pid, profile));
+
+      el.append(av, body);
       list.appendChild(el);
     });
   }

@@ -62,6 +62,7 @@ Configuration is all environment variables; you need none of them locally:
 | `PUBLIC_URL` | Public base URL the QR and join links point at | detected LAN address |
 | `DATA_DIR` | Where `rooms_state.json`, `leads/` and `events/` are written | the project directory |
 | `SMTP_*` / `MAIL_FROM` | Mail server for the debrief email — see [DEPLOY.md](DEPLOY.md) | unset — sending disabled |
+| `DATA_DIR/avatars/` | Where uploaded profile photos are written | alongside the other run-time data |
 | `PORT` | Port to listen on | `8000` |
 
 The app keeps room state in memory and in one file, so it must run as a **single
@@ -109,6 +110,13 @@ signs the crew out, and anyone with the code has the controls.
   deduplicated per room and stamped with the event name. The setup page shows a
   **✉ count** against each room; click it to download that room's sign-ups.
   Sign-ups need no passcode (guests are not crew), but reading them does.
+- **Profiles** — optional, from the avatar in the phone's header: a name, what
+  they do, a quirky fact and a photo. The moderator sees it beside that person's
+  questions and challenges, and **SHOW WHO** puts them on the projector. Profiles
+  are crew-only until then, and never reach the public recap. Photos are checked
+  by their actual bytes (JPEG/PNG/GIF/WEBP only — no SVG), capped at 3MB, stored
+  under `DATA_DIR/avatars/`, and served with `nosniff` so an upload can't be
+  interpreted as markup.
 - **Questions from the floor** — guests ask and upvote from the discussion
   screen; the moderator's ranked panel can throw one over the projector (`PUT UP`)
   or grey it off once covered (`DONE`). Separate from the challenge queue: a

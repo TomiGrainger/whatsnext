@@ -80,6 +80,97 @@
       b.classList.toggle("sel", b.dataset.choice === mySentiment));
   }
 
+  // ---- your profile ----
+  // Kept on the phone as well as the server so the sheet is filled in when you
+  // reopen it, and so the header avatar survives a reload.
+  const ME_KEY = "upgrade_me";
+  let me = {};
+  try { me = JSON.parse(localStorage.getItem(ME_KEY) || "{}"); } catch (e) { me = {}; }
+
+  function initialsOf(name) {
+    const parts = (name || "").split(" ").filter(Boolean);
+    if (!parts.length) return "+";
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  function paintMe() {
+    const badge = $("#me-btn");
+    const ini = initialsOf(me.name);
+    $("#me-initials").textContent = me.avatar ? "" : ini;
+    $("#me-photo-initials").textContent = me.name ? ini : "?";
+    badge.classList.toggle("has", Boolean(me.name || me.avatar));
+    const url = me.avatar ? "/avatars/" + me.avatar : "";
+    badge.style.backgroundImage = url ? "url(" + url + ")" : "";
+    $("#me-photo").style.backgroundImage = url ? "url(" + url + ")" : "";
+    $("#me-photo").classList.toggle("has", Boolean(url));
+    $("#me-name").value = me.name || "";
+    $("#me-occupation").value = me.occupation || "";
+    $("#me-fact").value = me.fact || "";
+  }
+
+  function openMe() {
+    paintMe();
+    $("#me-sheet").classList.add("show");
+    $("#me-scrim").classList.add("show");
+  }
+  function closeMe() {
+    $("#me-sheet").classList.remove("show");
+    $("#me-scrim").classList.remove("show");
+  }
+  $("#me-btn").addEventListener("click", openMe);
+  $("#me-x").addEventListener("click", closeMe);
+  $("#me-scrim").addEventListener("click", closeMe);
+
+  $("#me-save").addEventListener("click", () => {
+    me.name = $("#me-name").value.trim();
+    me.occupation = $("#me-occupation").value.trim();
+    me.fact = $("#me-fact").value.trim();
+    localStorage.setItem(ME_KEY, JSON.stringify(me));
+    Live.send("profile", { name: me.name, occupation: me.occupation, fact: me.fact });
+    paintMe();
+    closeMe();
+    UI.toast("Profile saved");
+  });
+
+  // The photo goes up as the raw file body — the server identifies it by its
+  // bytes rather than trusting the name or the type we claim.
+  $("#me-file").addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const note = $("#me-photo-note");
+    if (file.size > 3 * 1024 * 1024) {
+      note.textContent = "That photo is too big — keep it under 3MB.";
+      note.classList.add("err");
+      return;
+    }
+    note.classList.remove("err");
+    note.textContent = "Uploading…";
+    try {
+      const r = await fetch("/api/avatar?room=" + encodeURIComponent(Live.room()) +
+                            "&pid=" + encodeURIComponent(Live.pid()), {
+        method: "POST",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+      });
+      const res = await r.json();
+      if (!res.ok) {
+        note.textContent = res.error || "Couldn't upload that.";
+        note.classList.add("err");
+        return;
+      }
+      me.avatar = res.avatar;
+      localStorage.setItem(ME_KEY, JSON.stringify(me));
+      paintMe();
+      note.textContent = "Photo added";
+    } catch (err) {
+      note.textContent = "No connection — try again.";
+      note.classList.add("err");
+    }
+  });
+
+  paintMe();
+
   // ---- live reaction bursts ----
   // Hold a reaction down and it keeps flowing to the projector. The set is
   // fixed here and re-checked on the server, since these land on the big screen.
