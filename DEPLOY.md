@@ -8,7 +8,8 @@ the projector's QR works from anywhere in the room.
 
 - It runs a **single always-on machine**, which this app needs — room state lives
   in memory and in one file, so it must not be load-balanced across replicas.
-- **Persistent volumes**, so `rooms_state.json` and `leads/` survive a redeploy.
+- **Persistent volumes**, so the rooms, the events you author, the debrief
+  sign-ups and uploaded profile photos all survive a redeploy.
 - **Long-lived SSE connections** work fine through its proxy (the server sends a
   keepalive ping every 15s, well inside any idle timeout).
 - Roughly **$3–5/month** for a 256MB machine plus a 1GB volume.
@@ -74,13 +75,30 @@ fly secrets set PUBLIC_URL=https://the-upgrade-live.fly.dev
 Get this wrong and the QR will point somewhere phones can't reach, so it's worth
 double-checking against what `fly deploy` prints.
 
-### 5. Deploy
+### 5. Set up mail, if you want the debrief to send itself
+
+Skip this and everything else still works — you'd just download the sign-ups and
+email people yourself. With it, **SEND DEBRIEF** in setup does it for you.
+
+Use a transactional provider rather than a personal mailbox: you're sending a
+hundred near-identical emails at once, which is what trips spam filters. Postmark
+and Mailgun both have free tiers that cover an event. Sign up, verify your
+sending domain (their DNS steps are what actually keeps you out of spam), then:
+
+```bash
+fly secrets set SMTP_HOST=smtp.postmarkapp.com SMTP_PORT=587 SMTP_USER=your-token SMTP_PASS=your-token MAIL_FROM=hello@yourdomain.com MAIL_REPLY_TO=you@yourdomain.com
+```
+
+`MAIL_FROM` has to be at the domain you verified or the provider will refuse it.
+If yours wants port 465, add `SMTP_TLS=ssl`.
+
+### 6. Deploy
 
 ```bash
 fly deploy
 ```
 
-### 6. Check it
+### 7. Check it
 
 ```bash
 fly logs
@@ -126,18 +144,11 @@ who signed up a link to the public recap. It takes two clicks (the second says
 `CONFIRM SEND`) because it goes to real inboxes, and it records who has had it,
 so pressing it again only reaches people who signed up since.
 
-For that button to work you need a mail server. Any SMTP provider does — a
-Fastmail or Gmail app password, or a transactional service like Postmark,
-Mailgun or SendGrid, which is the better choice if you're sending to more than a
-handful of people, since mail from a fresh domain otherwise tends to land in spam:
-
-```bash
-fly secrets set SMTP_HOST=smtp.postmarkapp.com SMTP_PORT=587 SMTP_USER=your-token SMTP_PASS=your-token MAIL_FROM=hello@yourdomain.com MAIL_REPLY_TO=you@yourdomain.com
-```
-
-Send yourself a test first: sign up with your own address on the closing screen
-of a test room, then send. Without these set, the button stays disabled and says
-so rather than pretending to send.
+That button needs the mail secrets from step 5; without them it stays disabled
+and says why. **Send yourself a test before the event** — sign up with your own
+address on the closing screen of a test room and send it. That proves the
+credentials, the from-address and deliverability in one go, and a DNS problem is
+much better found the day before than the morning after.
 
 You can also download the raw sign-ups from the ✉ link in setup, or:
 
@@ -163,6 +174,10 @@ fly ssh console -C "cat /data/leads/CODE.json"
   want the shipped version back.
 - **Back up sign-ups** after each event; the volume is a single disk, not a
   managed database.
+- **Sizing is measured, not guessed.** Idle is ~23MB; 366 phones connected at
+  once measured ~37MB and the app still answered in under a millisecond. The
+  256MB machine in `fly.toml` has plenty of room — don't pay for more without a
+  reason to.
 
 ## Environment variables
 
@@ -170,7 +185,7 @@ fly ssh console -C "cat /data/leads/CODE.json"
 |---|---|---|
 | `PASSCODE` | Crew passcode for `/moderator` and `/setup` | random 6 digits, printed at startup |
 | `PUBLIC_URL` | Public base URL used by the QR and join links | detected LAN address |
-| `DATA_DIR` | Where `rooms_state.json`, `leads/` and `events/` are written | the project directory |
+| `DATA_DIR` | Where `rooms_state.json`, `events/`, `leads/` and `avatars/` are written | the project directory |
 | `SMTP_HOST` | Mail server for the debrief email | unset — sending disabled |
 | `SMTP_PORT` | Mail server port | `587` |
 | `SMTP_USER` / `SMTP_PASS` | Mail server login | unset |

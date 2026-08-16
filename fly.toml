@@ -24,9 +24,12 @@ primary_region = "lhr"            # London; use `fly platform regions` for other
 
   [http_service.concurrency]
     type = "connections"
-    # each open surface holds an SSE connection, so allow plenty of headroom
-    soft_limit = 200
-    hard_limit = 400
+    # Every phone holds one event-stream connection open for the whole event,
+    # plus short-lived ones for each vote, so the ceiling needs to be well above
+    # the size of the room. Measured locally: 366 concurrent connections cost
+    # about 37MB, so the memory below is not the limit here.
+    soft_limit = 400
+    hard_limit = 800
 
 [[http_service.checks]]
   interval = "30s"
@@ -35,11 +38,15 @@ primary_region = "lhr"            # London; use `fly platform regions` for other
   method = "GET"
   path = "/healthz"
 
-# rooms_state.json and leads/ live here so a redeploy doesn't lose the night
+# Everything written at run time lives here so a redeploy doesn't lose the
+# night: rooms_state.json, the events you author, debrief sign-ups and the
+# profile photos people upload.
 [mounts]
   source = "upgrade_data"
   destination = "/data"
 
+# 256MB is deliberate, not a guess: idle is ~23MB and a room of 366 connected
+# phones measured ~37MB. Bump it only if you actually see memory pressure.
 [[vm]]
   size = "shared-cpu-1x"
   memory = "256mb"

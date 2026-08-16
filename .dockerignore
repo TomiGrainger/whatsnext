@@ -11,6 +11,7 @@ Designs/
 # local run-time state; the deployed app keeps its own on the volume
 rooms_state.json
 leads/
+avatars/
 
 DEPLOY.md
 README.md
