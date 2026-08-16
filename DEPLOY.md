@@ -27,9 +27,17 @@ Everything below is yours to run — nothing here has been done for you.
 
 ### 1. Install the CLI and sign up
 
+This Mac doesn't have Homebrew, so use Fly's own installer:
+
 ```bash
-brew install flyctl
+curl -L https://fly.io/install.sh | sh
 ```
+
+It installs to `~/.fly` and tells you to add it to your PATH. Do that, or just
+use the full path `~/.fly/bin/fly` in place of `fly` in the commands below.
+
+(If you'd rather have Homebrew generally, install it from
+<https://brew.sh> and then `brew install flyctl` works too.)
 
 ```bash
 fly auth signup
