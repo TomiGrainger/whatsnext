@@ -60,10 +60,39 @@ LEADS_DIR = os.path.join(DATA_DIR, "leads")
 # redeploy; locally DATA_DIR is the repo, so they stay in git as before.
 EVENTS_DIR = BUNDLED_EVENTS_DIR if DATA_DIR == ROOT else os.path.join(DATA_DIR, "events")
 
-# Where the audience reaches this server from. Set PUBLIC_URL when hosted
-# (e.g. https://debate.example.com) so the QR sends phones to the public
-# address; unset, we detect the LAN address for same-Wi-Fi use.
+# Where the audience reaches this server from — the address the QR sends phones
+# to. Three sources, in order of trust:
+#   1. PUBLIC_URL, if you set it explicitly.
+#   2. Learned from the first request that arrives through a reverse proxy. A
+#      host sees its own container IP and nothing else, so the only place the
+#      real public name exists is the headers the proxy adds. Getting this wrong
+#      is a silent failure — a QR pointing somewhere no phone can reach — so the
+#      app works it out rather than relying on being told.
+#   3. This machine's LAN address, for running it locally on the same Wi-Fi.
 PUBLIC_URL = (os.environ.get("PUBLIC_URL") or "").strip().rstrip("/")
+_learned_url = None
+URL_LOCK = threading.Lock()
+
+
+def learn_public_url(headers):
+    """Remember the public address from a proxied request, once."""
+    global _learned_url
+    if PUBLIC_URL or _learned_url:
+        return
+    host = (headers.get("X-Forwarded-Host") or headers.get("Host") or "").split(",")[0].strip()
+    if not host or host.startswith("localhost") or host.startswith("127.0.0.1"):
+        return
+    proto = (headers.get("X-Forwarded-Proto") or "").split(",")[0].strip().lower()
+    if proto not in ("http", "https"):
+        return          # no proxy in front: fall back to LAN detection
+    with URL_LOCK:
+        if not _learned_url:
+            _learned_url = "%s://%s" % (proto, host)
+            print("  Public address learned from the proxy: %s" % _learned_url)
+
+
+def public_base():
+    return PUBLIC_URL or _learned_url or ("http://%s:%d" % (lan_host(), PORT))
 
 DEFAULT_ROOM = "WN25"
 
@@ -342,7 +371,7 @@ def send_debrief(code):
         room = ROOMS.get(code)
         event_name = room.get("eventName", "The event") if room else "The event"
         brand = room.get("brand", "THE UPGRADE") if room else "THE UPGRADE"
-    recap_url = "%s/recap?room=%s" % (PUBLIC_URL or ("http://%s:%d" % (lan_host(), PORT)), code)
+    recap_url = "%s/recap?room=%s" % (public_base(), code)
 
     with LEAD_LOCK:
         leads = read_leads(code)
@@ -481,9 +510,9 @@ def join_url(code, host=None):
     """The URL a phone should open. Hosted, that's the public address; locally,
     this machine's address on the Wi-Fi (localhost would be useless on a phone)."""
     code = sanitize_code(code)
-    if PUBLIC_URL:
-        return "%s/?room=%s" % (PUBLIC_URL, code)
-    return "http://%s:%d/?room=%s" % (host or lan_host(), PORT, code)
+    if host:
+        return "http://%s:%d/?room=%s" % (host, PORT, code)
+    return "%s/?room=%s" % (public_base(), code)
 
 
 def _cid():
@@ -1700,6 +1729,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        # the first proxied request teaches the app its own public address
+        learn_public_url(self.headers)
         parsed = urlparse(self.path)
         path = parsed.path
         if path == "/login":
@@ -2103,6 +2134,11 @@ def main():
         print("  • Moderator  %s/moderator   (crew)" % PUBLIC_URL)
         print("  • Projector  %s/projector" % PUBLIC_URL)
         print("  • Audience   %s/   ← what phones scan" % PUBLIC_URL)
+    elif os.environ.get("DATA_DIR"):
+        # hosted, but nobody told us the address — we'll learn it from the first
+        # request that comes through the proxy
+        print("  • Waiting for the first request to learn the public address")
+        print("    (or set PUBLIC_URL to pin it explicitly)")
     else:
         print("  • Set up     http://localhost:%d/setup       (crew)" % PORT)
         print("  • Moderator  http://localhost:%d/moderator   (crew)" % PORT)

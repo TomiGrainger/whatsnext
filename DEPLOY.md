@@ -73,15 +73,18 @@ The passcode guards the moderator and setup pages. Pick your own:
 fly secrets set PASSCODE=your-passcode-here
 ```
 
-`PUBLIC_URL` is what the QR code sends phones to. Until you add a custom domain
-it's `https://<your-app-name>.fly.dev`:
+**`PUBLIC_URL` you can usually skip.** The app works out its own public address
+from the first request that reaches it through Fly's proxy, so the QR points at
+the right place without being told. Set it only if you want to pin it:
 
 ```bash
 fly secrets set PUBLIC_URL=https://the-upgrade-live.fly.dev
 ```
 
-Get this wrong and the QR will point somewhere phones can't reach, so it's worth
-double-checking against what `fly deploy` prints.
+Either way, check it: load the projector and confirm the QR shows your public
+address rather than a `172.x` or `192.168.x` one. A QR pointing somewhere no
+phone can reach is a silent failure you'd otherwise discover with a room full of
+people.
 
 ### 5. Set up mail, if you want the debrief to send itself
 
@@ -192,7 +195,7 @@ fly ssh console -C "cat /data/leads/CODE.json"
 | Variable | What it does | Default |
 |---|---|---|
 | `PASSCODE` | Crew passcode for `/moderator` and `/setup` | random 6 digits, printed at startup |
-| `PUBLIC_URL` | Public base URL used by the QR and join links | detected LAN address |
+| `PUBLIC_URL` | Pin the public base URL for the QR and join links | learned from the proxy, else the LAN address |
 | `DATA_DIR` | Where `rooms_state.json`, `events/`, `leads/` and `avatars/` are written | the project directory |
 | `SMTP_HOST` | Mail server for the debrief email | unset — sending disabled |
 | `SMTP_PORT` | Mail server port | `587` |
