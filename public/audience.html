@@ -54,7 +54,20 @@
       <button class="react" data-choice="unsure"><div class="emo">😐</div><div class="lab">UNSURE</div></button>
       <button class="react fight" id="fight-btn"><div class="emo">⚡</div><div class="lab">FIGHT</div></button>
     </div>
-    <button class="qa-bar" id="qa-bar">🙋 ASK A QUESTION <span id="qa-count"></span></button>
+    <!-- shown until they've made a profile, then it gets out of the way -->
+    <button class="profile-cta" id="profile-cta">
+      <span class="pc-face" id="pc-face"><span id="pc-initials">👋</span></span>
+      <span class="pc-txt">
+        <span class="pc-title" id="pc-title">ADD YOUR PROFILE</span>
+        <span class="pc-sub" id="pc-sub">So the room knows who you are</span>
+      </span>
+      <span class="pc-go">→</span>
+    </button>
+
+    <div class="bar-row">
+      <button class="qa-bar" id="room-bar">👥 ROOM <span id="room-count"></span></button>
+      <button class="qa-bar" id="qa-bar">🙋 ASK <span id="qa-count"></span></button>
+    </div>
     <button class="next-bar" id="next-bar">→ WHAT'S NEXT?&nbsp; 7/10</button>
   </section>
 
@@ -181,8 +194,49 @@
   <input class="field" id="me-name" maxlength="40" placeholder="Your name" autocomplete="name">
   <input class="field" id="me-occupation" maxlength="60" placeholder="What you do">
   <input class="field" id="me-fact" maxlength="120" placeholder="A quirky fact about you">
-  <div class="note">Only the crew sees this, unless they put you on the big screen.</div>
+
+  <!-- everything below here is opt-in, and off unless they turn it on -->
+  <label class="me-share" for="me-shared">
+    <input type="checkbox" id="me-shared">
+    <span class="ms-txt">
+      <b>Show me in the room directory</b>
+      <em>Other guests can see your name, job, fact and photo — and ask to connect.
+        Leave this off and only the crew ever sees your profile.</em>
+    </span>
+  </label>
+
+  <div class="me-contact" id="me-contact" hidden>
+    <div class="mc-lab">Shared only with people whose connection request you accept</div>
+    <input class="field" id="me-email" type="email" maxlength="200"
+           placeholder="Your email (optional)" autocomplete="email">
+    <input class="field" id="me-link" maxlength="120" placeholder="LinkedIn or website (optional)">
+  </div>
+
+  <div class="note" id="me-note">Only the crew sees this, unless they put you on the big screen.</div>
   <button class="btn" id="me-save">SAVE →</button>
+</div>
+
+<!-- WHO'S IN THE ROOM -->
+<div class="sheet-scrim" id="room-scrim"></div>
+<div class="sheet room-sheet" id="room-sheet">
+  <button class="x" id="room-x">×</button>
+  <div class="tag"><span class="bolt">👥</span> IN THE ROOM</div>
+  <h3>WHO ELSE IS <b>HERE?</b></h3>
+
+  <div class="room-optin" id="room-optin" hidden>
+    <p>You're not in the directory yet. Add your profile and tick
+      <b>show me in the room directory</b> to see who else is here.</p>
+    <button class="btn" id="room-optin-btn">SET UP MY PROFILE →</button>
+  </div>
+
+  <div id="room-body" hidden>
+    <div class="room-reqs" id="room-reqs"></div>
+    <div class="room-tabs">
+      <button class="rt on" id="tab-all" data-tab="all">EVERYONE</button>
+      <button class="rt" id="tab-mine" data-tab="mine">MY CONNECTIONS <span id="conn-count"></span></button>
+    </div>
+    <div class="room-list" id="room-list"></div>
+  </div>
 </div>
 
 <!-- Q&A SHEET -->

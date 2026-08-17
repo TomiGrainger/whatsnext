@@ -97,9 +97,10 @@
   function paintMe() {
     const badge = $("#me-btn");
     const ini = initialsOf(me.name);
+    const has = Boolean(me.name || me.avatar);
     $("#me-initials").textContent = me.avatar ? "" : ini;
     $("#me-photo-initials").textContent = me.name ? ini : "?";
-    badge.classList.toggle("has", Boolean(me.name || me.avatar));
+    badge.classList.toggle("has", has);
     const url = me.avatar ? "/avatars/" + me.avatar : "";
     badge.style.backgroundImage = url ? "url(" + url + ")" : "";
     $("#me-photo").style.backgroundImage = url ? "url(" + url + ")" : "";
@@ -107,7 +108,30 @@
     $("#me-name").value = me.name || "";
     $("#me-occupation").value = me.occupation || "";
     $("#me-fact").value = me.fact || "";
+    $("#me-email").value = me.email || "";
+    $("#me-link").value = me.link || "";
+    $("#me-shared").checked = Boolean(me.shared);
+    $("#me-contact").hidden = !me.shared;
+    $("#me-note").textContent = me.shared
+      ? "Your name, job, fact and photo are visible to the room. Contact details only go to people you accept."
+      : "Only the crew sees this, unless they put you on the big screen.";
+
+    // the prompt shouts until there's a profile, then settles into a summary
+    const cta = $("#profile-cta");
+    cta.classList.toggle("done", has);
+    $("#pc-initials").textContent = has ? (me.avatar ? "" : ini) : "👋";
+    $("#pc-face").style.backgroundImage = url ? "url(" + url + ")" : "";
+    $("#pc-face").classList.toggle("has", Boolean(url));
+    $("#pc-title").textContent = has ? (me.name || "YOUR PROFILE") : "ADD YOUR PROFILE";
+    $("#pc-sub").textContent = has
+      ? (me.shared ? "Visible in the room directory · tap to edit"
+                   : "Only the crew can see it · tap to edit")
+      : "So the room knows who you are";
   }
+
+  $("#me-shared").addEventListener("change", (e) => {
+    $("#me-contact").hidden = !e.target.checked;
+  });
 
   function openMe() {
     paintMe();
@@ -119,18 +143,26 @@
     $("#me-scrim").classList.remove("show");
   }
   $("#me-btn").addEventListener("click", openMe);
+  $("#profile-cta").addEventListener("click", openMe);
   $("#me-x").addEventListener("click", closeMe);
   $("#me-scrim").addEventListener("click", closeMe);
 
-  $("#me-save").addEventListener("click", () => {
+  $("#me-save").addEventListener("click", async () => {
     me.name = $("#me-name").value.trim();
     me.occupation = $("#me-occupation").value.trim();
     me.fact = $("#me-fact").value.trim();
+    me.shared = $("#me-shared").checked;
+    me.email = me.shared ? $("#me-email").value.trim() : "";
+    me.link = me.shared ? $("#me-link").value.trim() : "";
     localStorage.setItem(ME_KEY, JSON.stringify(me));
-    Live.send("profile", { name: me.name, occupation: me.occupation, fact: me.fact });
+    Live.send("profile", {
+      name: me.name, occupation: me.occupation, fact: me.fact,
+      shared: me.shared, email: me.email, link: me.link,
+    });
     paintMe();
     closeMe();
-    UI.toast("Profile saved");
+    UI.toast(me.shared ? "Profile saved and shared" : "Profile saved");
+    refreshMine();
   });
 
   // The photo goes up as the raw file body — the server identifies it by its
@@ -170,6 +202,223 @@
   });
 
   paintMe();
+
+  // ---- who's in the room ----
+  // The snapshot carries the directory but never contact details; those live
+  // behind /api/me and only appear once someone accepts a request.
+  let mine = { incoming: [], pending: [], connections: [], shared: false };
+  let roomTab = "all";
+  let minePoll = null;
+
+  async function refreshMine() {
+    try {
+      const r = await fetch("/api/me?room=" + encodeURIComponent(Live.room()) +
+                            "&pid=" + encodeURIComponent(Live.pid()),
+                            { headers: { "Cache-Control": "no-store" } });
+      const d = await r.json();
+      if (d.exists) {
+        mine = d;
+        paintRoom(Live.get());
+      }
+    } catch (e) { /* offline — the sheet just shows what it had */ }
+  }
+
+  function openRoom() {
+    $("#room-sheet").classList.add("show");
+    $("#room-scrim").classList.add("show");
+    refreshMine();
+    // requests can arrive while the sheet is open
+    if (!minePoll) minePoll = setInterval(refreshMine, 4000);
+  }
+  function closeRoom() {
+    $("#room-sheet").classList.remove("show");
+    $("#room-scrim").classList.remove("show");
+    clearInterval(minePoll);
+    minePoll = null;
+  }
+  $("#room-bar").addEventListener("click", openRoom);
+  $("#room-x").addEventListener("click", closeRoom);
+  $("#room-scrim").addEventListener("click", closeRoom);
+  $("#room-optin-btn").addEventListener("click", () => { closeRoom(); openMe(); });
+  $$(".room-tabs .rt").forEach((b) => b.addEventListener("click", () => {
+    roomTab = b.dataset.tab;
+    $$(".room-tabs .rt").forEach((x) => x.classList.toggle("on", x === b));
+    paintRoom(Live.get());
+  }));
+
+  function personRow(p, opts) {
+    const row = document.createElement("div");
+    row.className = "person";
+
+    const face = document.createElement("div");
+    face.className = "p-face";
+    if (p.avatar) face.style.backgroundImage = "url(/avatars/" + p.avatar + ")";
+    else face.textContent = p.initials || "?";
+
+    const body = document.createElement("div");
+    body.className = "p-body";
+    const nm = document.createElement("div");
+    nm.className = "p-name";
+    nm.textContent = p.name || "Someone";
+    body.appendChild(nm);
+    if (p.occupation) {
+      const oc = document.createElement("div");
+      oc.className = "p-occ";
+      oc.textContent = p.occupation;
+      body.appendChild(oc);
+    }
+    if (p.fact) {
+      const ft = document.createElement("div");
+      ft.className = "p-fact";
+      ft.textContent = "“" + p.fact + "”";
+      body.appendChild(ft);
+    }
+    // contact details appear only for accepted connections
+    if (opts.contact && (p.email || p.link)) {
+      const box = document.createElement("div");
+      box.className = "p-contact";
+      if (p.email) {
+        const a = document.createElement("a");
+        a.href = "mailto:" + p.email;
+        a.textContent = p.email;
+        box.appendChild(a);
+      }
+      if (p.link) {
+        const a = document.createElement("a");
+        const href = /^https?:\/\//i.test(p.link) ? p.link : "https://" + p.link;
+        a.href = href;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer nofollow";
+        a.textContent = p.link;
+        box.appendChild(a);
+      }
+      const save = document.createElement("button");
+      save.className = "p-save";
+      save.textContent = "SAVE TO CONTACTS";
+      save.addEventListener("click", () => downloadVcard(p));
+      box.appendChild(save);
+      body.appendChild(box);
+    }
+
+    row.append(face, body);
+    if (opts.action) row.appendChild(opts.action);
+    return row;
+  }
+
+  // A vCard is just text — the phone opens it in Contacts.
+  function downloadVcard(p) {
+    const esc = (s) => (s || "").replace(/[\\;,]/g, (m) => "\\" + m).replace(/\n/g, " ");
+    const lines = [
+      "BEGIN:VCARD", "VERSION:3.0",
+      "FN:" + esc(p.name || "Guest"),
+      p.occupation ? "TITLE:" + esc(p.occupation) : "",
+      p.email ? "EMAIL;TYPE=INTERNET:" + esc(p.email) : "",
+      p.link ? "URL:" + esc(p.link) : "",
+      "NOTE:" + esc("Met at " + ((Live.get() || {}).eventName || "the event") +
+                    (p.fact ? " — " + p.fact : "")),
+      "END:VCARD",
+    ].filter(Boolean);
+    const blob = new Blob([lines.join("\r\n")], { type: "text/vcard" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (p.name || "contact").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".vcf";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+
+  function paintRoom(st) {
+    if (!st) return;
+    const dir = (st.directory || []).filter((p) => p.pid !== Live.pid());
+    $("#room-count").textContent = dir.length ? "· " + dir.length : "";
+    $("#conn-count").textContent = mine.connections.length ? "· " + mine.connections.length : "";
+
+    // not opted in? explain rather than showing them the room
+    const optedIn = Boolean(mine.shared);
+    $("#room-optin").hidden = optedIn;
+    $("#room-body").hidden = !optedIn;
+    if (!optedIn) return;
+
+    // requests waiting on you, at the top
+    const reqs = $("#room-reqs");
+    reqs.innerHTML = "";
+    mine.incoming.forEach((req) => {
+      const yes = document.createElement("button");
+      yes.className = "p-act yes";
+      yes.textContent = "ACCEPT";
+      yes.addEventListener("click", async () => {
+        await Live.send("connectRespond", { id: req.id, accept: true });
+        UI.toast("Connected — details swapped");
+        refreshMine();
+      });
+      const no = document.createElement("button");
+      no.className = "p-act no";
+      no.textContent = "IGNORE";
+      no.addEventListener("click", async () => {
+        await Live.send("connectRespond", { id: req.id, accept: false });
+        refreshMine();
+      });
+      const acts = document.createElement("div");
+      acts.className = "p-acts";
+      acts.append(yes, no);
+
+      const row = personRow(req.who, { action: acts });
+      row.classList.add("req");
+      reqs.appendChild(row);
+    });
+    if (mine.incoming.length) {
+      const lab = document.createElement("div");
+      lab.className = "reqs-lab";
+      lab.textContent = mine.incoming.length === 1
+        ? "1 person wants to connect" : mine.incoming.length + " people want to connect";
+      reqs.prepend(lab);
+    }
+
+    const list = $("#room-list");
+    list.innerHTML = "";
+
+    if (roomTab === "mine") {
+      if (!mine.connections.length) {
+        list.appendChild(emptyNote("No connections yet. Tap CONNECT on someone to ask."));
+      }
+      mine.connections.forEach((p) => list.appendChild(personRow(p, { contact: true })));
+      return;
+    }
+
+    if (!dir.length) {
+      list.appendChild(emptyNote("Nobody else has shared a profile yet."));
+      return;
+    }
+    const connected = new Set(mine.connections.map((c) => c.pid));
+    const asked = new Set(mine.pending);
+    dir.forEach((p) => {
+      let action = document.createElement("button");
+      if (connected.has(p.pid)) {
+        action.className = "p-act done";
+        action.textContent = "CONNECTED";
+        action.disabled = true;
+      } else if (asked.has(p.pid)) {
+        action.className = "p-act waiting";
+        action.textContent = "ASKED";
+        action.disabled = true;
+      } else {
+        action.className = "p-act";
+        action.textContent = "CONNECT";
+        action.addEventListener("click", async () => {
+          await Live.send("connect", { to: p.pid });
+          UI.toast("Request sent");
+          refreshMine();
+        });
+      }
+      list.appendChild(personRow(p, { action }));
+    });
+  }
+
+  function emptyNote(text) {
+    const d = document.createElement("div");
+    d.className = "qa-empty";
+    d.textContent = text;
+    return d;
+  }
 
   // ---- live reaction bursts ----
   // Hold a reaction down and it keeps flowing to the projector. The set is
@@ -460,6 +709,7 @@
     setQuestionTitle("#res-q", st.topic, true);
 
     renderQa(st);
+    paintRoom(st);
 
     // discussion stats
     $("#st-agree").textContent = st.sentiment.agree;
@@ -639,5 +889,6 @@
 
   Live.onState(render);
   Live.connect("audience");
+  refreshMine();
   render(Live.get());
 })();

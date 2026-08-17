@@ -198,7 +198,7 @@
     btn.className = "mq-btn" + (live ? " on" : "");
     btn.textContent = live ? "ON SCREEN" : "SHOW WHO";
     btn.title = "Put this person on the projector";
-    btn.addEventListener("click", () => Live.send("featureProfile", { pid }));
+    btn.addEventListener("click", () => Live.send("featureProfile", { target: pid }));
 
     // clears the name, occupation, fact and photo outright — for when what
     // someone put in their profile shouldn't be anywhere near the big screen
@@ -207,7 +207,7 @@
     drop.textContent = "✕";
     drop.title = "Delete this person's profile and photo";
     drop.addEventListener("click", () => {
-      Live.send("removeProfile", { pid });
+      Live.send("removeProfile", { target: pid });
       UI.toast("Profile removed");
     });
 

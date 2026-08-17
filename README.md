@@ -112,13 +112,22 @@ signs the crew out, and anyone with the code has the controls.
   deduplicated per room and stamped with the event name. The setup page shows a
   **✉ count** against each room; click it to download that room's sign-ups.
   Sign-ups need no passcode (guests are not crew), but reading them does.
-- **Profiles** — optional, from the avatar in the phone's header: a name, what
-  they do, a quirky fact and a photo. The moderator sees it beside that person's
-  questions and challenges, and **SHOW WHO** puts them on the projector. Profiles
-  are crew-only until then, and never reach the public recap. Photos are checked
-  by their actual bytes (JPEG/PNG/GIF/WEBP only — no SVG), capped at 3MB, stored
-  under `DATA_DIR/avatars/`, and served with `nosniff` so an upload can't be
-  interpreted as markup.
+- **Profiles** — a red **ADD YOUR PROFILE** bar on the discussion screen until
+  someone makes one, after which it steps aside and the header avatar edits it.
+  Name, what they do, a quirky fact, a photo. The moderator sees it beside that
+  person's questions and challenges, and **SHOW WHO** puts them on the projector.
+  Photos are checked by their actual bytes (JPEG/PNG/GIF/WEBP only — no SVG),
+  capped at 3MB, stored under `DATA_DIR/avatars/`, and served with `nosniff` so an
+  upload can't be interpreted as markup.
+- **Who's in the room** — a directory guests opt into. Tick *show me in the room
+  directory* and your name, job, fact and photo become visible to other guests who
+  have also opted in; leave it off and only the crew ever sees your profile.
+  Nothing is shared by default, and browsing is reciprocal — you appear to see.
+  Contact details work by handshake: tap **CONNECT**, the other person accepts or
+  ignores, and only then do both sides see each other's email and link, with
+  **SAVE TO CONTACTS** producing a vCard stamped with where you met. Nobody can
+  collect the room's addresses: a request is a request, not a transfer, and none
+  of it reaches the public recap or the moderator.
 - **Questions from the floor** — guests ask and upvote from the discussion
   screen; the moderator's ranked panel can throw one over the projector (`PUT UP`)
   or grey it off once covered (`DONE`). Separate from the challenge queue: a

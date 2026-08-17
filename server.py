@@ -639,6 +639,8 @@ def new_room(code, event_id=DEFAULT_EVENT_ID, seed=False):
         # pid -> {name, occupation, fact, avatar}
         "profiles": {},
         "featuredProfile": None,
+        # connection requests between audience members
+        "connections": [],
         "simParticipants": config.get("seedSimParticipants", 0) if seed else 0,
     }
     _activate_topic(room, 0)
@@ -896,6 +898,7 @@ def reset_room(room):
     room["featuredQuestion"] = None
     room["profiles"] = {}
     room["featuredProfile"] = None
+    room["connections"] = []
     room["simParticipants"] = 0
     _activate_topic(room, 0)
     mark_dirty()
@@ -1202,6 +1205,50 @@ def recap_payload(code):
         }
 
 
+def _profile_card(profiles, pid, with_contact=False):
+    p = profiles.get(pid, {})
+    card = {"pid": pid, "name": p.get("name", ""), "occupation": p.get("occupation", ""),
+            "fact": p.get("fact", ""), "initials": p.get("initials", "?"),
+            "avatar": p.get("avatar")}
+    if with_contact:
+        card["email"] = p.get("email", "")
+        card["link"] = p.get("link", "")
+    return card
+
+
+def my_view(code, pid):
+    """Everything that is this one person's business and nobody else's: their own
+    profile, requests waiting on them, and the contact details of people who
+    actually accepted. Keyed on their participant id, which only their phone
+    has — the same basis the vote tracking already works on."""
+    with LOCK:
+        r = ROOMS.get(sanitize_code(code))
+        if r is None:
+            return {"exists": False}
+        profiles = r.get("profiles", {})
+        mine = profiles.get(pid, {})
+        conns = r.get("connections", [])
+
+        incoming, outgoing, accepted = [], [], []
+        for c in conns:
+            if c["to"] == pid and c["state"] == "pending":
+                incoming.append({"id": c["id"], "who": _profile_card(profiles, c["from"])})
+            elif c["from"] == pid and c["state"] == "pending":
+                outgoing.append(c["to"])
+            elif c["state"] == "accepted" and pid in (c["from"], c["to"]):
+                other = c["to"] if c["from"] == pid else c["from"]
+                accepted.append(_profile_card(profiles, other, with_contact=True))
+
+        return {
+            "exists": True,
+            "shared": bool(mine.get("shared")),
+            "profile": _profile_card(profiles, pid, with_contact=True) if mine else None,
+            "incoming": incoming,          # waiting for you to accept
+            "pending": outgoing,           # you asked, they haven't answered
+            "connections": accepted,       # both agreed — contact details included
+        }
+
+
 def missing_snapshot(code):
     """A room code nobody opened. Same shape as a real snapshot so every surface
     can render it without special-casing every field — just `exists: false`."""
@@ -1223,6 +1270,7 @@ def missing_snapshot(code):
         "challenges": [], "invited": [],
         "questions": [], "featuredQuestion": None,
         "profiles": {}, "featuredProfile": None, "featuredProfilePid": None,
+        "directory": [],
         "poll": payloads["poll"], "wordcloud": payloads["wordcloud"],
         "emoji": payloads["emoji"], "slider": payloads["slider"],
         "ranking": payloads["ranking"],
@@ -1303,9 +1351,23 @@ def snapshot(code, crew=False):
                           for q in sorted(r.get("questions", []),
                                           key=lambda q: (-q["votes"], -q["at"]))],
             "featuredQuestion": r.get("featuredQuestion"),
+            # Who's in the room, for the audience directory: only people who
+            # opted in, and never their contact details — those move one-to-one
+            # through an accepted connection (see /api/me).
+            "directory": [
+                {"pid": p, "name": v.get("name", ""), "occupation": v.get("occupation", ""),
+                 "fact": v.get("fact", ""), "initials": v.get("initials", "?"),
+                 "avatar": v.get("avatar")}
+                for p, v in sorted(r.get("profiles", {}).items(),
+                                   key=lambda kv: kv[1].get("name", "").lower())
+                if v.get("shared") and (v.get("name") or v.get("occupation"))
+            ],
             # profiles are personal, so the whole set is crew-only; everyone
-            # else sees just the one the moderator has deliberately put up
-            "profiles": r.get("profiles", {}) if crew else {},
+            # else sees just the one the moderator has deliberately put up.
+            # Contact details are stripped even for the crew — the moderator has
+            # no need for the room's email addresses.
+            "profiles": ({p: {k: val for k, val in v.items() if k not in ("email", "link")}
+                          for p, v in r.get("profiles", {}).items()} if crew else {}),
             "featuredProfile": _featured_profile(r),
             # the crew needs to know *which* person is up, to light the right
             # card; the pid stays out of the public payload
@@ -1323,7 +1385,16 @@ def snapshot(code, crew=False):
 # ---------------------------------------------------------------------------
 
 AUDIENCE_ACTIONS = ("join", "sentiment", "whatsnext", "challenge", "poll", "word",
-                    "emoji", "slider", "ranking", "ask", "upvote", "burst", "profile")
+                    "emoji", "slider", "ranking", "ask", "upvote", "burst", "profile",
+                    "connect", "connectRespond")
+
+
+def _connection(room, a, b):
+    """Any existing request between two people, either direction."""
+    for c in room.get("connections", []):
+        if {c["from"], c["to"]} == {a, b} and c["state"] != "declined":
+            return c
+    return None
 
 MAX_QUESTIONS = 200
 
@@ -1384,16 +1455,47 @@ def act(code, kind, pid, data):
             name = (data.get("name") or "").strip()[:40]
             occupation = (data.get("occupation") or "").strip()[:60]
             fact = (data.get("fact") or "").strip()[:120]
+            email = plausible_email(data.get("email")) or ""
+            link = (data.get("link") or "").strip()[:120]
+            # `shared` is the consent switch: nothing about a person reaches the
+            # rest of the room unless they turn it on themselves
+            shared = bool(data.get("shared"))
             existing = r["profiles"].get(pid, {})
-            if name or occupation or fact:
+            if name or occupation or fact or email or link:
                 r["profiles"][pid] = {
                     "name": name, "occupation": occupation, "fact": fact,
                     "initials": _initials(name) if name else "?",
                     "avatar": existing.get("avatar"),
+                    "email": email, "link": link,
+                    "shared": shared,
                 }
             elif existing:
                 # cleared every field — drop everything but a photo they kept
-                existing.update({"name": "", "occupation": "", "fact": "", "initials": "?"})
+                existing.update({"name": "", "occupation": "", "fact": "", "initials": "?",
+                                 "email": "", "link": "", "shared": False})
+
+        elif kind == "connect":
+            # A request, not a transfer. Contact details move only once the other
+            # person accepts, so nobody can quietly collect the room's addresses.
+            target = re_pid(data.get("to"))
+            them = r["profiles"].get(target, {})
+            me = r["profiles"].get(pid, {})
+            if (target != pid and them.get("shared") and me.get("shared")
+                    and not _connection(r, pid, target)):
+                r["connections"].append({
+                    "id": _cid(), "from": pid, "to": target,
+                    "state": "pending", "at": time.time(),
+                })
+
+        elif kind == "connectRespond":
+            cid = data.get("id")
+            accept = bool(data.get("accept"))
+            for c in r["connections"]:
+                # only the person who received it may answer it
+                if c["id"] == cid and c["to"] == pid and c["state"] == "pending":
+                    c["state"] = "accepted" if accept else "declined"
+                    c["answeredAt"] = time.time()
+                    break
 
         elif kind == "ask":
             text = (data.get("text") or "").strip()[:200]
@@ -1525,7 +1627,7 @@ def act(code, kind, pid, data):
             r["challenges"] = [c for c in r["challenges"] if c["id"] != cid]
             r["invited"] = [i for i in r["invited"] if i != cid]
         elif kind == "removeProfile":
-            target = re_pid(data.get("pid"))
+            target = re_pid(data.get("target"))
             profile = r["profiles"].pop(target, None)
             if r.get("featuredProfile") == target:
                 r["featuredProfile"] = None
@@ -1536,7 +1638,7 @@ def act(code, kind, pid, data):
                     pass
 
         elif kind == "featureProfile":
-            target = data.get("pid")
+            target = re_pid(data.get("target"))
             if target in r["profiles"]:
                 r["featuredProfile"] = None if r.get("featuredProfile") == target else target
         elif kind == "featureQuestion":
@@ -1796,6 +1898,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.serve_static(PAGES[path])
         if path.startswith("/css/") or path.startswith("/js/") or path.startswith("/assets/"):
             return self.serve_static(path.lstrip("/"))
+        if path == "/api/me":
+            qs = parse_qs(parsed.query)
+            code = qs.get("room", [DEFAULT_ROOM])[0]
+            pid = re_pid(qs.get("pid", [""])[0])
+            return self._send(200, json.dumps(my_view(code, pid)), "application/json",
+                              {"Cache-Control": "no-store"})
         if path == "/api/recap":
             # public on purpose — this link goes out in the debrief email
             qs = parse_qs(parsed.query)
