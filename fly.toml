@@ -6,7 +6,7 @@
 #   • the app keeps room state in memory and in one file, so it must run as
 #     exactly ONE machine. Don't scale this out.
 
-app = "the-upgrade-live"          # change to your own app name
+app = "whatsnext"                 # must match the app name on Fly
 primary_region = "lhr"            # London; use `fly platform regions` for others
 
 [build]
