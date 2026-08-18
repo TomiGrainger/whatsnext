@@ -22,6 +22,7 @@
   $("#discussion-btn").addEventListener("click", () => { Live.send("backToDiscussion"); UI.toast("Back to discussion"); });
   $("#reveal-btn").addEventListener("click", () => { Live.send("reveal"); UI.toast("Results revealed"); });
   $("#again-btn").addEventListener("click", () => { Live.send("askAgain"); UI.toast("Same poll, round two"); });
+  $("#offer-btn").addEventListener("click", () => Live.send("showOffer"));
   $("#invite-btn").addEventListener("click", () => { Live.send("inviteTop"); UI.toast("Invited to speak"); });
   // sidebar quick-jumps
   $$('.nav a[data-jump]').forEach((a) => a.addEventListener("click", (e) => {
@@ -144,6 +145,11 @@
     $("#again-btn").disabled = !st.rerunnable;
     $("#again-btn").querySelector(".ql").textContent =
       st.poll.round > 1 ? "Round " + st.poll.round : "Ask Again";
+    // the offer only exists if the event was set up with one
+    $("#offer-btn").disabled = !st.offer;
+    $("#offer-btn").classList.toggle("armed", Boolean(st.offerLive));
+    $("#offer-btn").querySelector(".ql").textContent =
+      !st.offer ? "No Offer Set" : (st.offerLive ? "Hide Offer" : "Show Offer");
     $("#prev-btn").disabled = st.topicIndex === 0;
     $("#next-btn").disabled = st.topicIndex >= st.topicCount - 1;
     $("#next-btn-2").disabled = st.topicIndex >= st.topicCount - 1;

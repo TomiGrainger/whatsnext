@@ -187,6 +187,37 @@
     return el;
   }
 
+  // ---------------- the offer's artwork ----------------
+  let offerImage = "";
+
+  function paintOfferImage() {
+    const box = $("#offer-img");
+    box.style.backgroundImage = offerImage ? "url(/offers/" + offerImage + ")" : "";
+    box.classList.toggle("has", Boolean(offerImage));
+  }
+
+  $("#offer-file").addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const note = $("#offer-img-note");
+    note.textContent = "Uploading…";
+    try {
+      const r = await fetch("/api/offer-image?slug=" +
+        encodeURIComponent(($("#ev-name").value || "offer").toLowerCase().replace(/[^a-z0-9]+/g, "-")), {
+        method: "POST",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+      });
+      const res = await r.json();
+      if (!res.ok) { note.textContent = res.error || "Couldn't upload that."; return; }
+      offerImage = res.image;
+      paintOfferImage();
+      note.textContent = "Image added — remember to save the event";
+    } catch (err) {
+      note.textContent = "No connection — try again.";
+    }
+  });
+
   $("#add-topic").addEventListener("click", addTopic);
 
   // ---------------- create / edit mode ----------------
@@ -202,6 +233,14 @@
 
     $("#ev-brand").value = config ? config.brand : "";
     $("#ev-name").value = config ? config.eventName : "";
+    const offer = (config && config.offer) || {};
+    $("#offer-headline").value = offer.headline || "";
+    $("#offer-body").value = offer.body || "";
+    $("#offer-cta").value = offer.cta || "";
+    $("#offer-link").value = offer.link || "";
+    $("#offer-linklabel").value = offer.linkLabel || "";
+    offerImage = offer.image || "";
+    paintOfferImage();
     topics = config ? config.topics.map(toModel) : [];
     renderTopics();
     $("#save-msg").textContent = "";
@@ -238,6 +277,14 @@
     return {
       brand: $("#ev-brand").value,
       eventName: $("#ev-name").value,
+      offer: {
+        headline: $("#offer-headline").value,
+        body: $("#offer-body").value,
+        cta: $("#offer-cta").value,
+        link: $("#offer-link").value,
+        linkLabel: $("#offer-linklabel").value,
+        image: offerImage,
+      },
       topics: topics.map((t) => ({
         question: t.question,
         settings: { whatsNextThreshold: t.threshold },
@@ -391,6 +438,17 @@
         : "No sign-ups yet";
       leads.textContent = "✉ " + (r.leads || 0);
       row.appendChild(leads);
+
+      // people who raised a hand for the offer — a separate list to the
+      // debrief sign-ups, and downloadable the same way
+      if (r.interest) {
+        const want = document.createElement("a");
+        want.className = "room-leads has";
+        want.href = "/api/interest/" + encodeURIComponent(r.code) + ".json";
+        want.title = "Download the " + r.interest + " person(s) who tapped the offer in this room";
+        want.textContent = "\uD83D\uDCBC " + r.interest;
+        row.appendChild(want);
+      }
 
       const toggle = document.createElement("button");
       toggle.className = "room-toggle" + (r.closed ? " on" : "");

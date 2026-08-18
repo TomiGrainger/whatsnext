@@ -171,6 +171,13 @@
     </div>
 
     <a class="btn ghost cv-recap" id="recap-link" href="/recap">SEE TONIGHT'S RESULTS →</a>
+
+    <div class="cv-offer" id="cv-offer" hidden>
+      <img class="offer-hero" id="cv-offer-hero" alt="">
+      <div class="cv-offer-head" id="cv-offer-headline"></div>
+      <div class="cv-offer-body" id="cv-offer-body"></div>
+      <button class="btn" id="cv-offer-cta">I'M INTERESTED</button>
+    </div>
   </div>
 </div>
 
@@ -214,6 +221,31 @@
 
   <div class="note" id="me-note">Only the crew sees this, unless they put you on the big screen.</div>
   <button class="btn" id="me-save">SAVE →</button>
+</div>
+
+<!-- THE OFFER -->
+<div class="sheet-scrim" id="offer-scrim"></div>
+<div class="sheet offer-sheet" id="offer-sheet">
+  <button class="x" id="offer-x">×</button>
+  <img class="offer-hero" id="offer-hero" alt="">
+  <h3 id="offer-headline"></h3>
+  <p class="hint" id="offer-body"></p>
+
+  <div id="offer-ask">
+    <div class="offer-email" id="offer-email-wrap" hidden>
+      <input class="field" id="offer-email" type="email" inputmode="email"
+             maxlength="200" placeholder="Where should I send it?" autocomplete="email">
+    </div>
+    <button class="btn" id="offer-cta">I'M INTERESTED</button>
+    <a class="offer-link" id="offer-link" target="_blank" rel="noopener noreferrer"></a>
+  </div>
+
+  <div class="offer-done" id="offer-done" hidden>
+    <div class="tick">✓</div>
+    <div class="dn">YOU'RE ON THE LIST</div>
+    <div class="ds" id="offer-done-sub">I'll be in touch with the details.</div>
+    <a class="offer-link" id="offer-link-2" target="_blank" rel="noopener noreferrer"></a>
+  </div>
 </div>
 
 <!-- WHO'S IN THE ROOM -->

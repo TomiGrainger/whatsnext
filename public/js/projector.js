@@ -27,6 +27,30 @@
     document.querySelectorAll(".pview").forEach((v) => v.classList.toggle("active", v.id === id));
   }
 
+  // The offer takes the screen only while the moderator holds it up.
+  let offerQrFor = null;
+  function paintOffer(st) {
+    const o = st.offer;
+    const live = Boolean(o && st.offerLive && !st.closed);
+    $("#offer-veil").hidden = !live;
+    if (!live) return;
+    const hero = $("#ov-hero");
+    if (o.image) { hero.src = "/offers/" + o.image; hero.hidden = false; }
+    else { hero.hidden = true; }
+    $("#offer-veil").classList.toggle("no-hero", !o.image);
+    $("#ov-head").textContent = o.headline;
+    $("#ov-body").textContent = o.body || "";
+    $("#ov-body").hidden = !o.body;
+    $("#ov-cta").innerHTML = "Tap <b>" + (o.cta || "I'M INTERESTED") + "</b> on your phone";
+    // a QR for anyone not already in the app
+    $("#ov-qr").hidden = !o.link;
+    if (o.link && offerQrFor !== o.link) {
+      offerQrFor = o.link;
+      $("#ov-qr-img").src = "/qr.svg?url=" + encodeURIComponent(o.link);
+      $("#ov-link").textContent = o.link.replace(/^https?:\/\//, "");
+    }
+  }
+
   // Someone the moderator has brought in. Profiles reach this screen only when
   // the crew deliberately features them.
   function paintFeaturedProfile(st) {
@@ -109,6 +133,7 @@
     paintJoin(st);
     paintFeaturedQuestion(st);
     paintFeaturedProfile(st);
+    paintOffer(st);
     $("#closed-veil").hidden = !st.closed;
     // nobody in the room yet — show the join code rather than an empty stage
     $("#waiting-veil").hidden = st.closed || st.inRoom > 0;

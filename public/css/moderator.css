@@ -107,7 +107,7 @@ body.s-moderator{background:#060607;min-height:100vh;}
 
 /* quick actions */
 .qa-lab{font-family:var(--mono);letter-spacing:.2em;font-size:12px;color:var(--muted);margin:26px 0 12px;text-transform:uppercase;}
-.qa-row{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;}
+.qa-row{display:grid;grid-template-columns:repeat(7,1fr);gap:14px;}
 /* the reveal is the moment — make it findable without looking */
 .qa.reveal.armed{border-color:var(--red);background:var(--red-dim);animation:revealready 1.6s ease-in-out infinite;}
 .qa.reveal.armed .ql{color:var(--red);font-weight:700;}
@@ -165,3 +165,5 @@ body.s-moderator{background:#060607;min-height:100vh;}
   background:transparent;border:none;padding:2px 4px;border-radius:6px;
 }
 .ch-drop:hover{color:#fff;background:var(--red);}
+.qa.offer.armed{border-color:var(--red);background:var(--red);}
+.qa.offer.armed .ql{color:#fff;font-weight:700;}

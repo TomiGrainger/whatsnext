@@ -247,6 +247,60 @@ def event_summaries():
 # ---------------------------------------------------------------------------
 
 LEAD_LOCK = threading.Lock()
+INTEREST_LOCK = threading.Lock()
+
+
+def _interest_path(code):
+    return os.path.join(DATA_DIR, "interest", sanitize_code(code) + ".json")
+
+
+def read_interest(code):
+    try:
+        with open(_interest_path(code)) as fh:
+            data = json.load(fh)
+        return data if isinstance(data, list) else []
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+def add_interest(code, pid, email, name):
+    """One hand raised. Deduped by person, so tapping twice changes nothing."""
+    code = sanitize_code(code)
+    with INTEREST_LOCK:
+        rows = read_interest(code)
+        for row in rows:
+            if row.get("pid") == pid:
+                if email and not row.get("email"):
+                    row["email"] = email          # they've since given us one
+                    break
+                return False
+        else:
+            room = ROOMS.get(code) or {}
+            rows.append({
+                "pid": pid, "name": name or "", "email": email or "",
+                "at": time.time(), "room": code,
+                "eventName": room.get("eventName", ""),
+            })
+        try:
+            os.makedirs(os.path.dirname(_interest_path(code)), exist_ok=True)
+            tmp = _interest_path(code) + ".tmp"
+            with open(tmp, "w") as fh:
+                json.dump(rows, fh, indent=2)
+            os.replace(tmp, _interest_path(code))
+        except OSError as exc:
+            print("  (could not save interest: %s)" % exc)
+            return False
+    return True
+
+
+def _lead_email(code, pid):
+    """A debrief sign-up doesn't record who made it, so this only matches when
+    the profile carries the same address — kept as a hook rather than a guess."""
+    return ""
+
+
+def has_interest(code, pid):
+    return any(r.get("pid") == pid for r in read_interest(code))
 
 
 def _leads_path(code):
@@ -316,7 +370,7 @@ def _smtp_connect():
     return smtp
 
 
-def _debrief_message(to_addr, name, event_name, brand, recap_url):
+def _debrief_message(to_addr, name, event_name, brand, recap_url, offer=None):
     msg = EmailMessage()
     msg["Subject"] = "%s — the debrief" % event_name
     msg["From"] = formataddr((brand, MAIL_FROM))
@@ -334,6 +388,13 @@ def _debrief_message(to_addr, name, event_name, brand, recap_url):
         "%s\n\n"
         "— %s\n"
     ) % (hello, event_name, recap_url, brand)
+    if offer and offer.get("headline"):
+        tail = "\n\n---\n\n%s\n" % offer["headline"]
+        if offer.get("body"):
+            tail += "%s\n" % offer["body"]
+        if offer.get("link"):
+            tail += "%s\n" % offer["link"]
+        text += tail
     msg.set_content(text)
 
     # A plain, readable HTML part in the same voice as the app
@@ -353,13 +414,45 @@ def _debrief_message(to_addr, name, event_name, brand, recap_url):
     <p style="font-size:13px;line-height:1.6;color:#6e6e78;margin:26px 0 0;">
       Or paste this in: <br><span style="color:#a9a9b2;">%s</span>
     </p>
+    %s
     <p style="font-size:12px;color:#6e6e78;margin:26px 0 0;border-top:1px solid #26262b;padding-top:16px;">
       You're getting this because you asked for the debrief at %s.
     </p>
   </div>
 </body></html>""" % (html_escape(event_name), html_escape(hello), html_escape(recap_url),
-                     html_escape(recap_url), html_escape(event_name)), subtype="html")
+                     html_escape(recap_url), _offer_html(offer),
+                     html_escape(event_name)), subtype="html")
     return msg
+
+
+def _offer_html(offer):
+    """The pitch as a block at the foot of the debrief. Images are referenced
+    absolutely so they still resolve in a mail client, and the whole block
+    simply disappears when the event has no offer."""
+    if not offer or not offer.get("headline"):
+        return ""
+    hero = ""
+    if offer.get("image"):
+        hero = ('<img src="%s/offers/%s" alt="" width="520" '
+                'style="width:100%%;max-width:520px;border-radius:12px;display:block;'
+                'margin:0 0 16px;">' % (public_base(), html_escape(offer["image"])))
+    body = ""
+    if offer.get("body"):
+        body = ('<p style="font-size:15px;line-height:1.6;color:#a9a9b2;margin:0 0 16px;">%s</p>'
+                % html_escape(offer["body"]))
+    cta = ""
+    if offer.get("link"):
+        cta = ('<a href="%s" style="display:inline-block;background:#FF2D46;color:#fff;'
+               'text-decoration:none;font-weight:700;letter-spacing:.08em;padding:13px 20px;'
+               'border-radius:11px;">%s</a>'
+               % (html_escape(offer["link"]),
+                  html_escape(offer.get("linkLabel") or "FIND OUT MORE")))
+    return ('<div style="margin:30px 0 0;padding:20px;border:1px solid #3a0e15;border-radius:16px;'
+            'background:#14090c;">'
+            '<div style="font-size:11px;letter-spacing:.2em;color:#FF2D46;font-weight:700;">'
+            "WHAT'S NEXT FOR YOU</div>"
+            '%s<h2 style="font-size:22px;line-height:1.15;margin:12px 0 10px;color:#f5f3ef;">%s</h2>'
+            '%s%s</div>' % (hero, html_escape(offer["headline"]), body, cta))
 
 
 def send_debrief(code):
@@ -371,6 +464,7 @@ def send_debrief(code):
         room = ROOMS.get(code)
         event_name = room.get("eventName", "The event") if room else "The event"
         brand = room.get("brand", "THE UPGRADE") if room else "THE UPGRADE"
+        offer = room_offer(room) if room else None
     recap_url = "%s/recap?room=%s" % (public_base(), code)
 
     with LEAD_LOCK:
@@ -390,7 +484,7 @@ def send_debrief(code):
         for lead in pending:
             try:
                 smtp.send_message(_debrief_message(
-                    lead["email"], lead.get("name", ""), event_name, brand, recap_url))
+                    lead["email"], lead.get("name", ""), event_name, brand, recap_url, offer))
                 lead["sentAt"] = time.time()
                 sent += 1
             except Exception as exc:
@@ -433,6 +527,7 @@ def send_debrief(code):
 
 AVATAR_DIR_NAME = "avatars"
 MAX_AVATAR_BYTES = 3 * 1024 * 1024
+MAX_OFFER_BYTES = 5 * 1024 * 1024
 
 # Magic bytes -> extension. Only real raster photos: notably no SVG, which is a
 # document that can carry script, and no HTML sneaking in under an image name.
@@ -457,6 +552,31 @@ def sniff_image(blob):
 
 def avatars_dir():
     return os.path.join(DATA_DIR, AVATAR_DIR_NAME)
+
+
+def offers_dir():
+    return os.path.join(DATA_DIR, "offers")
+
+
+def save_offer_image(slug, blob):
+    """Same checks as a profile photo — identified by its bytes, never by what
+    the upload claims — but this one is the crew's own promo artwork."""
+    ext, _ = sniff_image(blob)
+    if not ext:
+        return None, "That file isn't an image we can use — try a JPEG or PNG."
+    if len(blob) > MAX_OFFER_BYTES:
+        return None, "That image is too big — keep it under 5MB."
+    name = "%s.%s" % (re_pid(slug) or "offer", ext)
+    try:
+        os.makedirs(offers_dir(), exist_ok=True)
+        path = os.path.join(offers_dir(), name)
+        tmp = path + ".tmp"
+        with open(tmp, "wb") as fh:
+            fh.write(blob)
+        os.replace(tmp, path)
+    except OSError as exc:
+        return None, "Couldn't save that image: %s" % exc
+    return name, None
 
 
 def save_avatar(pid, blob):
@@ -621,6 +741,7 @@ def new_room(code, event_id=DEFAULT_EVENT_ID, seed=False):
         "eventId": event_id,
         "brand": config.get("brand", "LIVE EVENT"),
         "eventName": config.get("eventName", "EVENT"),
+        "offerLive": False,
         "topics": topics,
         "topicIndex": 0,
         "topicCount": len(topics),
@@ -736,6 +857,29 @@ def _validate_interaction(raw, topic_no, index):
     return out
 
 
+def _validate_offer(raw):
+    """The one thing you're selling at this event. Optional — an event without
+    an offer simply never shows one. Text is kept separate from the image so it
+    can be laid out for a phone and a projector independently."""
+    if not isinstance(raw, dict):
+        return None
+    headline = _text(raw.get("headline"), "Offer headline", 80, required=False)
+    if not headline:
+        return None                      # no headline, no offer
+    link = _text(raw.get("link"), "Offer link", 300, required=False)
+    if link and not link.lower().startswith(("http://", "https://")):
+        link = "https://" + link
+    image = os.path.basename(_text(raw.get("image"), "", 120, required=False))
+    return {
+        "headline": headline,
+        "body": _text(raw.get("body"), "Offer text", 240, required=False),
+        "cta": _text(raw.get("cta"), "Button label", 30, required=False) or "I'M INTERESTED",
+        "link": link,
+        "linkLabel": _text(raw.get("linkLabel"), "Link label", 40, required=False) or "See the details",
+        "image": image,
+    }
+
+
 def validate_event(payload):
     """Untrusted payload -> a clean event config. Raises Invalid with a message
     meant to be shown to whoever is filling in the form.
@@ -772,11 +916,15 @@ def validate_event(payload):
             "interactions": [_validate_interaction(item, i + 1, n) for n, item in enumerate(raw_items)],
         })
 
-    return {
+    out = {
         "brand": _text(payload.get("brand"), "Brand", 40),
         "eventName": _text(payload.get("eventName"), "Event name", 60),
         "topics": topics,
     }
+    offer = _validate_offer(payload.get("offer"))
+    if offer:
+        out["offer"] = offer
+    return out
 
 
 def slugify(text):
@@ -1202,6 +1350,9 @@ def recap_payload(code):
                           for q in questions[:20]],
             "challengeCount": len(r["challenges"]),
             "topicCount": len(topics),
+            # the pitch travels with the debrief — it's the page people open
+            # days later, so it keeps working long after the room went dark
+            "offer": room_offer(r),
         }
 
 
@@ -1241,6 +1392,7 @@ def my_view(code, pid):
 
         return {
             "exists": True,
+            "interested": has_interest(code, pid),
             "shared": bool(mine.get("shared")),
             "profile": _profile_card(profiles, pid, with_contact=True) if mine else None,
             "incoming": incoming,          # waiting for you to accept
@@ -1258,6 +1410,7 @@ def missing_snapshot(code):
         "code": sanitize_code(code),
         "brand": "THE UPGRADE", "eventName": "",
         "closed": False, "joinUrl": join_url(code),
+        "offer": None, "offerLive": False,
         "topic": "", "topicIndex": 0, "topicCount": 0,
         "interactions": [], "activeInteraction": None,
         "mode": "discussion", "revealed": True, "revealable": False, "rerunnable": False,
@@ -1275,6 +1428,13 @@ def missing_snapshot(code):
         "emoji": payloads["emoji"], "slider": payloads["slider"],
         "ranking": payloads["ranking"],
     }
+
+
+def room_offer(r):
+    """Read live from the event rather than the room's frozen copy, so editing
+    the offer reaches rooms that are already open."""
+    cfg = get_event(r.get("eventId", DEFAULT_EVENT_ID)) or {}
+    return cfg.get("offer")
 
 
 def _featured_profile(r):
@@ -1322,6 +1482,8 @@ def snapshot(code, crew=False):
             "eventName": r["eventName"],
             "closed": r.get("closed", False),
             "joinUrl": join_url(r["code"]),
+            "offer": room_offer(r),
+            "offerLive": bool(r.get("offerLive") and room_offer(r)),
             "topic": topic.get("question", ""),
             "topicIndex": r["topicIndex"],
             "topicCount": r["topicCount"],
@@ -1386,7 +1548,7 @@ def snapshot(code, crew=False):
 
 AUDIENCE_ACTIONS = ("join", "sentiment", "whatsnext", "challenge", "poll", "word",
                     "emoji", "slider", "ranking", "ask", "upvote", "burst", "profile",
-                    "connect", "connectRespond")
+                    "connect", "connectRespond", "interested")
 
 
 def _connection(room, a, b):
@@ -1473,6 +1635,16 @@ def act(code, kind, pid, data):
                 # cleared every field — drop everything but a photo they kept
                 existing.update({"name": "", "occupation": "", "fact": "", "initials": "?",
                                  "email": "", "link": "", "shared": False})
+
+        elif kind == "interested":
+            # Reuse an address we already have — the debrief sign-up or their
+            # profile — so for most people this is genuinely one tap.
+            if room_offer(r):
+                profile = r["profiles"].get(pid, {})
+                given = plausible_email(data.get("email"))
+                known = profile.get("email") or _lead_email(r["code"], pid)
+                add_interest(r["code"], pid, given or known or "",
+                             (data.get("name") or profile.get("name") or "").strip()[:40])
 
         elif kind == "connect":
             # A request, not a transfer. Contact details move only once the other
@@ -1636,6 +1808,12 @@ def act(code, kind, pid, data):
                     os.remove(os.path.join(avatars_dir(), os.path.basename(profile["avatar"])))
                 except OSError:
                     pass
+
+        elif kind == "showOffer":
+            if room_offer(r):
+                # honour an explicit on/off when given, otherwise toggle
+                want = data.get("on")
+                r["offerLive"] = (not r.get("offerLive")) if want is None else bool(want)
 
         elif kind == "featureProfile":
             target = re_pid(data.get("target"))
@@ -1860,6 +2038,15 @@ class Handler(BaseHTTPRequestHandler):
             code = qs.get("room", [DEFAULT_ROOM])[0]
             return self._send(200, json.dumps(snapshot(code, crew=self.authed())), "application/json",
                               {"Cache-Control": "no-store"})
+        if path.startswith("/api/interest/"):
+            if not self.authed():
+                return self._deny()
+            code = sanitize_code(path[len("/api/interest/"):].replace(".json", ""))
+            body = json.dumps(read_interest(code), indent=2)
+            return self._send(200, body, "application/json", {
+                "Cache-Control": "no-store",
+                "Content-Disposition": 'attachment; filename="interested-%s.json"' % code,
+            })
         if path.startswith("/api/leads/"):
             if not self.authed():
                 return self._deny()
@@ -1879,6 +2066,7 @@ class Handler(BaseHTTPRequestHandler):
                         "eventName": r.get("eventName", ""), "closed": r.get("closed", False),
                         "leads": len(leads),
                         "unsent": sum(1 for l in leads if not l.get("sentAt")),
+                        "interest": len(read_interest(c)),
                     })
             return self._send(200, json.dumps({"rooms": rooms, "mailConfigured": mail_configured()}),
                               "application/json", {"Cache-Control": "no-store"})
@@ -1912,12 +2100,37 @@ class Handler(BaseHTTPRequestHandler):
                               {"Cache-Control": "no-store"})
         if path == "/qr.svg":
             qs = parse_qs(parsed.query)
-            code = sanitize_code(qs.get("room", [DEFAULT_ROOM])[0])
+            # either a room's join link, or an explicit URL (the offer's)
+            target = (qs.get("url", [""])[0] or "").strip()
+            if target:
+                if not target.lower().startswith(("http://", "https://")):
+                    target = "https://" + target
+                target = target[:300]
+            else:
+                target = join_url(sanitize_code(qs.get("room", [DEFAULT_ROOM])[0]))
             try:
-                svg = qr.render_svg(join_url(code), size_px=420)
+                svg = qr.render_svg(target, size_px=420)
             except ValueError as exc:
                 return self._send(500, str(exc))
             return self._send(200, svg, "image/svg+xml", {"Cache-Control": "no-store"})
+        if path.startswith("/offers/"):
+            name = os.path.basename(path[len("/offers/"):])
+            full = os.path.join(offers_dir(), name)
+            if not name or not os.path.isfile(full):
+                return self._send(404, "Not found")
+            try:
+                with open(full, "rb") as fh:
+                    blob = fh.read()
+            except OSError:
+                return self._send(404, "Not found")
+            _, ctype = sniff_image(blob)
+            if not ctype:
+                return self._send(404, "Not found")
+            return self._send(200, blob, ctype, {
+                "Cache-Control": "public, max-age=300",
+                "X-Content-Type-Options": "nosniff",
+                "Content-Security-Policy": "default-src 'none'; sandbox",
+            })
         if path.startswith("/avatars/"):
             # served with nosniff and an image type we determined ourselves, so
             # an uploaded file can never be interpreted as markup or script
@@ -1975,6 +2188,10 @@ class Handler(BaseHTTPRequestHandler):
         is_debrief = parsed.path.startswith("/api/debrief/")
         if parsed.path == "/api/avatar":
             return self.handle_avatar(parsed)
+        if parsed.path == "/api/offer-image":
+            if not self.authed():
+                return self._deny()
+            return self.handle_offer_image(parsed)
         if (parsed.path not in ("/api/action", "/api/events", "/api/rooms", "/api/leads")
                 and not is_event_update and not is_room_update and not is_debrief):
             return self._send(404, "Not found")
@@ -2028,6 +2245,23 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:
             return self._send(500, json.dumps({"ok": False, "error": str(exc)}), "application/json")
         return self._send(200, json.dumps({"ok": True}), "application/json", {"Cache-Control": "no-store"})
+
+    def handle_offer_image(self, parsed):
+        qs = parse_qs(parsed.query)
+        slug = qs.get("slug", ["offer"])[0]
+        length = int(self.headers.get("Content-Length", "0") or 0)
+        if length <= 0:
+            return self._send(400, json.dumps({"ok": False, "error": "No image received."}),
+                              "application/json")
+        if length > MAX_OFFER_BYTES:
+            return self._send(413, json.dumps(
+                {"ok": False, "error": "That image is too big — keep it under 5MB."}),
+                "application/json")
+        name, err = save_offer_image(slug, self.rfile.read(length))
+        if err:
+            return self._send(400, json.dumps({"ok": False, "error": err}), "application/json")
+        return self._send(200, json.dumps({"ok": True, "image": name}), "application/json",
+                          {"Cache-Control": "no-store"})
 
     def handle_avatar(self, parsed):
         """The photo arrives as the raw request body — no multipart parsing, and

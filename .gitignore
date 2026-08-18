@@ -4,3 +4,5 @@ __pycache__/
 rooms_state.json
 leads/
 avatars/
+interest/
+offers/

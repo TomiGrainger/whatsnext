@@ -74,6 +74,27 @@
       });
     }
 
+    // the offer, if the event has one — shown without a sign-up button
+    // because a debrief reader has no room to raise a hand in
+    if (d.offer && d.offer.headline) {
+      const o = d.offer;
+      const hero = $("#rc-offer-hero");
+      if (o.image) { hero.src = "/offers/" + o.image; hero.hidden = false; }
+      else { hero.hidden = true; }
+      $("#rc-offer-head").textContent = o.headline;
+      $("#rc-offer-body").textContent = o.body || "";
+      $("#rc-offer-body").hidden = !o.body;
+      const link = $("#rc-offer-link");
+      if (o.link) {
+        link.href = o.link;
+        link.textContent = o.linkLabel || "Find out more";
+        link.hidden = false;
+      } else {
+        link.hidden = true;
+      }
+      $("#rc-offer").hidden = false;
+    }
+
     $("#rc-wrap").hidden = false;
   }
 

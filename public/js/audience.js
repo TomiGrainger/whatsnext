@@ -203,6 +203,91 @@
 
   paintMe();
 
+  // ---- the offer ----
+  // Raising a hand keeps you in the room: it records interest against your
+  // phone and, where we already have an address, needs nothing typed at all.
+  let offerSeen = null;          // which offer we last auto-opened for
+  let iAmInterested = false;
+
+  function offerImageUrl(o) { return o && o.image ? "/offers/" + o.image : ""; }
+
+  function paintOffer(st) {
+    const o = st.offer;
+    const live = Boolean(o && st.offerLive && !st.closed);
+
+    if (o) {
+      const img = offerImageUrl(o);
+      [["#offer-hero", "#offer-headline", "#offer-body"],
+       ["#cv-offer-hero", "#cv-offer-headline", "#cv-offer-body"]].forEach(([i, h, b]) => {
+        const el = $(i);
+        if (img) { el.src = img; el.hidden = false; } else { el.hidden = true; }
+        $(h).textContent = o.headline;
+        $(b).textContent = o.body || "";
+        $(b).hidden = !o.body;
+      });
+      $("#offer-cta").textContent = o.cta;
+      $("#cv-offer-cta").textContent = o.cta;
+      const linkText = o.link ? o.linkLabel : "";
+      [["#offer-link", o.link], ["#offer-link-2", o.link]].forEach(([sel, href]) => {
+        const a = $(sel);
+        a.textContent = linkText;
+        a.href = href || "#";
+        a.hidden = !href;
+      });
+    }
+
+    // on the closing screen it just sits there — no moderator needed
+    $("#cv-offer").hidden = !o;
+    paintInterested();
+
+    // the moderator putting it up opens it once; dismissing it stays dismissed
+    if (joined && live && offerSeen !== o.headline) {
+      offerSeen = o.headline;
+      openOffer();
+    }
+    if (!live && offerSeen && !st.offerLive) { offerSeen = null; closeOffer(); }
+  }
+
+  function paintInterested() {
+    const done = iAmInterested;
+    $("#offer-ask").hidden = done;
+    $("#offer-done").hidden = !done;
+    $("#cv-offer-cta").disabled = done;
+    $("#cv-offer-cta").textContent = done ? "✓ YOU'RE ON THE LIST"
+      : ((Live.get() || {}).offer || {}).cta || "I'M INTERESTED";
+  }
+
+  function openOffer() {
+    $("#offer-sheet").classList.add("show");
+    $("#offer-scrim").classList.add("show");
+  }
+  function closeOffer() {
+    $("#offer-sheet").classList.remove("show");
+    $("#offer-scrim").classList.remove("show");
+  }
+  $("#offer-x").addEventListener("click", closeOffer);
+  $("#offer-scrim").addEventListener("click", closeOffer);
+
+  async function raiseHand(emailField) {
+    // if we have no address for them, ask for one rather than guessing
+    const known = (me && me.email) || knownLeadEmail;
+    const typed = emailField ? $(emailField).value.trim() : "";
+    if (!known && !typed) {
+      $("#offer-email-wrap").hidden = false;
+      $("#offer-email").focus();
+      openOffer();
+      return;
+    }
+    iAmInterested = true;
+    paintInterested();
+    await Live.send("interested", { email: typed || known, name: (me && me.name) || "" });
+    UI.toast("You're on the list");
+    refreshMine();
+  }
+
+  $("#offer-cta").addEventListener("click", () => raiseHand("#offer-email"));
+  $("#cv-offer-cta").addEventListener("click", () => { openOffer(); raiseHand("#offer-email"); });
+
   // ---- who's in the room ----
   // The snapshot carries the directory but never contact details; those live
   // behind /api/me and only appear once someone accepts a request.
@@ -218,7 +303,9 @@
       const d = await r.json();
       if (d.exists) {
         mine = d;
+        if (d.interested) iAmInterested = true;
         paintRoom(Live.get());
+        paintInterested();
       }
     } catch (e) { /* offline — the sheet just shows what it had */ }
   }
@@ -710,6 +797,7 @@
 
     renderQa(st);
     paintRoom(st);
+    paintOffer(st);
 
     // discussion stats
     $("#st-agree").textContent = st.sentiment.agree;
@@ -844,6 +932,7 @@
 
   // ---- closing screen: the debrief sign-up ----
   const LEAD_KEY = "upgrade_lead_done";
+  let knownLeadEmail = "";
   if (sessionStorage.getItem(LEAD_KEY) === "1") showLeadDone();
 
   function showLeadDone() {
@@ -876,6 +965,7 @@
         return;
       }
       sessionStorage.setItem(LEAD_KEY, "1");
+      knownLeadEmail = email;
       showLeadDone();
     } catch (err) {
       note.textContent = "No connection — try again in a moment.";

@@ -182,3 +182,17 @@
 .room-toggle.send:hover:not(:disabled){color:var(--red);border-color:var(--red);}
 .room-toggle.send:disabled{opacity:.4;cursor:not-allowed;}
 .room-toggle.send.confirming{background:var(--red);border-color:var(--red);color:#fff;}
+
+/* ---- the offer ---- */
+.offer-edit{display:flex;gap:14px;align-items:center;margin-bottom:10px;}
+.offer-img{
+  width:132px;height:84px;flex:0 0 auto;border-radius:12px;
+  background:var(--bg-2) center/cover no-repeat;border:1px dashed var(--line-2);
+  display:flex;align-items:center;justify-content:center;
+}
+.offer-img.has{border-style:solid;border-color:var(--red);}
+.offer-img.has span{display:none;}
+.offer-img span{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--dim);}
+.offer-img-actions{flex:1;min-width:0;}
+.offer-img-actions .btn{width:100%;margin:0;cursor:pointer;font-size:11px;padding:11px 12px;}
+.offer-edit + .field{margin-bottom:8px;}

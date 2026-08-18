@@ -21,7 +21,9 @@ Open <http://localhost:8000/setup>:
    which has no countdown and stays up until the moderator moves. Underneath each
    topic, add the interactions you want to be able to launch during it — poll,
    word cloud, slider, emoji, ranking — each with its own question, options and
-   seconds on screen. Save it.
+   seconds on screen. Then, if you're selling something, fill in **the offer**
+   at the foot of the form — headline, a line of copy, a button label, a link
+   and artwork. Leave the headline empty and there is no offer. Save it.
 2. **Go live** — pick that event, type a room code, and hit `OPEN ROOM`. You get
    links to the audience, moderator and projector surfaces for that room.
 
@@ -35,7 +37,9 @@ that starts with the mockup's numbers in it.
 Each event in the list also has **✎ edit** (loads it back into the builder,
 topics and nested interactions alike; `SAVE CHANGES` writes to the same file) and
 **× delete** (click once, then ✓ to confirm). Editing or deleting an event never
-disturbs a room that is already running — the room holds its own copy. The demo
+disturbs a room that is already running — the room holds its own copy. The one
+exception is the offer, which is read live, so you can add or fix a promotion
+without reopening the room. The demo
 event can't be deleted, since it is the fallback for room codes that were never
 set up.
 
@@ -128,6 +132,21 @@ signs the crew out, and anyone with the code has the controls.
   **SAVE TO CONTACTS** producing a vCard stamped with where you met. Nobody can
   collect the room's addresses: a request is a request, not a transfer, and none
   of it reaches the public recap or the moderator.
+- **The offer** — one promotion per event, set up under the topics: a headline,
+  a line of copy, a button label, a link and a piece of artwork. It sits idle
+  until the moderator presses **SHOW OFFER**, at which point it takes over the
+  projector (with a QR of the link for anyone not on their phone) and rises as a
+  sheet on every phone in the room. Tapping the button records interest *in the
+  app* rather than sending anyone off to a landing page mid-event — if the app
+  already has an address, from their profile or the debrief sign-up, it is one
+  tap and nothing to type. The link is still there as a secondary path and opens
+  in a new tab. Pressing the button again takes it down everywhere, and the offer
+  reappears on its own on the closing screen, in the debrief email and on the
+  recap page — so it keeps working after the room goes dark. Hands raised land in
+  `interest/<ROOM>.json`, shown as a **💼 count** against the room in setup and
+  downloadable there; they are kept apart from the debrief list and survive a
+  room RESET, so rehearsing never destroys real leads. Editing the offer reaches
+  rooms that are already open, so a typo can be fixed mid-event.
 - **Questions from the floor** — guests ask and upvote from the discussion
   screen; the moderator's ranked panel can throw one over the projector (`PUT UP`)
   or grey it off once covered (`DONE`). Separate from the challenge queue: a
@@ -247,5 +266,7 @@ public/
 Designs/               the visual source of truth (do not redesign)
 events/*.json          event content — one file per event
 leads/<ROOM>.json      debrief sign-ups, written at the event (gitignored)
+interest/<ROOM>.json   hands raised for the offer (gitignored, survives RESET)
+offers/                offer artwork uploaded in setup (gitignored)
 rooms_state.json       live room state, so a restart doesn't lose the night
 ```

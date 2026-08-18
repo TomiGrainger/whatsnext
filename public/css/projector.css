@@ -281,3 +281,36 @@ body.reveal-flash .pv-slider .big{animation:revealglow .9s ease;}
 .wv-occ[hidden],.wv-fact[hidden]{display:none;}
 .wv-fact{font-size:clamp(15px,1.5vw,24px);color:var(--ink);margin-top:12px;
   font-style:italic;max-width:46ch;line-height:1.35;}
+
+/* ---- the offer on the big screen ---- */
+.offer-veil{
+  position:fixed;inset:0;z-index:895;background:#08080a;
+  display:flex;align-items:center;justify-content:center;padding:5vw;
+}
+.offer-veil[hidden]{display:none;}
+.ov-grid{display:grid;grid-template-columns:1fr 1fr;gap:5vw;align-items:center;
+  max-width:1500px;width:100%;}
+.ov-hero{width:100%;border-radius:24px;object-fit:cover;max-height:70vh;
+  box-shadow:0 30px 90px rgba(0,0,0,.6);}
+.ov-hero[hidden]{display:none;}
+.ov-tag{font-family:var(--mono);font-size:clamp(13px,1.3vw,19px);letter-spacing:.3em;
+  color:var(--red);font-weight:700;margin-bottom:16px;}
+.ov-head{font-family:var(--display);text-transform:uppercase;color:var(--ink);
+  font-size:clamp(38px,4.6vw,86px);line-height:.95;margin:0 0 18px;}
+.ov-body{color:var(--muted);font-size:clamp(17px,1.7vw,28px);line-height:1.45;
+  margin:0 0 28px;max-width:28ch;}
+.ov-body[hidden]{display:none;}
+.ov-cta{font-family:var(--mono);font-size:clamp(15px,1.5vw,24px);letter-spacing:.1em;
+  color:var(--ink);background:var(--red-dim);border:1px solid var(--red);
+  border-radius:14px;padding:16px 20px;display:inline-block;}
+.ov-cta b{color:var(--red);}
+.ov-qr{display:flex;align-items:center;gap:18px;margin-top:26px;}
+.ov-qr[hidden]{display:none;}
+.ov-qr img{width:130px;height:130px;background:#f5f3ef;padding:10px;border-radius:14px;}
+.ov-qr span{font-family:var(--mono);font-size:clamp(12px,1.2vw,17px);color:var(--muted);word-break:break-all;}
+/* text-only offer: no empty column where the artwork would have been */
+.offer-veil.no-hero .ov-grid{grid-template-columns:1fr;max-width:1100px;justify-items:center;
+  text-align:center;}
+.offer-veil.no-hero .ov-body{max-width:34ch;}
+.offer-veil.no-hero .ov-qr{justify-content:center;}
+@media(max-width:1100px){ .ov-grid{grid-template-columns:1fr;gap:3vh;} .ov-hero{max-height:34vh;} }

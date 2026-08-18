@@ -2,6 +2,14 @@
   "brand": "THE UPGRADE",
   "eventName": "THE BIG DEBATE",
   "seedSimParticipants": 49,
+  "offer": {
+    "headline": "Work with me for 12 weeks",
+    "body": "Small group coaching, starts in March.",
+    "cta": "I'M INTERESTED",
+    "link": "https://theupgrade.live/coaching",
+    "linkLabel": "See the details",
+    "image": ""
+  },
   "seedChallenges": [
     { "name": "Alex R.", "text": "I disagree — convenience has freed up time for creativity.", "agoSeconds": 60 },
     { "name": "Maya L.", "text": "But at what cost to our attention and focus?", "agoSeconds": 120 },
