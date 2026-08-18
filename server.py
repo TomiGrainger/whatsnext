@@ -29,6 +29,7 @@ import hmac
 import json
 import os
 import queue
+import re
 import secrets
 import signal
 import smtplib
@@ -742,6 +743,7 @@ def new_room(code, event_id=DEFAULT_EVENT_ID, seed=False):
         "brand": config.get("brand", "LIVE EVENT"),
         "eventName": config.get("eventName", "EVENT"),
         "offerLive": False,
+        "holdingLive": False,
         "topics": topics,
         "topicIndex": 0,
         "topicCount": len(topics),
@@ -1484,6 +1486,7 @@ def snapshot(code, crew=False):
             "joinUrl": join_url(r["code"]),
             "offer": room_offer(r),
             "offerLive": bool(r.get("offerLive") and room_offer(r)),
+            "holdingLive": bool(r.get("holdingLive")),
             "topic": topic.get("question", ""),
             "topicIndex": r["topicIndex"],
             "topicCount": r["topicCount"],
@@ -1809,6 +1812,10 @@ def act(code, kind, pid, data):
                 except OSError:
                     pass
 
+        elif kind == "showHolding":
+            want = data.get("on")
+            r["holdingLive"] = (not r.get("holdingLive")) if want is None else bool(want)
+
         elif kind == "showOffer":
             if room_offer(r):
                 # honour an explicit on/off when given, otherwise toggle
@@ -1898,6 +1905,7 @@ STATIC_TYPES = {
     ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
     ".js": "application/javascript; charset=utf-8", ".svg": "image/svg+xml",
     ".png": "image/png", ".ico": "image/x-icon", ".json": "application/json",
+    ".mp4": "video/mp4", ".webm": "video/webm", ".jpg": "image/jpeg",
 }
 PAGES = {"/": "audience.html", "/moderator": "moderator.html",
          "/projector": "projector.html", "/setup": "setup.html",
@@ -2084,7 +2092,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, body, "application/json", {"Cache-Control": "no-store"})
         if path in PAGES:
             return self.serve_static(PAGES[path])
-        if path.startswith("/css/") or path.startswith("/js/") or path.startswith("/assets/"):
+        if (path.startswith("/css/") or path.startswith("/js/")
+                or path.startswith("/assets/") or path.startswith("/media/")):
             return self.serve_static(path.lstrip("/"))
         if path == "/api/me":
             qs = parse_qs(parsed.query)
@@ -2409,9 +2418,40 @@ class Handler(BaseHTTPRequestHandler):
         full = os.path.join(PUBLIC, rel)
         if not os.path.isfile(full):
             return self._send(404, "Not found")
-        ctype = STATIC_TYPES.get(os.path.splitext(full)[1], "application/octet-stream")
+        ext = os.path.splitext(full)[1]
+        ctype = STATIC_TYPES.get(ext, "application/octet-stream")
+        if ext in (".mp4", ".webm"):
+            return self.serve_media(full, ctype)
         with open(full, "rb") as fh:
             self._send(200, fh.read(), ctype, {"Cache-Control": "no-cache"})
+
+    def serve_media(self, full, ctype):
+        """Video needs byte ranges: Safari asks for one before it will play a
+        <video> at all, and refuses the file outright if the server answers 200
+        to a Range request. Small files, so the read stays simple."""
+        size = os.path.getsize(full)
+        rng = self.headers.get("Range", "")
+        start, end = 0, size - 1
+        partial = False
+        m = re.match(r"bytes=(\d*)-(\d*)$", rng.strip()) if rng else None
+        if m:
+            first, last = m.group(1), m.group(2)
+            if first:
+                start = int(first)
+                if last:
+                    end = min(int(last), size - 1)
+            elif last:                      # bytes=-500 — the tail
+                start = max(0, size - int(last))
+            if start >= size or start > end:
+                return self._send(416, "", ctype, {"Content-Range": "bytes */%d" % size})
+            partial = True
+        with open(full, "rb") as fh:
+            fh.seek(start)
+            body = fh.read(end - start + 1)
+        headers = {"Accept-Ranges": "bytes", "Cache-Control": "public, max-age=3600"}
+        if partial:
+            headers["Content-Range"] = "bytes %d-%d/%d" % (start, end, size)
+        self._send(206 if partial else 200, body, ctype, headers)
 
     def handle_sse(self, parsed):
         qs = parse_qs(parsed.query)

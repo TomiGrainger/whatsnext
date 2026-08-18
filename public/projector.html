@@ -54,6 +54,13 @@
     <div class="topic">TOPIC <span id="p-n">1</span> OF <span id="p-t">5</span></div>
   </div>
 
+  <!-- HOLDING SCREEN: the loop that plays before doors, in the break, and
+       after the room empties. Sits above everything else on the display. -->
+  <div class="hold-veil" id="hold-veil" hidden>
+    <video id="hold-video" src="/media/holding.mp4" muted loop playsinline
+           preload="auto" disablepictureinpicture></video>
+  </div>
+
   <!-- The offer, on screen only while the moderator holds it there -->
   <div class="offer-veil" id="offer-veil" hidden>
     <div class="ov-grid">

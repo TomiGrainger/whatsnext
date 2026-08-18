@@ -132,6 +132,16 @@ signs the crew out, and anyone with the code has the controls.
   **SAVE TO CONTACTS** producing a vCard stamped with where you met. Nobody can
   collect the room's addresses: a request is a request, not a transfer, and none
   of it reaches the public recap or the moderator.
+- **The holding screen** — **HOLDING SCREEN** in the control room throws a
+  full-screen video loop over the projector: before doors, during the break,
+  while you fix something. Press again and the room comes straight back to
+  whatever was on. It sits above every other screen, so it covers a poll, the
+  offer and the join code alike, and it plays silently — browsers refuse to
+  autoplay anything with sound, and there is nobody at the projector to press
+  play. A projector opened or reloaded while it's up joins the loop already
+  running. The clip is `public/media/holding.mp4`; drop a different file at that
+  path to change it (1920×1080 H.264 plays everywhere, and it ships inside the
+  image, so it needs no upload and works even if the venue Wi-Fi is grim).
 - **The offer** — one promotion per event, set up under the topics: a headline,
   a line of copy, a button label, a link and a piece of artwork. It sits idle
   until the moderator presses **SHOW OFFER**, at which point it takes over the
@@ -255,6 +265,7 @@ fly.toml               Fly.io config — see DEPLOY.md
 events/
   demo_event.json      the demo event — also the template for new ones
 public/
+  media/holding.mp4    the projector's holding-screen loop
   setup.html           event builder + room launcher
   audience.html        mobile surface — 8 interaction screens
   moderator.html       control room dashboard

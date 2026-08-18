@@ -27,6 +27,22 @@
     document.querySelectorAll(".pview").forEach((v) => v.classList.toggle("active", v.id === id));
   }
 
+  // The holding loop. Muted is not a style choice: a browser will refuse to
+  // autoplay anything with sound, and nobody is at the projector to press play.
+  function paintHolding(st) {
+    const on = Boolean(st.holdingLive);
+    const veil = $("#hold-veil");
+    const video = $("#hold-video");
+    if (on === !veil.hidden) return;          // already in the right state
+    veil.hidden = !on;
+    if (on) {
+      const go = video.play();
+      if (go && go.catch) go.catch(() => {}); // a blocked play leaves frame one up
+    } else {
+      video.pause();
+    }
+  }
+
   // The offer takes the screen only while the moderator holds it up.
   let offerQrFor = null;
   function paintOffer(st) {
@@ -121,6 +137,7 @@
     if (justRevealed) document.body.classList.add("reveal-flash");
     if (justRevealed) setTimeout(() => document.body.classList.remove("reveal-flash"), 900);
     $("#wordmark").innerHTML = st.brand + " <em>LIVE</em>";
+    paintHolding(st);
     // a code nobody opened — nothing to display until setup opens it
     const missing = st.exists === false;
     $("#nosuch-veil").hidden = !missing;

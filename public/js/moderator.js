@@ -22,6 +22,7 @@
   $("#discussion-btn").addEventListener("click", () => { Live.send("backToDiscussion"); UI.toast("Back to discussion"); });
   $("#reveal-btn").addEventListener("click", () => { Live.send("reveal"); UI.toast("Results revealed"); });
   $("#again-btn").addEventListener("click", () => { Live.send("askAgain"); UI.toast("Same poll, round two"); });
+  $("#holding-btn").addEventListener("click", () => Live.send("showHolding"));
   $("#offer-btn").addEventListener("click", () => Live.send("showOffer"));
   $("#invite-btn").addEventListener("click", () => { Live.send("inviteTop"); UI.toast("Invited to speak"); });
   // sidebar quick-jumps
@@ -145,6 +146,10 @@
     $("#again-btn").disabled = !st.rerunnable;
     $("#again-btn").querySelector(".ql").textContent =
       st.poll.round > 1 ? "Round " + st.poll.round : "Ask Again";
+    $("#holding-btn").classList.toggle("armed", Boolean(st.holdingLive));
+    $("#holding-btn").querySelector(".ql").textContent =
+      st.holdingLive ? "Hide Holding" : "Holding Screen";
+
     // the offer only exists if the event was set up with one
     $("#offer-btn").disabled = !st.offer;
     $("#offer-btn").classList.toggle("armed", Boolean(st.offerLive));

@@ -314,3 +314,9 @@ body.reveal-flash .pv-slider .big{animation:revealglow .9s ease;}
 .offer-veil.no-hero .ov-body{max-width:34ch;}
 .offer-veil.no-hero .ov-qr{justify-content:center;}
 @media(max-width:1100px){ .ov-grid{grid-template-columns:1fr;gap:3vh;} .ov-hero{max-height:34vh;} }
+
+/* ---- holding screen ---- */
+/* Above every other veil: when this is up, it is the only thing on the wall. */
+.hold-veil{position:fixed;inset:0;z-index:950;background:#000;}
+.hold-veil[hidden]{display:none;}
+.hold-veil video{width:100%;height:100%;object-fit:cover;display:block;}
