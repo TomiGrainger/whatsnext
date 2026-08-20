@@ -118,7 +118,7 @@ def state(client, room=ROOM):
 # the run
 # ---------------------------------------------------------------------------
 
-def run(guest, crew):
+def run(guest, crew, data_dir):
     # ---- the surfaces are all reachable ----
     for path, label in (("/", "audience"), ("/projector", "projector"),
                         ("/recap", "recap"), ("/setup", "setup"),
@@ -396,8 +396,35 @@ def run(guest, crew):
     check("a bad address is refused", status == 400, "got %s" % status)
     status, leads = crew.json("/api/leads/%s.json" % ROOM)
     check("sign-ups are readable by the crew", status == 200 and len(leads) == 1)
+    lead_count = len(leads)
     status, _, _ = guest.get("/api/leads/%s.json" % ROOM)
     check("but not by anyone else", status == 401, "got %s" % status)
+
+    # ---- a full or unmounted volume must never be reported as success ----
+    # This one shipped: a failed write was indistinguishable from "already on
+    # the list", so a guest whose address was never saved got a tick and a
+    # promise of a debrief that could not arrive.
+    if os.geteuid() != 0:
+        leads_dir = os.path.join(data_dir, "leads")
+        os.makedirs(leads_dir, exist_ok=True)
+        mode = os.stat(leads_dir).st_mode
+        os.chmod(leads_dir, 0o500)
+        try:
+            status, body, _ = guest.post("/api/leads", {"room": ROOM,
+                                                        "email": "unsaveable@example.com"})
+            check("a sign-up that cannot be written is reported as a failure",
+                  status != 200, "got %s: %s" % (status, body[:80]))
+            status, body, _ = guest.post("/api/leads", {"room": ROOM,
+                                                        "email": "sign@example.com"})
+            check("someone already on the list still gets a yes",
+                  status == 200, "got %s" % status)
+        finally:
+            os.chmod(leads_dir, mode)
+        status, body, _ = guest.post("/api/leads", {"room": ROOM,
+                                                    "email": "unsaveable@example.com"})
+        check("and it works again once the volume is writable", status == 200,
+              "got %s" % status)
+        lead_count = len(crew.json("/api/leads/%s.json" % ROOM)[1])
 
     # ---- unsubscribe and deletion ----
     status, body, _ = guest.get("/unsubscribe?e=sign%40example.com&t=forged")
@@ -412,7 +439,8 @@ def run(guest, crew):
     check("reset does not destroy real leads", len(rows) == interest_count,
           "%d before, %d after" % (interest_count, len(rows)))
     status, leads = crew.json("/api/leads/%s.json" % ROOM)
-    check("reset does not destroy debrief sign-ups", len(leads) == 1)
+    check("reset does not destroy debrief sign-ups", len(leads) == lead_count,
+          "%d before, %d after" % (lead_count, len(leads)))
 
     # ---- deleting yourself ----
     guest.act("join", pid="p_gone")
@@ -474,7 +502,7 @@ def main():
             return 1
 
         print("\n\033[1mTHE UPGRADE LIVE — smoke test\033[0m  (port %d)\n" % port)
-        run(Client(base), Client(base))
+        run(Client(base), Client(base), data_dir)
 
         # nothing should have gone bang along the way
         log.seek(0)

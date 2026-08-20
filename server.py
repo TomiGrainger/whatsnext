@@ -265,7 +265,9 @@ def read_interest(code):
 
 
 def add_interest(code, pid, email, name):
-    """One hand raised. Deduped by person, so tapping twice changes nothing."""
+    """One hand raised, deduped by person. Returns "stored", "duplicate" or
+    "failed" — a hand raised but not written down is worse than useless, so the
+    phone has to be able to tell the difference."""
     code = sanitize_code(code)
     with INTEREST_LOCK:
         rows = read_interest(code)
@@ -274,7 +276,7 @@ def add_interest(code, pid, email, name):
                 if email and not row.get("email"):
                     row["email"] = email          # they've since given us one
                     break
-                return False
+                return "duplicate"
         else:
             room = ROOMS.get(code) or {}
             rows.append({
@@ -290,8 +292,9 @@ def add_interest(code, pid, email, name):
             os.replace(tmp, _interest_path(code))
         except OSError as exc:
             print("  (could not save interest: %s)" % exc)
-            return False
-    return True
+            return "failed"
+    return "stored"
+
 
 
 def _lead_email(code, pid):
@@ -332,12 +335,14 @@ def plausible_email(value):
 
 
 def add_lead(code, email, name):
-    """Returns True if stored, False if this address already signed up."""
+    """Returns "stored", "duplicate", or "failed". The three are genuinely
+    different to the person standing there: only the last one means their
+    address is not on the list, and they need telling."""
     code = sanitize_code(code)
     with LEAD_LOCK:
         leads = read_leads(code)
         if any(l.get("email", "").lower() == email.lower() for l in leads):
-            return False
+            return "duplicate"
         room = ROOMS.get(code) or {}
         leads.append({
             "email": email,
@@ -355,8 +360,8 @@ def add_lead(code, email, name):
             os.replace(tmp, _leads_path(code))
         except OSError as exc:
             print("  (could not save sign-up: %s)" % exc)
-            return False
-    return True
+            return "failed"
+    return "stored"
 
 
 def _smtp_connect():
@@ -1095,29 +1100,50 @@ def save_state():
         tmp = STATE_FILE + ".tmp"
         with open(tmp, "w") as fh:
             json.dump(data, fh)
+            # a rename is atomic, but only over data the disk has actually taken:
+            # without this a host-level kill can leave the new file empty
+            fh.flush()
+            os.fsync(fh.fileno())
+        # keep the last good copy — if the volume ever hands back a corrupt
+        # file, the night falls back one autosave instead of starting over
+        if os.path.isfile(STATE_FILE):
+            try:
+                os.replace(STATE_FILE, STATE_FILE + ".bak")
+            except OSError:
+                pass
         os.replace(tmp, STATE_FILE)
     except Exception as exc:
         print("  (persist failed: %s)" % exc)
 
 
 def load_state():
-    if not os.path.isfile(STATE_FILE):
-        open_room(DEFAULT_ROOM)  # the demo room is always there
-        return
+    # the live file first, then the previous autosave — losing five seconds of
+    # an event beats losing the whole thing
+    for path, note in ((STATE_FILE, ""), (STATE_FILE + ".bak", " from the backup copy")):
+        if os.path.isfile(path):
+            if _load_state_file(path, note):
+                return
+    open_room(DEFAULT_ROOM)  # the demo room is always there
+
+
+def _load_state_file(path, note):
+    """Load one state file. Returns False and leaves ROOMS untouched if it is
+    unreadable, so the caller can fall back to the previous autosave."""
     try:
-        with open(STATE_FILE) as fh:
+        with open(path) as fh:
             data = json.load(fh)
         loaded = data.get("rooms", {})
-        with LOCK:
-            for code, room in loaded.items():
-                ROOMS[sanitize_code(code)] = room
-        if DEFAULT_ROOM not in ROOMS:
-            open_room(DEFAULT_ROOM)
-        print("  Restored %d room(s) from %s" % (len(ROOMS), os.path.basename(STATE_FILE)))
     except Exception as exc:
-        print("  (could not load saved state: %s — starting fresh)" % exc)
+        print("  (could not load %s: %s)" % (os.path.basename(path), exc))
+        return False
+    with LOCK:
         ROOMS.clear()
+        for code, room in loaded.items():
+            ROOMS[sanitize_code(code)] = room
+    if DEFAULT_ROOM not in ROOMS:
         open_room(DEFAULT_ROOM)
+    print("  Restored %d room(s)%s" % (len(ROOMS), note))
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -1897,8 +1923,10 @@ def act(code, kind, pid, data):
                 profile = r["profiles"].get(pid, {})
                 given = plausible_email(data.get("email"))
                 known = profile.get("email") or _lead_email(r["code"], pid)
-                add_interest(r["code"], pid, given or known or "",
-                             (data.get("name") or profile.get("name") or "").strip()[:40])
+                outcome = add_interest(r["code"], pid, given or known or "",
+                                       (data.get("name") or profile.get("name") or "").strip()[:40])
+                # "already on the list" is a yes; only a failed write is a no
+                result = {"saved": outcome != "failed"}
 
         elif kind == "connect":
             # A request, not a transfer. Contact details move only once the other
@@ -2647,10 +2675,16 @@ class Handler(BaseHTTPRequestHandler):
         if get_room(code) is None:
             return self._send(404, json.dumps({"ok": False, "error": "That room isn't open."}),
                               "application/json")
-        stored = add_lead(code, email, name)
+        outcome = add_lead(code, email, name)
+        if outcome == "failed":
+            # never tell someone they are on a list they are not on
+            return self._send(503, json.dumps({
+                "ok": False,
+                "error": "We couldn't save that just now — please try again."}),
+                "application/json", {"Cache-Control": "no-store"})
         # an address that already signed up still gets a yes — from the guest's
         # side they are on the list either way
-        return self._send(200, json.dumps({"ok": True, "duplicate": not stored}),
+        return self._send(200, json.dumps({"ok": True, "duplicate": outcome == "duplicate"}),
                           "application/json", {"Cache-Control": "no-store"})
 
     def handle_unsubscribe(self):

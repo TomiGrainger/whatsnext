@@ -305,13 +305,16 @@ audience list and sent every phone that scanned the QR to the crew passcode
 screen, and a suite that only checked the crew gate would have passed happily
 through it. It now fails within a second.
 
-Run it before every deploy.
+Run it before every deploy. [RUNBOOK.md](RUNBOOK.md) covers the other half —
+what actually happens when the machine dies, the volume fills up or a phone
+loses signal mid-vote, each one measured rather than assumed.
 
 ## Files
 
 ```
 server.py              real-time server (stdlib only)
 test_smoke.py          end-to-end smoke test — run before every deploy
+RUNBOOK.md             what to do on the night when something breaks
 qr.py                  minimal QR encoder for the projector's join code
 Dockerfile             container image for hosting
 fly.toml               Fly.io config — see DEPLOY.md

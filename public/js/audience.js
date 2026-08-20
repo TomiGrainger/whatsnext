@@ -408,9 +408,14 @@
       openOffer();
       return;
     }
+    const res = await Live.send("interested", { email: typed || known, name: (me && me.name) || "" });
+    if (res && res.saved === false) {
+      // never show a tick for a lead that isn't written down
+      UI.toast("That didn't save — try once more");
+      return;
+    }
     iAmInterested = true;
     paintInterested();
-    await Live.send("interested", { email: typed || known, name: (me && me.name) || "" });
     UI.toast("You're on the list");
     refreshMine();
   }
