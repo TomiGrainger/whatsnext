@@ -286,10 +286,32 @@ Audience votes flow back the other way into the sentiment ring, the "what's next
 counter, and the challenge queue. Each interaction keeps its own tallies, so
 returning to one later shows what it had.
 
+## Tests
+
+```bash
+python3 test_smoke.py
+```
+
+Boots a real server on a spare port against a throwaway data directory, drives
+it the way an event would, and asserts what comes back — 103 checks in about a
+third of a second, standard library only. It is black-box on purpose: it talks
+HTTP and never imports the app's internals, so it survives the code underneath
+being rearranged.
+
+Two halves matter most. Every crew action is fired *without* a passcode and must
+be refused; every audience action is fired without one and must be accepted. The
+second half is not symmetry for its own sake — `join` once slipped out of the
+audience list and sent every phone that scanned the QR to the crew passcode
+screen, and a suite that only checked the crew gate would have passed happily
+through it. It now fails within a second.
+
+Run it before every deploy.
+
 ## Files
 
 ```
 server.py              real-time server (stdlib only)
+test_smoke.py          end-to-end smoke test — run before every deploy
 qr.py                  minimal QR encoder for the projector's join code
 Dockerfile             container image for hosting
 fly.toml               Fly.io config — see DEPLOY.md
