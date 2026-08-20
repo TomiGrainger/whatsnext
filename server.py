@@ -40,7 +40,7 @@ import uuid
 from email.message import EmailMessage
 from email.utils import formataddr, formatdate
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, quote
 
 import qr
 
@@ -379,6 +379,8 @@ def _debrief_message(to_addr, name, event_name, brand, recap_url, offer=None):
     msg["Date"] = formatdate(localtime=True)
     if MAIL_REPLY_TO:
         msg["Reply-To"] = MAIL_REPLY_TO
+    unsub = unsubscribe_url(to_addr)
+    msg["List-Unsubscribe"] = "<%s>" % unsub
 
     hello = "Hi %s," % name if name else "Hi,"
     text = (
@@ -389,6 +391,7 @@ def _debrief_message(to_addr, name, event_name, brand, recap_url, offer=None):
         "%s\n\n"
         "— %s\n"
     ) % (hello, event_name, recap_url, brand)
+    text += "\n\nDon't want these? %s\n" % unsub
     if offer and offer.get("headline"):
         tail = "\n\n---\n\n%s\n" % offer["headline"]
         if offer.get("body"):
@@ -418,11 +421,12 @@ def _debrief_message(to_addr, name, event_name, brand, recap_url, offer=None):
     %s
     <p style="font-size:12px;color:#6e6e78;margin:26px 0 0;border-top:1px solid #26262b;padding-top:16px;">
       You're getting this because you asked for the debrief at %s.
+      <br><a href="%s" style="color:#8b8b90;">Unsubscribe or delete your details</a>.
     </p>
   </div>
 </body></html>""" % (html_escape(event_name), html_escape(hello), html_escape(recap_url),
                      html_escape(recap_url), _offer_html(offer),
-                     html_escape(event_name)), subtype="html")
+                     html_escape(event_name), html_escape(unsub)), subtype="html")
     return msg
 
 
@@ -470,7 +474,7 @@ def send_debrief(code):
 
     with LEAD_LOCK:
         leads = read_leads(code)
-    pending = [l for l in leads if not l.get("sentAt")]
+    pending = [l for l in leads if not l.get("sentAt") and not is_suppressed(l["email"])]
     if not pending:
         return {"ok": True, "sent": 0, "failed": 0, "skipped": len(leads),
                 "message": "Everyone on this list has already had it."}
@@ -1595,6 +1599,92 @@ VIBES = [
 VIBE_IDS = {v["id"] for v in VIBES}
 
 
+def _site_secret():
+    """A stable per-install secret for signing unsubscribe links. Kept on the
+    data volume so links in already-sent mail keep working across a redeploy."""
+    path = os.path.join(DATA_DIR, "secret.key")
+    try:
+        with open(path) as fh:
+            key = fh.read().strip()
+            if key:
+                return key
+    except OSError:
+        pass
+    key = secrets.token_hex(32)
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(path, "w") as fh:
+            fh.write(key)
+        os.chmod(path, 0o600)
+    except OSError:
+        pass          # not writable — links still work for this process's life
+    return key
+
+
+def mail_token(email):
+    return hmac.new(_site_secret().encode(), email.lower().encode(), "sha256").hexdigest()[:32]
+
+
+def unsubscribe_url(email):
+    return "%s/unsubscribe?e=%s&t=%s" % (
+        public_base(), quote(email), mail_token(email))
+
+
+def _suppressed_path():
+    return os.path.join(DATA_DIR, "suppressed.txt")
+
+
+def is_suppressed(email):
+    try:
+        with open(_suppressed_path()) as fh:
+            return email.lower() in {ln.strip().lower() for ln in fh}
+    except OSError:
+        return False
+
+
+def suppress(email):
+    """Never mail this address again — for this event or any other."""
+    if is_suppressed(email):
+        return
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(_suppressed_path(), "a") as fh:
+            fh.write(email.lower() + "\n")
+    except OSError:
+        pass
+
+
+def forget_email(email):
+    """Remove every trace of an address: the debrief lists and the offer
+    interest lists, across every room. Asked for, and then done."""
+    email = (email or "").lower()
+    removed = 0
+    with LEAD_LOCK:
+        for folder, lock_free in ((LEADS_DIR, True), (os.path.join(DATA_DIR, "interest"), True)):
+            try:
+                names = os.listdir(folder)
+            except OSError:
+                continue
+            for fn in names:
+                if not fn.endswith(".json"):
+                    continue
+                full = os.path.join(folder, fn)
+                try:
+                    with open(full) as fh:
+                        rows = json.load(fh)
+                    keep = [r for r in rows
+                            if (r.get("email") or "").lower() != email]
+                    if len(keep) != len(rows):
+                        removed += len(rows) - len(keep)
+                        tmp = full + ".tmp"
+                        with open(tmp, "w") as fh:
+                            json.dump(keep, fh, indent=2)
+                        os.replace(tmp, full)
+                except (OSError, json.JSONDecodeError):
+                    continue
+    return removed
+
+
 def occupations():
     """The dropdown the phones show, overridable on the volume."""
     try:
@@ -1695,7 +1785,7 @@ MAX_WORDS_PER_PHONE = 3
 
 AUDIENCE_ACTIONS = ("join", "sentiment", "whatsnext", "challenge", "poll", "word",
                     "emoji", "slider", "ranking", "ask", "upvote", "burst", "profile",
-                    "connect", "connectRespond", "interested")
+                    "connect", "connectRespond", "interested", "forgetMe")
 
 
 def _connection(room, a, b):
@@ -1787,6 +1877,18 @@ def act(code, kind, pid, data):
                 # cleared every field — drop everything but a photo they kept
                 existing.update({"name": "", "occupation": "", "fact": "", "initials": "?",
                                  "email": "", "link": "", "shared": False})
+
+        elif kind == "forgetMe":
+            # everything this phone told the room, gone — including its place in
+            # the room's make-up. The email lists are handled separately, from
+            # the link in the mail, since the room doesn't know that address.
+            r["profiles"].pop(pid, None)
+            r["connections"] = [c for c in r.get("connections", [])
+                                if pid not in (c.get("from"), c.get("to"))]
+            r["questions"] = [q for q in r["questions"] if q.get("pid") != pid]
+            r["challenges"] = [c for c in r["challenges"] if c.get("pid") != pid]
+            if r.get("featuredProfile") == pid:
+                r["featuredProfile"] = None
 
         elif kind == "interested":
             # Reuse an address we already have — the debrief sign-up or their
@@ -2087,6 +2189,27 @@ PAGES = {"/": "audience.html", "/moderator": "moderator.html",
 # is a passive display, often on a machine nobody can type on.
 PROTECTED_PAGES = ("/moderator", "/setup")
 
+UNSUB_PAGE = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Upgrade LIVE — Your details</title>
+<link rel="stylesheet" href="/css/app.css">
+<style>
+  body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+  .box{max-width:440px;width:100%%;background:#0e0e11;border:1px solid #26262b;
+    border-radius:20px;padding:32px;}
+  h1{font-family:var(--display);text-transform:uppercase;font-size:30px;margin:0 0 6px;color:var(--ink);}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--red);font-weight:700;}
+  p{color:var(--muted);font-size:15px;line-height:1.6;}
+  .addr{color:var(--ink);font-family:var(--mono);font-size:13px;word-break:break-all;}
+  button{width:100%%;border:none;border-radius:12px;padding:15px;font-family:var(--mono);
+    font-size:12px;letter-spacing:.14em;font-weight:700;cursor:pointer;margin-top:12px;}
+  .stop{background:var(--red);color:#fff;}
+  .wipe{background:transparent;border:1px solid #3a0e15;color:var(--red);}
+  .done{color:var(--ink);font-size:16px;line-height:1.6;}
+</style></head>
+<body class="s-recap"><div class="box">%s</div></body></html>"""
+
 LOGIN_PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -2251,6 +2374,34 @@ class Handler(BaseHTTPRequestHandler):
                     })
             return self._send(200, json.dumps({"rooms": rooms, "mailConfigured": mail_configured()}),
                               "application/json", {"Cache-Control": "no-store"})
+        if path == "/unsubscribe":
+            qs = parse_qs(parsed.query)
+            email = (qs.get("e", [""])[0] or "").strip()
+            token = qs.get("t", [""])[0]
+            if not email or not hmac.compare_digest(token, mail_token(email)):
+                return self._send(400, UNSUB_PAGE % (
+                    '<div class="eyebrow">LINK NOT VALID</div>'
+                    "<h1>That link didn't work</h1>"
+                    "<p>It may have been cut in half by your mail app. "
+                    "Reply to the email and we'll sort it by hand.</p>"),
+                    "text/html; charset=utf-8")
+            body = (
+                '<div class="eyebrow">YOUR DETAILS</div>'
+                "<h1>Your details</h1>"
+                '<p>We have this address from an event you came to:<br>'
+                '<span class="addr">%s</span></p>'
+                '<form method="POST" action="/unsubscribe">'
+                '<input type="hidden" name="e" value="%s">'
+                '<input type="hidden" name="t" value="%s">'
+                '<button class="stop" name="do" value="stop" type="submit">STOP EMAILING ME</button>'
+                '<button class="wipe" name="do" value="delete" type="submit">DELETE MY DETAILS ENTIRELY</button>'
+                "</form>"
+                "<p style=\"font-size:13px;margin-top:18px\">Stopping keeps you off future "
+                "sends. Deleting removes your address from every list we hold, including "
+                "any offer you registered interest in.</p>"
+            ) % (html_escape(email), html_escape(email), html_escape(token))
+            return self._send(200, UNSUB_PAGE % body, "text/html; charset=utf-8",
+                              {"Cache-Control": "no-store"})
         if path == "/api/onboarding":
             payload = {"occupations": occupations(), "vibes": VIBES}
             return self._send(200, json.dumps(payload), "application/json",
@@ -2368,6 +2519,8 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == "/login":
             return self.handle_login()
+        if parsed.path == "/unsubscribe":
+            return self.handle_unsubscribe()
 
         is_event_update = parsed.path.startswith("/api/events/")
         is_room_update = parsed.path.startswith("/api/rooms/")
@@ -2499,6 +2652,36 @@ class Handler(BaseHTTPRequestHandler):
         # side they are on the list either way
         return self._send(200, json.dumps({"ok": True, "duplicate": not stored}),
                           "application/json", {"Cache-Control": "no-store"})
+
+    def handle_unsubscribe(self):
+        """Acting on someone's own request about their own data — no passcode,
+        but the signed token has to match the address it claims."""
+        length = int(self.headers.get("Content-Length", "0") or 0)
+        if length > 4096:
+            return self._send(413, "Too large")
+        fields = parse_qs(self.rfile.read(length).decode("utf-8", "replace") if length else "")
+        email = (fields.get("e", [""])[0] or "").strip()
+        token = fields.get("t", [""])[0]
+        want = fields.get("do", [""])[0]
+        if not email or not hmac.compare_digest(token, mail_token(email)):
+            return self._send(400, UNSUB_PAGE % (
+                '<div class="eyebrow">LINK NOT VALID</div><h1>That link didn\'t work</h1>'
+                "<p>Reply to the email and we'll sort it by hand.</p>"),
+                "text/html; charset=utf-8")
+        if want == "delete":
+            gone = forget_email(email)
+            suppress(email)      # and don't let a later event re-add them
+            body = ('<div class="eyebrow">DONE</div><h1>Deleted</h1>'
+                    '<p class="done">Your address has been removed from %d list(s), '
+                    "and we won't email you again. Nothing further is needed.</p>") % gone
+        else:
+            suppress(email)
+            body = ('<div class="eyebrow">DONE</div><h1>Unsubscribed</h1>'
+                    '<p class="done">We won\'t email this address again. '
+                    "Your details are still on the list from the night you came \u2014 "
+                    "use the delete option in any earlier email if you'd rather they weren't.</p>")
+        return self._send(200, UNSUB_PAGE % body, "text/html; charset=utf-8",
+                          {"Cache-Control": "no-store"})
 
     def handle_login(self):
         length = int(self.headers.get("Content-Length", "0") or 0)

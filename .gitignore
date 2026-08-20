@@ -6,3 +6,7 @@ leads/
 avatars/
 interest/
 offers/
+suppressed.txt
+secret.key
+blocklist.txt
+occupations.txt

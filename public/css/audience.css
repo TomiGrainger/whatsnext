@@ -411,3 +411,10 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
 .ci-privacy{color:var(--dim);font-size:11.5px;line-height:1.5;margin:0 0 14px;}
 /* not ready yet — say so, rather than looking pressable and doing nothing */
 #ci-done:disabled{opacity:.35;cursor:not-allowed;}
+/* leaving is as easy as arriving */
+.me-forget{display:block;width:100%;margin-top:12px;background:none;border:none;
+  color:var(--dim);font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  text-decoration:underline;cursor:pointer;padding:8px;}
+.me-forget:hover{color:var(--red);}
+.me-forget.arm{color:var(--red);text-decoration:none;border:1px solid var(--red);
+  border-radius:10px;}

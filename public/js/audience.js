@@ -166,6 +166,33 @@
     refreshMine();
   });
 
+  // Two taps, because it can't be undone.
+  let forgetArmed = false;
+  $("#me-forget").addEventListener("click", async () => {
+    const btn = $("#me-forget");
+    if (!forgetArmed) {
+      forgetArmed = true;
+      btn.classList.add("arm");
+      btn.textContent = "Tap again to delete everything";
+      setTimeout(() => {
+        forgetArmed = false;
+        btn.classList.remove("arm");
+        btn.textContent = "Delete my details";
+      }, 5000);
+      return;
+    }
+    await Live.send("forgetMe", {});
+    me = {};
+    localStorage.removeItem(ME_KEY);
+    sessionStorage.removeItem("upgrade_checkedin");
+    checkedIn = false;
+    vibeChoice = null;
+    paintMe();
+    closeMe();
+    UI.toast("Your details are gone");
+    render(Live.get(), true);
+  });
+
   // The photo goes up as the raw file body — the server identifies it by its
   // bytes rather than trusting the name or the type we claim.
   $("#me-file").addEventListener("change", async (e) => {

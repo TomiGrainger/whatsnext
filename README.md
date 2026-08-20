@@ -170,6 +170,15 @@ signs the crew out, and anyone with the code has the controls.
   downloadable there; they are kept apart from the debrief list and survive a
   room RESET, so rehearsing never destroys real leads. Editing the offer reaches
   rooms that are already open, so a typo can be fixed mid-event.
+- **Leaving** — every debrief email carries a `List-Unsubscribe` header and a
+  visible link to a page offering two things: stop emailing me, or delete my
+  details entirely. Deleting removes the address from every debrief and offer
+  list across every room, and suppresses it so a later event can't re-add it.
+  The link is signed, so it only ever acts on the address it was issued for, and
+  the action is a POST — a mail client that prefetches links can't unsubscribe
+  anyone by accident. Inside the app, **Delete my details** in the profile sheet
+  (two taps, it can't be undone) wipes that phone's profile, check-in, questions
+  and challenges from the room it's standing in.
 - **Questions from the floor** — guests ask and upvote from the discussion
   screen; the moderator's ranked panel can throw one over the projector (`PUT UP`)
   or grey it off once covered (`DONE`). Separate from the challenge queue: a
