@@ -27,6 +27,55 @@
     document.querySelectorAll(".pview").forEach((v) => v.classList.toggle("active", v.id === id));
   }
 
+  // Who is in the room, on the wall — the moment that turns a crowd into a room.
+  function paintRoomStats(st) {
+    const rs = st.roomStats;
+    const on = Boolean(st.statsLive && rs && rs.checkedIn && !st.closed);
+    $("#stats-veil").hidden = !on;
+    if (!on) return;
+    $("#sv-n").textContent = rs.checkedIn;
+
+    const top = Math.max(1, ...rs.occupations.map((o) => o.count));
+    const host = $("#sv-occ");
+    host.innerHTML = "";
+    // a projector has room for the shape of the room, not a long tail
+    rs.occupations.slice(0, 7).forEach((o) => {
+      const row = document.createElement("div");
+      row.className = "sv-bar";
+      const fill = document.createElement("div");
+      fill.className = "fill";
+      fill.style.width = Math.round((o.count / top) * 100) + "%";
+      const t = document.createElement("span");
+      t.className = "t";
+      t.textContent = o.label;
+      const n = document.createElement("span");
+      n.className = "n";
+      n.textContent = o.count;
+      row.append(fill, t, n);
+      host.appendChild(row);
+    });
+
+    const vhost = $("#sv-vibes");
+    vhost.innerHTML = "";
+    rs.vibes.filter((v) => v.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .forEach((v) => {
+        const cell = document.createElement("div");
+        cell.className = "sv-vibe";
+        const e = document.createElement("span");
+        e.className = "e";
+        e.textContent = v.char;
+        const n = document.createElement("span");
+        n.className = "n";
+        n.textContent = v.count;
+        const l = document.createElement("span");
+        l.className = "l";
+        l.textContent = v.label.toUpperCase();
+        cell.append(e, n, l);
+        vhost.appendChild(cell);
+      });
+  }
+
   // The holding loop. Muted is not a style choice: a browser will refuse to
   // autoplay anything with sound, and nobody is at the projector to press play.
   function paintHolding(st) {
@@ -138,6 +187,7 @@
     if (justRevealed) setTimeout(() => document.body.classList.remove("reveal-flash"), 900);
     $("#wordmark").innerHTML = st.brand + " <em>LIVE</em>";
     paintHolding(st);
+    paintRoomStats(st);
     // a code nobody opened — nothing to display until setup opens it
     const missing = st.exists === false;
     $("#nosuch-veil").hidden = !missing;

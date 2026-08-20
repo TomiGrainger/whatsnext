@@ -746,6 +746,7 @@ def new_room(code, event_id=DEFAULT_EVENT_ID, seed=False):
         "eventName": config.get("eventName", "EVENT"),
         "offerLive": False,
         "holdingLive": False,
+        "statsLive": False,
         "topics": topics,
         "topicIndex": 0,
         "topicCount": len(topics),
@@ -1489,6 +1490,9 @@ def snapshot(code, crew=False):
             "offer": room_offer(r),
             "offerLive": bool(r.get("offerLive") and room_offer(r)),
             "holdingLive": bool(r.get("holdingLive")),
+            "statsLive": bool(r.get("statsLive")),
+            # aggregate only — no names, nothing that identifies anyone
+            "roomStats": room_stats(r),
             "topic": topic.get("question", ""),
             "topicIndex": r["topicIndex"],
             "topicCount": r["topicCount"],
@@ -1550,6 +1554,83 @@ def snapshot(code, crew=False):
 # ---------------------------------------------------------------------------
 # Actions
 # ---------------------------------------------------------------------------
+
+# Everyone says who they are on the way in: a name, what they do, and how they
+# arrived. Three taps, and it turns an anonymous crowd into a room the moderator
+# can read. The occupation list is deliberately short — a long dropdown on a
+# phone in a dark venue is worse than a rough fit — and DATA_DIR/occupations.txt
+# (one per line) replaces it for a venue where these are the wrong buckets.
+DEFAULT_OCCUPATIONS = [
+    "Founder / Business owner",
+    "Senior leader / Exec",
+    "Manager / Team lead",
+    "Marketing / Creative",
+    "Sales / Business development",
+    "Tech / Engineering",
+    "Finance / Legal",
+    "Healthcare",
+    "Education / Academia",
+    "Public sector / Non-profit",
+    "Freelance / Consultant",
+    "Student",
+    "Between things right now",
+    "Retired",
+    "Prefer not to say",
+]
+
+# How they walked in. Deliberately spread across the range — an event that only
+# offers positive options learns nothing it didn't already assume.
+VIBES = [
+    {"id": "fired", "char": "\U0001F525", "label": "Fired up"},
+    {"id": "good", "char": "\U0001F60A", "label": "Good"},
+    {"id": "curious", "char": "\U0001F914", "label": "Curious"},
+    {"id": "hopeful", "char": "\U0001F91E", "label": "Hopeful"},
+    {"id": "calm", "char": "\U0001F60C", "label": "Calm"},
+    {"id": "sceptical", "char": "\U0001F643", "label": "Sceptical"},
+    {"id": "nervous", "char": "\U0001F62C", "label": "Nervous"},
+    {"id": "tired", "char": "\U0001F634", "label": "Knackered"},
+    {"id": "swamped", "char": "\U0001F92F", "label": "Overwhelmed"},
+    {"id": "stuck", "char": "\U0001F615", "label": "Stuck"},
+]
+VIBE_IDS = {v["id"] for v in VIBES}
+
+
+def occupations():
+    """The dropdown the phones show, overridable on the volume."""
+    try:
+        with open(os.path.join(DATA_DIR, "occupations.txt")) as fh:
+            custom = [ln.strip() for ln in fh if ln.strip() and not ln.startswith("#")]
+        if custom:
+            return custom[:40]
+    except OSError:
+        pass
+    return list(DEFAULT_OCCUPATIONS)
+
+
+def room_stats(r):
+    """Who is in the room tonight, in aggregate. Counts everyone who has checked
+    in — not who happens to have an open connection this second, which would
+    lurch about every time a phone locked itself."""
+    occ, vibes = {}, {}
+    checked_in = 0
+    for p in r["profiles"].values():
+        if not p.get("onboarded"):
+            continue
+        checked_in += 1
+        job = p.get("occupation") or ""
+        if job:
+            occ[job] = occ.get(job, 0) + 1
+        v = p.get("vibe")
+        if v in VIBE_IDS:
+            vibes[v] = vibes.get(v, 0) + 1
+    top = sorted(occ.items(), key=lambda kv: (-kv[1], kv[0]))
+    return {
+        "checkedIn": checked_in,
+        "occupations": [{"label": k, "count": n} for k, n in top],
+        "vibes": [{"id": v["id"], "char": v["char"], "label": v["label"],
+                   "count": vibes.get(v["id"], 0)} for v in VIBES],
+    }
+
 
 # A word cloud puts audience text straight onto a three-metre screen, so it is
 # the one input that is filtered before it lands. The built-in list is short and
@@ -1683,6 +1764,7 @@ def act(code, kind, pid, data):
         elif kind == "profile":
             name = (data.get("name") or "").strip()[:40]
             occupation = (data.get("occupation") or "").strip()[:60]
+            vibe = data.get("vibe") if data.get("vibe") in VIBE_IDS else None
             fact = (data.get("fact") or "").strip()[:120]
             email = plausible_email(data.get("email")) or ""
             link = (data.get("link") or "").strip()[:120]
@@ -1697,6 +1779,9 @@ def act(code, kind, pid, data):
                     "avatar": existing.get("avatar"),
                     "email": email, "link": link,
                     "shared": shared,
+                    # check-in fields: kept across later profile edits
+                    "vibe": vibe or existing.get("vibe"),
+                    "onboarded": bool(data.get("checkin")) or existing.get("onboarded", False),
                 }
             elif existing:
                 # cleared every field — drop everything but a photo they kept
@@ -1883,6 +1968,10 @@ def act(code, kind, pid, data):
                     os.remove(os.path.join(avatars_dir(), os.path.basename(profile["avatar"])))
                 except OSError:
                     pass
+
+        elif kind == "showStats":
+            want = data.get("on")
+            r["statsLive"] = (not r.get("statsLive")) if want is None else bool(want)
 
         elif kind == "removeWord":
             # pulls it off the projector and stops it coming straight back
@@ -2162,6 +2251,10 @@ class Handler(BaseHTTPRequestHandler):
                     })
             return self._send(200, json.dumps({"rooms": rooms, "mailConfigured": mail_configured()}),
                               "application/json", {"Cache-Control": "no-store"})
+        if path == "/api/onboarding":
+            payload = {"occupations": occupations(), "vibes": VIBES}
+            return self._send(200, json.dumps(payload), "application/json",
+                              {"Cache-Control": "no-cache"})
         if path == "/api/events":
             with LOCK:
                 payload = {"events": event_summaries(), "defaultId": DEFAULT_EVENT_ID}

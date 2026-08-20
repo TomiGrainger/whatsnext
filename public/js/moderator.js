@@ -22,6 +22,7 @@
   $("#discussion-btn").addEventListener("click", () => { Live.send("backToDiscussion"); UI.toast("Back to discussion"); });
   $("#reveal-btn").addEventListener("click", () => { Live.send("reveal"); UI.toast("Results revealed"); });
   $("#again-btn").addEventListener("click", () => { Live.send("askAgain"); UI.toast("Same poll, round two"); });
+  $("#stats-btn").addEventListener("click", () => Live.send("showStats"));
   $("#holding-btn").addEventListener("click", () => Live.send("showHolding"));
   $("#offer-btn").addEventListener("click", () => Live.send("showOffer"));
   $("#invite-btn").addEventListener("click", () => { Live.send("inviteTop"); UI.toast("Invited to speak"); });
@@ -149,9 +150,66 @@
     });
   }
 
+  // Who is in the room tonight. Aggregate only — the moderator sees the shape
+  // of the room, not a list of who said what about themselves.
+  function paintRoomStats(st) {
+    const rs = st.roomStats;
+    if (!rs) return;
+    $("#sr-count").textContent = rs.checkedIn;
+    const any = rs.checkedIn > 0;
+    $("#sr-note").hidden = any;
+    $("#sr-occ-block").hidden = !any || !rs.occupations.length;
+    const vibes = rs.vibes.filter((v) => v.count > 0);
+    $("#sr-vibe-block").hidden = !vibes.length;
+
+    const top = Math.max(1, ...rs.occupations.map((o) => o.count));
+    const host = $("#sr-occ");
+    host.innerHTML = "";
+    rs.occupations.forEach((o) => {
+      const row = document.createElement("div");
+      row.className = "sr-bar";
+      const fill = document.createElement("div");
+      fill.className = "fill";
+      fill.style.width = Math.round((o.count / top) * 100) + "%";
+      const t = document.createElement("span");
+      t.className = "t";
+      t.textContent = o.label;
+      const n = document.createElement("span");
+      n.className = "n";
+      n.textContent = o.count;
+      row.append(fill, t, n);
+      host.appendChild(row);
+    });
+
+    const vhost = $("#sr-vibes");
+    vhost.innerHTML = "";
+    vibes.sort((a, b) => b.count - a.count).forEach((v) => {
+      const chip = document.createElement("div");
+      chip.className = "sr-vibe";
+      const e = document.createElement("span");
+      e.className = "e";
+      e.textContent = v.char;
+      const n = document.createElement("span");
+      n.className = "n";
+      n.textContent = v.count;
+      const l = document.createElement("span");
+      l.className = "l";
+      l.textContent = v.label;
+      chip.append(e, n, l);
+      vhost.appendChild(chip);
+    });
+
+    const btn = $("#stats-btn");
+    btn.disabled = !any;
+    btn.classList.toggle("armed", Boolean(st.statsLive));
+    btn.querySelector(".ql").textContent =
+      !any ? "State of the Room" : (st.statsLive ? "Hide the Room" : "State of the Room");
+  }
+
   function render(st) {
     if (!st) return;
     paintWordCloud(st);
+    paintRoomStats(st);
     $("#mod-brand").innerHTML = st.brand + " <em>LIVE</em>";
     $("#mode-label").textContent = (MODE_LABEL[st.mode] || "DISCUSSION") + (st.revealed ? "" : " · HIDDEN");
     $("#mode-label").classList.toggle("hidden-state", !st.revealed);

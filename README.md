@@ -116,6 +116,19 @@ signs the crew out, and anyone with the code has the controls.
   deduplicated per room and stamped with the event name. The setup page shows a
   **✉ count** against each room; click it to download that room's sign-ups.
   Sign-ups need no passcode (guests are not crew), but reading them does.
+- **Checking in** — joining now asks three things before the debate: a name, what
+  they do (a dropdown — `DATA_DIR/occupations.txt`, one per line, replaces the
+  built-in list for a venue where those are the wrong buckets), and how they are
+  arriving, picked from ten emoji spread deliberately across the range from
+  *fired up* to *stuck*. Three taps, and an anonymous crowd becomes a room the
+  moderator can read. It writes into the same profile they can edit later.
+- **State of the room** — the control room carries a live breakdown of who is in:
+  occupations as bars, vibes as counts, and a total. **STATE OF THE ROOM** puts
+  the same picture on the projector — a genuinely good opening moment, and the
+  fastest way to show a room what it is made of. Aggregate only: no names, and
+  nothing that ties a job or a mood back to a person. It counts everyone who has
+  checked in rather than who has a live connection this second, so it doesn't
+  lurch about every time a phone locks itself.
 - **Profiles** — a red **ADD YOUR PROFILE** bar on the discussion screen until
   someone makes one, after which it steps aside and the header avatar edits it.
   Name, what they do, a quirky fact, a photo. The moderator sees it beside that

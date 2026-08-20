@@ -107,7 +107,7 @@ body.s-moderator{background:#060607;min-height:100vh;}
 
 /* quick actions */
 .qa-lab{font-family:var(--mono);letter-spacing:.2em;font-size:12px;color:var(--muted);margin:26px 0 12px;text-transform:uppercase;}
-.qa-row{display:grid;grid-template-columns:repeat(8,1fr);gap:14px;}
+.qa-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:14px;}
 /* the reveal is the moment — make it findable without looking */
 .qa.reveal.armed{border-color:var(--red);background:var(--red-dim);animation:revealready 1.6s ease-in-out infinite;}
 .qa.reveal.armed .ql{color:var(--red);font-weight:700;}
@@ -184,3 +184,31 @@ body.s-moderator{background:#060607;min-height:100vh;}
 .wc-word .x{color:var(--red);font-weight:700;opacity:0;transition:opacity .12s;}
 .wc-word:hover .x{opacity:1;}
 .wc-empty{color:var(--dim);font-size:13px;}
+
+/* ---- state of the room ---- */
+/* the room breakdown and the word list want width for their labels, so they
+   share a row of their own under the four live panels */
+#stats-panel,#wc-panel{grid-column:span 2;}
+@media(max-width:1100px){ #stats-panel,#wc-panel{grid-column:auto;} }
+.sr-note{color:var(--muted);font-size:13px;margin:0;}
+.sr-block{margin-top:16px;}
+.sr-block[hidden]{display:none;}
+.sr-lab{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--red);
+  font-weight:700;margin-bottom:10px;}
+.sr-bars{display:flex;flex-direction:column;gap:7px;}
+.sr-bar{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+  position:relative;background:#121216;border:1px solid var(--line);border-radius:9px;
+  padding:8px 11px;overflow:hidden;}
+.sr-bar .fill{position:absolute;inset:0 auto 0 0;background:var(--red-dim);
+  border-right:1px solid var(--red);}
+.sr-bar .t,.sr-bar .n{position:relative;}
+.sr-bar .t{font-size:13px;color:var(--ink);}
+.sr-bar .n{font-family:var(--mono);font-size:12px;color:var(--red);font-weight:700;}
+.sr-vibes{display:flex;flex-wrap:wrap;gap:8px;}
+.sr-vibe{display:flex;align-items:center;gap:7px;background:#121216;
+  border:1px solid var(--line);border-radius:999px;padding:6px 12px;}
+.sr-vibe .e{font-size:17px;line-height:1;}
+.sr-vibe .n{font-family:var(--mono);font-size:12px;color:var(--ink);font-weight:700;}
+.sr-vibe .l{font-size:11px;color:var(--muted);}
+.qa.stats.armed{border-color:var(--red);background:var(--red);}
+.qa.stats.armed .ql{color:#fff;font-weight:700;}

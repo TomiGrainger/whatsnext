@@ -37,6 +37,33 @@
     <button class="btn join-btn" id="join-btn">JOIN THE DEBATE →</button>
   </section>
 
+  <!-- 01b CHECK IN: three taps on the way in, so the room knows who it is -->
+  <section class="screen" id="s-checkin">
+    <div class="eyebrow-c">CHECK IN</div>
+    <div class="ci-big">WHO'S<b>HERE?</b></div>
+    <div class="ci-sub">Three quick things, then you're in.</div>
+
+    <label class="ci-lab" for="ci-name">YOUR NAME</label>
+    <input class="ci-input" id="ci-name" maxlength="40" autocomplete="name"
+           placeholder="First name is fine" aria-label="Your name">
+
+    <label class="ci-lab" for="ci-occ">WHAT YOU DO</label>
+    <select class="ci-input ci-select" id="ci-occ" aria-label="What you do"></select>
+    <input class="ci-input ci-other" id="ci-occ-other" maxlength="60" hidden
+           placeholder="Tell us in a few words" aria-label="What you do">
+
+    <div class="ci-lab">HOW YOU'RE ARRIVING</div>
+    <div class="ci-vibes" id="ci-vibes" role="group" aria-label="Your current vibe"></div>
+
+    <div class="spacer"></div>
+    <p class="ci-privacy">
+      Your name and vibe are only used to show the room how it's made up tonight,
+      and are deleted with the room. Nothing is shared with anyone else unless you
+      turn that on in your profile.
+    </p>
+    <button class="btn" id="ci-done" disabled>I'M IN →</button>
+  </section>
+
   <!-- 02 DISCUSSION -->
   <section class="screen" id="s-discussion">
     <div class="q-eyebrow">THE QUESTION</div>

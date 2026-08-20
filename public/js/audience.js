@@ -4,6 +4,7 @@
   const $$ = (s) => Array.from(document.querySelectorAll(s));
 
   let joined = sessionStorage.getItem("upgrade_joined") === "1";
+  let checkedIn = sessionStorage.getItem("upgrade_checkedin") === "1";
   let mySentiment = null;
   let myNextVoted = false;
   let myPoll = null;
@@ -53,8 +54,8 @@
     sessionStorage.setItem("upgrade_joined", "1");
     sessionStorage.setItem("upgrade_room", Live.room());
     Live.send("join");
+    buildCheckIn();
     render(Live.get(), true);
-    UI.toast("Joined room " + Live.room());
   });
 
   // ---- discussion: sentiment + fight + whats-next ----
@@ -202,6 +203,108 @@
   });
 
   paintMe();
+
+  // ---- check in ----
+  // Everyone says who they are on the way in. Three taps: it is the difference
+  // between an anonymous crowd and a room the moderator can actually read.
+  let vibeChoice = null;
+  let optionsLoaded = null;
+
+  function loadOptions() {
+    if (!optionsLoaded) {
+      optionsLoaded = fetch("/api/onboarding")
+        .then((r) => r.json())
+        .catch(() => ({ occupations: [], vibes: [] }));
+    }
+    return optionsLoaded;
+  }
+
+  async function buildCheckIn() {
+    const opts = await loadOptions();
+    const sel = $("#ci-occ");
+    if (!sel.options.length) {
+      const first = document.createElement("option");
+      first.value = "";
+      first.textContent = "Choose one\u2026";
+      sel.appendChild(first);
+      opts.occupations.forEach((label) => {
+        const o = document.createElement("option");
+        o.value = label;
+        o.textContent = label;
+        sel.appendChild(o);
+      });
+      const other = document.createElement("option");
+      other.value = "__other";
+      other.textContent = "Something else\u2026";
+      sel.appendChild(other);
+    }
+    const host = $("#ci-vibes");
+    if (!host.children.length) {
+      opts.vibes.forEach((v) => {
+        const b = document.createElement("button");
+        b.className = "ci-vibe";
+        b.type = "button";
+        b.dataset.vibe = v.id;
+        b.setAttribute("aria-pressed", "false");
+        const e = document.createElement("span");
+        e.className = "e";
+        e.textContent = v.char;
+        const l = document.createElement("span");
+        l.className = "l";
+        l.textContent = v.label;
+        b.append(e, l);
+        b.addEventListener("click", () => {
+          vibeChoice = v.id;
+          $$(".ci-vibe").forEach((x) => {
+            const on = x.dataset.vibe === v.id;
+            x.classList.toggle("on", on);
+            x.setAttribute("aria-pressed", String(on));
+          });
+          checkInReady();
+        });
+        host.appendChild(b);
+      });
+    }
+    if (me.name) $("#ci-name").value = me.name;
+    checkInReady();
+  }
+
+  function checkInOccupation() {
+    const sel = $("#ci-occ").value;
+    if (sel === "__other") return $("#ci-occ-other").value.trim();
+    return sel;
+  }
+
+  function checkInReady() {
+    const ok = Boolean($("#ci-name").value.trim() && checkInOccupation() && vibeChoice);
+    $("#ci-done").disabled = !ok;
+  }
+
+  $("#ci-occ").addEventListener("change", () => {
+    const other = $("#ci-occ").value === "__other";
+    $("#ci-occ-other").hidden = !other;
+    if (other) $("#ci-occ-other").focus();
+    checkInReady();
+  });
+  $("#ci-name").addEventListener("input", checkInReady);
+  $("#ci-occ-other").addEventListener("input", checkInReady);
+
+  $("#ci-done").addEventListener("click", () => {
+    me.name = $("#ci-name").value.trim();
+    me.occupation = checkInOccupation();
+    me.vibe = vibeChoice;
+    localStorage.setItem(ME_KEY, JSON.stringify(me));
+    // `checkin` is what marks them as counted in the room's make-up
+    Live.send("profile", {
+      name: me.name, occupation: me.occupation, vibe: me.vibe,
+      fact: me.fact || "", shared: Boolean(me.shared),
+      email: me.email || "", link: me.link || "", checkin: true,
+    });
+    checkedIn = true;
+    sessionStorage.setItem("upgrade_checkedin", "1");
+    paintMe();
+    render(Live.get(), true);
+  });
 
   // ---- the offer ----
   // Raising a hand keeps you in the room: it records interest against your
@@ -790,7 +893,9 @@
 
     // choose screen
     const targetMode = st.mode;
-    const screenId = joined ? (MODE_SCREEN[targetMode] || "s-discussion") : "s-join";
+    const screenId = !joined ? "s-join"
+      : !checkedIn ? "s-checkin"
+      : (MODE_SCREEN[targetMode] || "s-discussion");
     const active = $(".screen.active");
     if (!active || active.id !== screenId || force) showScreen(screenId);
     updateCounter(st);
@@ -926,10 +1031,12 @@
   // if this tab already joined a room, reconnect to it after a reload
   const savedRoom = sessionStorage.getItem("upgrade_room");
   if (joined && savedRoom) Live.setRoom(savedRoom);
+  if (joined && !checkedIn) buildCheckIn();
 
   // back to the join screen to retype a code
   $("#nosuch-retry").addEventListener("click", () => {
     sessionStorage.removeItem("upgrade_joined");
+    sessionStorage.removeItem("upgrade_checkedin");
     sessionStorage.removeItem("upgrade_room");
     location.href = "/";
   });

@@ -27,8 +27,8 @@
         <a href="#" data-jump="interactions"><span class="ic"></span> Topics</a>
         <a href="#" data-jump="interactions"><span class="ic"></span> Interactions</a>
         <a href="#" data-jump="challenges"><span class="ic"></span> Challenges <span class="badge" id="nav-ch">6</span></a>
-        <a href="#"><span class="ic"></span> Analytics</a>
-        <a href="#"><span class="ic"></span> Settings</a>
+        <a href="#" data-jump="stats-panel"><span class="ic"></span> The room</a>
+        <a href="/setup" target="_blank"><span class="ic"></span> Setup</a>
       </nav>
       <div class="me">
         <div class="avatar">TO</div>
@@ -94,6 +94,26 @@
         </div>
 
         <!-- CHALLENGES -->
+        <div class="panel ch" id="challenges">
+          <div class="ch-head">Challenges <span class="badge" id="ch-count">6</span> in queue</div>
+          <div class="ch-list" id="ch-list"></div>
+          <button class="invite-btn" id="invite-btn">INVITE FROM QUEUE</button>
+        </div>
+
+        <!-- who is actually in the room tonight -->
+        <div class="panel statspanel" id="stats-panel">
+          <div class="ch-head">State of the room <span class="badge" id="sr-count">0</span> checked in</div>
+          <div class="sr-note" id="sr-note">Nobody has checked in yet.</div>
+          <div class="sr-block" id="sr-occ-block" hidden>
+            <div class="sr-lab">WHAT THEY DO</div>
+            <div class="sr-bars" id="sr-occ"></div>
+          </div>
+          <div class="sr-block" id="sr-vibe-block" hidden>
+            <div class="sr-lab">HOW THEY ARRIVED</div>
+            <div class="sr-vibes" id="sr-vibes"></div>
+          </div>
+        </div>
+
         <!-- only while a word cloud is live: what is actually on the wall -->
         <div class="panel wcmod" id="wc-panel" hidden>
           <div class="ch-head">On the wall <span class="badge" id="wc-count">0</span> words</div>
@@ -101,15 +121,11 @@
           <div class="wc-list" id="wc-list"></div>
         </div>
 
-        <div class="panel ch" id="challenges">
-          <div class="ch-head">Challenges <span class="badge" id="ch-count">6</span> in queue</div>
-          <div class="ch-list" id="ch-list"></div>
-          <button class="invite-btn" id="invite-btn">INVITE FROM QUEUE</button>
-        </div>
       </div>
 
       <div class="qa-lab" id="interactions">Quick Actions</div>
       <div class="qa-row">
+        <button class="qa stats" id="stats-btn"><span class="qi">📊</span><span class="ql">State of the Room</span></button>
         <button class="qa holding" id="holding-btn"><span class="qi">▶</span><span class="ql">Holding Screen</span></button>
         <button class="qa offer" id="offer-btn"><span class="qi">💼</span><span class="ql">Show Offer</span></button>
         <button class="qa reveal" id="reveal-btn"><span class="qi">👁</span><span class="ql">Reveal Results</span></button>

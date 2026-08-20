@@ -320,3 +320,38 @@ body.reveal-flash .pv-slider .big{animation:revealglow .9s ease;}
 .hold-veil{position:fixed;inset:0;z-index:950;background:#000;}
 .hold-veil[hidden]{display:none;}
 .hold-veil video{width:100%;height:100%;object-fit:cover;display:block;}
+
+/* ---- state of the room ---- */
+.stats-veil{position:fixed;inset:0;z-index:893;background:#08080a;
+  padding:4vw 5vw;display:flex;flex-direction:column;gap:3vh;}
+.stats-veil[hidden]{display:none;}
+.sv-head{display:flex;align-items:baseline;justify-content:space-between;gap:24px;
+  border-bottom:1px solid var(--line);padding-bottom:2vh;}
+.sv-tag{font-family:var(--mono);font-size:clamp(14px,1.4vw,22px);letter-spacing:.3em;
+  color:var(--red);font-weight:700;}
+.sv-count{display:flex;align-items:baseline;gap:14px;}
+.sv-count #sv-n{font-family:var(--display);font-size:clamp(44px,5vw,92px);color:var(--ink);
+  line-height:1;}
+.sv-of{font-family:var(--mono);font-size:clamp(11px,1.1vw,16px);letter-spacing:.22em;
+  color:var(--muted);}
+.sv-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:4vw;flex:1;min-height:0;}
+.sv-lab{font-family:var(--mono);font-size:clamp(11px,1.1vw,17px);letter-spacing:.24em;
+  color:var(--muted);margin-bottom:2vh;}
+.sv-bars{display:flex;flex-direction:column;gap:1.4vh;}
+.sv-bar{position:relative;background:#101014;border:1px solid var(--line);
+  border-radius:12px;padding:1.4vh 20px;display:grid;grid-template-columns:1fr auto;
+  gap:18px;align-items:center;overflow:hidden;}
+.sv-bar .fill{position:absolute;inset:0 auto 0 0;background:var(--red-dim);
+  border-right:2px solid var(--red);}
+.sv-bar .t{position:relative;font-size:clamp(15px,1.55vw,28px);color:var(--ink);font-weight:600;}
+.sv-bar .n{position:relative;font-family:var(--display);font-size:clamp(20px,2vw,38px);
+  color:var(--red);line-height:1;}
+.sv-vibes{display:flex;flex-wrap:wrap;gap:12px;align-content:flex-start;}
+.sv-vibe{display:flex;flex-direction:column;align-items:center;gap:4px;
+  background:#101014;border:1px solid var(--line);border-radius:14px;
+  padding:1.4vh 18px;min-width:110px;}
+.sv-vibe .e{font-size:clamp(26px,2.6vw,48px);line-height:1;}
+.sv-vibe .n{font-family:var(--display);font-size:clamp(18px,1.8vw,34px);color:var(--ink);line-height:1;}
+.sv-vibe .l{font-family:var(--mono);font-size:clamp(9px,.85vw,13px);letter-spacing:.12em;
+  color:var(--muted);text-align:center;}
+@media(max-width:1100px){ .sv-grid{grid-template-columns:1fr;} }
