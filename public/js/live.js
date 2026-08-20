@@ -108,7 +108,8 @@ window.Live = (function () {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
-        if (r.ok) return true;
+        // hand back the parsed body so a caller can read a hint (still truthy)
+        if (r.ok) return await r.json().catch(() => true);
         // only the crew surfaces have a login to go back to — never bounce a
         // guest's phone to a passcode screen
         if (r.status === 401 && role === "moderator") {

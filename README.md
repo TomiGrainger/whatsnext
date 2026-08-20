@@ -161,6 +161,15 @@ signs the crew out, and anyone with the code has the controls.
   screen; the moderator's ranked panel can throw one over the projector (`PUT UP`)
   or grey it off once covered (`DONE`). Separate from the challenge queue: a
   challenge asks for the mic, a question asks for an answer.
+- **The word cloud is the one moderated input** — it is the only place audience
+  text goes straight onto a three-metre screen, so submissions are filtered
+  (a built-in list plus `DATA_DIR/blocklist.txt`, matched against leetspeak,
+  padding and digit substitutions) and capped at three words per phone. A
+  filtered word spends the sender's allowance and gets exactly the same reply as
+  one that landed — there is no way to probe the filter, and a determined troll
+  burns their three goes on nothing. No filter is airtight, so the control room
+  lists every word on the wall while a cloud is live: tap one to pull it off the
+  screen, and it can't be submitted again for the rest of that run.
 - **Taking something down** — every question and challenge has a **REMOVE**, and
   every profile an **✕**. One click, no confirmation, because when something
   needs to come off the screen it needs to come off now. Removal is total: it

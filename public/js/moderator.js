@@ -111,8 +111,47 @@
     $("#spark").innerHTML = line("agree", "#f5f3ef") + line("disagree", "#FF2D46");
   }
 
+  // What the room has actually put on the wall. No filter catches everything,
+  // so the crew gets a one-tap way to take a word down.
+  function paintWordCloud(st) {
+    const cloud = st.wordcloud;
+    const on = st.mode === "wordcloud" && cloud;
+    $("#wc-panel").hidden = !on;
+    if (!on) return;
+    const words = (cloud.words || []).slice().sort((a, b) => b.weight - a.weight);
+    $("#wc-count").textContent = words.length;
+    const host = $("#wc-list");
+    host.innerHTML = "";
+    if (!words.length) {
+      const empty = document.createElement("div");
+      empty.className = "wc-empty";
+      empty.textContent = "Nothing submitted yet.";
+      host.appendChild(empty);
+      return;
+    }
+    words.forEach((w) => {
+      const b = document.createElement("button");
+      b.className = "wc-word";
+      b.type = "button";
+      b.title = "Remove \u201c" + w.text + "\u201d from the screen";
+      // textContent throughout: audience text never becomes markup
+      const label = document.createElement("span");
+      label.textContent = w.text;
+      const n = document.createElement("span");
+      n.className = "n";
+      n.textContent = w.weight;
+      const x = document.createElement("span");
+      x.className = "x";
+      x.textContent = "\u00d7";
+      b.append(label, n, x);
+      b.addEventListener("click", () => Live.send("removeWord", { word: w.text }));
+      host.appendChild(b);
+    });
+  }
+
   function render(st) {
     if (!st) return;
+    paintWordCloud(st);
     $("#mod-brand").innerHTML = st.brand + " <em>LIVE</em>";
     $("#mode-label").textContent = (MODE_LABEL[st.mode] || "DISCUSSION") + (st.revealed ? "" : " · HIDDEN");
     $("#mode-label").classList.toggle("hidden-state", !st.revealed);

@@ -170,3 +170,17 @@ body.s-moderator{background:#060607;min-height:100vh;}
 /* the holding loop is live on the wall — unmistakable from across a room */
 .qa.holding.armed{border-color:var(--red);background:var(--red);}
 .qa.holding.armed .ql{color:#fff;font-weight:700;}
+
+/* ---- word cloud moderation ---- */
+.wcmod[hidden]{display:none;}
+.wc-note{color:var(--muted);font-size:12px;margin:0 0 12px;}
+.wc-list{display:flex;flex-wrap:wrap;gap:8px;}
+.wc-word{display:inline-flex;align-items:center;gap:8px;background:#141418;
+  border:1px solid var(--line);border-radius:999px;padding:7px 12px;cursor:pointer;
+  font-size:13px;color:var(--ink);font-family:inherit;}
+.wc-word:hover{border-color:var(--red);background:var(--red-dim);}
+.wc-word .n{font-family:var(--mono);font-size:11px;color:var(--muted);}
+.wc-word:hover .n{color:#fff;}
+.wc-word .x{color:var(--red);font-weight:700;opacity:0;transition:opacity .12s;}
+.wc-word:hover .x{opacity:1;}
+.wc-empty{color:var(--dim);font-size:13px;}

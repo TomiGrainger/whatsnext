@@ -673,7 +673,9 @@ def _init_interaction_runtime(item, seed):
         return {"votes": {o["id"]: seed_votes.get(o["id"], 0) for o in item["options"]},
                 "rounds": [], "_votes": {}}
     if kind == "wordcloud":
-        return {"words": dict(seed_data.get("words", {})), "_votes": {}}
+        # `_votes` is pid -> the words that phone added, for the per-phone cap;
+        # `banned` remembers what the crew removed so it cannot be re-submitted
+        return {"words": dict(seed_data.get("words", {})), "_votes": {}, "banned": []}
     if kind == "emoji":
         seed_counts = seed_data.get("counts", {})
         return {"counts": {o["id"]: seed_counts.get(o["id"], 0) for o in item["options"]}, "_votes": {}}
@@ -1549,6 +1551,67 @@ def snapshot(code, crew=False):
 # Actions
 # ---------------------------------------------------------------------------
 
+# A word cloud puts audience text straight onto a three-metre screen, so it is
+# the one input that is filtered before it lands. The built-in list is short and
+# blunt; DATA_DIR/blocklist.txt (one word per line) extends it without a deploy.
+BUILTIN_BLOCKED = {
+    "fuck", "fucking", "fucker", "shit", "shite", "bitch", "bastard", "cunt",
+    "wanker", "prick", "dick", "cock", "pussy", "twat", "slut", "whore",
+    "nigger", "nigga", "faggot", "fag", "tranny", "retard", "retarded", "spastic",
+    "paki", "chink", "kike", "coon", "raghead", "rape", "rapist", "nazi", "hitler",
+    "porn", "pornhub", "sex", "penis", "vagina", "boobs", "tits", "arse", "ass",
+    "piss", "crap", "bollocks", "knob", "minge", "wank",
+}
+# leetspeak and padding are the obvious ways round a word list
+_LEET = str.maketrans({"4": "a", "@": "a", "3": "e", "1": "i", "!": "i", "|": "i",
+                       "0": "o", "5": "s", "$": "s", "7": "t", "+": "t", "8": "b"})
+
+
+def blocklist():
+    """Built-in words plus anything the crew has added on the volume."""
+    words = set(BUILTIN_BLOCKED)
+    try:
+        with open(os.path.join(DATA_DIR, "blocklist.txt")) as fh:
+            for line in fh:
+                w = line.strip().lower()
+                if w and not w.startswith("#"):
+                    words.add(w)
+    except OSError:
+        pass
+    return words
+
+
+def word_is_blocked(word):
+    """Match on a normalised form so f-u-c-k, fu4ck and fuuuuck are all caught."""
+    flat = word.translate(_LEET)
+    flat = "".join(ch for ch in flat if ch.isalnum())
+    # collapse runs of the same letter: "fuuuck" -> "fuck"
+    squashed = ""
+    for ch in flat:
+        if not squashed or squashed[-1] != ch:
+            squashed += ch
+    banned = blocklist()
+    for form in (word, flat, squashed):
+        if form in banned:
+            return True
+    # a blocked word hiding inside a longer one ("shithead")
+    if any(b in squashed for b in banned if len(b) >= 4):
+        return True
+    # digits standing in for letters ("f4ck", "sh1t"): treat every digit as a
+    # wildcard against blocked words of the same length. Narrow on purpose —
+    # matching on consonants alone would take "count" down with "cunt".
+    lowered = word.lower()
+    if any(ch.isdigit() for ch in lowered):
+        for b in banned:
+            if len(b) == len(lowered) and all(
+                    c.isdigit() or c == bc for c, bc in zip(lowered, b)):
+                return True
+    return False
+
+
+# how many words one phone may add to a single cloud
+MAX_WORDS_PER_PHONE = 3
+
 AUDIENCE_ACTIONS = ("join", "sentiment", "whatsnext", "challenge", "poll", "word",
                     "emoji", "slider", "ranking", "ask", "upvote", "burst", "profile",
                     "connect", "connectRespond", "interested")
@@ -1565,6 +1628,7 @@ MAX_QUESTIONS = 200
 
 
 def act(code, kind, pid, data):
+    result = None      # an optional note back to the phone that acted
     with LOCK:
         r = get_room(code)
         if r is None:
@@ -1715,8 +1779,16 @@ def act(code, kind, pid, data):
             if live("wordcloud"):
                 word = (data.get("word") or "").strip().lower()[:20]
                 word = "".join(ch for ch in word if ch.isalnum() or ch in "-'")
-                if word:
-                    irt["words"][word] = irt["words"].get(word, 0) + 1
+                mine = irt["_votes"].setdefault(pid, [])
+                if word and len(mine) < MAX_WORDS_PER_PHONE and word not in mine:
+                    # A filtered word still spends the sender's allowance. That
+                    # keeps the reply identical either way — no way to probe the
+                    # filter — and costs a persistent troll their three goes.
+                    if (word not in irt.get("banned", [])
+                            and not word_is_blocked(word)):
+                        irt["words"][word] = irt["words"].get(word, 0) + 1
+                    mine.append(word)
+                result = {"wordsLeft": max(0, MAX_WORDS_PER_PHONE - len(mine))}
 
         elif kind == "emoji":
             if live("emoji"):
@@ -1812,6 +1884,17 @@ def act(code, kind, pid, data):
                 except OSError:
                     pass
 
+        elif kind == "removeWord":
+            # pulls it off the projector and stops it coming straight back
+            word = (data.get("word") or "").strip().lower()[:20]
+            for topic_rt in r["topicRuntime"]:
+                for wrt in topic_rt["interactions"]:
+                    if "words" in wrt and word in wrt["words"]:
+                        del wrt["words"][word]
+                        banned = wrt.setdefault("banned", [])
+                        if word not in banned:
+                            banned.append(word)
+
         elif kind == "showHolding":
             want = data.get("on")
             r["holdingLive"] = (not r.get("holdingLive")) if want is None else bool(want)
@@ -1851,6 +1934,7 @@ def act(code, kind, pid, data):
 
         mark_dirty()
     broadcast(sanitize_code(code))
+    return result
 
 
 def _initials(name):
@@ -2250,10 +2334,13 @@ class Handler(BaseHTTPRequestHandler):
         try:
             # participant ids come from the client, so they're reduced to a safe,
             # bounded token before they key anything (votes, profiles, filenames)
-            act(code, kind, re_pid(data.get("pid")), data)
+            note = act(code, kind, re_pid(data.get("pid")), data)
         except Exception as exc:
             return self._send(500, json.dumps({"ok": False, "error": str(exc)}), "application/json")
-        return self._send(200, json.dumps({"ok": True}), "application/json", {"Cache-Control": "no-store"})
+        body = {"ok": True}
+        if note:
+            body.update(note)
+        return self._send(200, json.dumps(body), "application/json", {"Cache-Control": "no-store"})
 
     def handle_offer_image(self, parsed):
         qs = parse_qs(parsed.query)

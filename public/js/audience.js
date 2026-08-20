@@ -648,12 +648,16 @@
   });
 
   // ---- word cloud submit ----
-  function submitWord() {
+  async function submitWord() {
     const w = $("#wc-input").value.trim();
     if (!w) return;
-    Live.send("word", { word: w });
     $("#wc-input").value = "";
-    UI.toast("Word added");
+    const res = await Live.send("word", { word: w });
+    // A word the filter caught gets the same reply as one that landed: saying
+    // "blocked" out loud only invites the sender to try a spelling that works.
+    const left = res && typeof res.wordsLeft === "number" ? res.wordsLeft : null;
+    if (left === 0) UI.toast("That's your three words");
+    else UI.toast(left === 1 ? "Word added \u00b7 1 left" : "Word added");
   }
   $("#wc-send").addEventListener("click", submitWord);
   $("#wc-input").addEventListener("keydown", (e) => { if (e.key === "Enter") submitWord(); });
