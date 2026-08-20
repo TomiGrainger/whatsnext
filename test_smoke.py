@@ -178,6 +178,17 @@ def run(guest, crew, data_dir):
           sum(v["count"] for v in rs.get("vibes", [])) == 3)
     check("room stats carry no names", "P_ONE" not in json.dumps(rs))
 
+    # editing a profile later must not quietly un-check-in the person, or
+    # drop the vibe they picked — the sheet doesn't have those fields on it
+    guest.act("profile", pid="p_one", name="P One", occupation="Founder / Business owner",
+              fact="Likes maps", shared=True, email="one@example.com")
+    rs = state(guest)["roomStats"]
+    check("editing a profile keeps the check-in", rs["checkedIn"] == 3,
+          "checkedIn=%s" % rs["checkedIn"])
+    check("editing a profile keeps the vibe",
+          sum(v["count"] for v in rs["vibes"]) == 3,
+          "vibes=%s" % [v["count"] for v in rs["vibes"]])
+
     # ---- every audience action a phone can send ----
     guest.act("sentiment", pid="p_one", choice="agree")
     guest.act("sentiment", pid="p_two", choice="disagree")
