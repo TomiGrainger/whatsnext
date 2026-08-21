@@ -473,8 +473,8 @@ def run(guest, crew, data_dir):
           "got %s" % arc)
     check("the archive is recording who came", arc["attendees"] >= 3,
           "attendees=%s" % arc.get("attendees"))
-    check("giving an email identifies that phone", arc["identified"] >= 1,
-          "identified=%s" % arc.get("identified"))
+    check("sign-ups are recorded as contacts", arc["contacts"] >= 1,
+          "contacts=%s" % arc.get("contacts"))
 
     # a RESET wipes the room but must not wipe the record — this is what the
     # archive exists for, and what used to destroy an evening
@@ -540,21 +540,37 @@ def run(guest, crew, data_dir):
     # sign-up whose phone never checked in), which is fine but not the case
     # this is testing
     who = folk["people"][0]
-    check("a person carries their history", who["nights"] >= 1 and "email" in who,
-          "got %s" % who)
-    check("signing up claims what that phone already did tonight",
-          who["email"] == "crm@example.com" and who["questions"] >= 1,
-          "got %s" % who)
+    check("a contact records which events they came to",
+          who["nights"] >= 1 and who["email"] == "crm@example.com", "got %s" % who)
+    check("and what they do, kept on the contact",
+          who["occupation"] == "Founder / Business owner", "got %s" % who.get("occupation"))
     status, detail = crew.json("/api/crm/person?id=%s" % who["id"])
-    check("one person's whole record opens", status == 200 and detail["email"] == who["email"])
-    check("their nights carry what they did",
-          any(sess["responses"] for sess in detail["sessions"]),
-          "no responses on any night")
+    check("one contact opens", status == 200 and detail["email"] == who["email"])
+
+    # The promise the whole shape rests on: nothing joins a person to an answer.
+    # If a future change quietly reintroduces that link, this is what fails.
+    blob = json.dumps(detail).lower()
+    check("a contact record carries no answers of any kind",
+          "responses" not in detail and "sentiment" not in blob
+          and "is any of this written down" not in blob,
+          "leaked: %s" % blob[:180])
 
     status, found = crew.json("/api/crm/people?q=" + who["email"].split("@")[0])
     check("search finds them", found["total"] >= 1, "total=%s" % found["total"])
     status, none = crew.json("/api/crm/people?q=zzzznobody")
     check("and finds nothing when there is nothing", none["total"] == 0)
+
+    # the cross-tabs — the reason the response half carries occupation at all
+    status, report = crew.json("/api/crm/session?id=%s" % over["sessions"][0]["id"])
+    check("an event reports what the room thought", "answers" in report)
+    for block in report.get("answers", []):
+        check("percentages add up (%s)" % block["question"][:24],
+              abs(sum(block["pcts"]) - 100) <= 2,
+              "%s = %s" % (block["pcts"], sum(block["pcts"])))
+        check("the breakdown never exceeds the room (%s)" % block["question"][:24],
+              sum(g["total"] for g in block["groups"]) == block["total"],
+              "%d in groups vs %d answered"
+              % (sum(g["total"] for g in block["groups"]), block["total"]))
 
     # a report must never count one person twice, however often they changed
     # their mind — the archive keeps every position, the report takes the last
@@ -570,6 +586,11 @@ def run(guest, crew, data_dir):
     status, body, headers = crew.get("/api/crm/people.csv")
     check("people export as CSV", status == 200 and b"email,name" in body,
           body[:60].decode("utf-8", "replace"))
+    status, resp_csv, _ = crew.get("/api/crm/responses.csv")
+    check("the responses export carries no names or addresses",
+          b"crm@example.com" not in resp_csv and b"Crm Tester" not in resp_csv
+          and b"email" not in resp_csv.split(b"\n")[0],
+          resp_csv.split(b"\n")[0][:90].decode("utf-8", "replace"))
     check("the CSV downloads rather than displays",
           "attachment" in headers.get("Content-Disposition", ""))
     status, body, _ = crew.get("/api/crm/responses.csv")

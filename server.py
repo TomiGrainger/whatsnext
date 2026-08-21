@@ -1940,10 +1940,12 @@ def act(code, kind, pid, data):
                     "vibe": vibe or existing.get("vibe"),
                     "onboarded": bool(data.get("checkin")) or existing.get("onboarded", False),
                 }
-                crm.check_in(session, pid, name, occupation,
-                             vibe or existing.get("vibe") or "")
+                # the anonymous half gets what they do and how they arrived;
+                # the name they gave stays in the live room, and reaches the
+                # archive only as a contact record if they hand over an address
+                crm.check_in(session, pid, occupation, vibe or existing.get("vibe") or "")
                 if email:
-                    crm.identify(session, pid, email, name)
+                    crm.contact(email, name, occupation)
             elif existing:
                 # cleared every field — drop everything but a photo they kept
                 existing.update({"name": "", "occupation": "", "fact": "", "initials": "?",
@@ -1972,7 +1974,8 @@ def act(code, kind, pid, data):
                 who = (data.get("name") or profile.get("name") or "").strip()[:40]
                 outcome = add_interest(r["code"], pid, given or known or "", who)
                 keep("interested", (room_offer(r) or {}).get("headline", ""))
-                crm.signup(session, pid, given or known or "", who, kind="offer")
+                crm.signup(session, given or known or "", who,
+                           profile.get("occupation", ""), kind="offer")
                 # "already on the list" is a yes; only a failed write is a no
                 result = {"saved": outcome != "failed"}
 
@@ -2479,8 +2482,10 @@ class Handler(BaseHTTPRequestHandler):
                 '<button class="wipe" name="do" value="delete" type="submit">DELETE MY DETAILS ENTIRELY</button>'
                 "</form>"
                 "<p style=\"font-size:13px;margin-top:18px\">Stopping keeps you off future "
-                "sends. Deleting removes your address from every list we hold, including "
-                "any offer you registered interest in.</p>"
+                "sends. Deleting removes your name and address from everything we hold. "
+                "Your answers at the event aren't affected because they aren't yours to "
+                "find \u2014 they're kept as anonymous room totals, with nothing linking "
+                "them to you.</p>"
             ) % (html_escape(email), html_escape(email), html_escape(token))
             return self._send(200, UNSUB_PAGE % body, "text/html; charset=utf-8",
                               {"Cache-Control": "no-store"})
@@ -2746,9 +2751,10 @@ class Handler(BaseHTTPRequestHandler):
         outcome = add_lead(code, email, name, pid)
         if outcome != "failed":
             room = ROOMS.get(code) or {}
+            job = (room.get("profiles", {}).get(pid) or {}).get("occupation", "")
             crm.signup(crm.session_for(code, room.get("eventId", ""),
                                        room.get("eventName", "")),
-                       pid, email, name, kind="debrief")
+                       email, name, job, kind="debrief")
         if outcome == "failed":
             # never tell someone they are on a list they are not on
             return self._send(503, json.dumps({
@@ -2776,18 +2782,19 @@ class Handler(BaseHTTPRequestHandler):
                 "<p>Reply to the email and we'll sort it by hand.</p>"),
                 "text/html; charset=utf-8")
         if want == "delete":
-            gone = forget_email(email)
+            forget_email(email)
             suppress(email)      # and don't let a later event re-add them
             body = ('<div class="eyebrow">DONE</div><h1>Deleted</h1>'
-                    '<p class="done">Your address has been removed from %d list(s), '
-                    "and we won't email you again. Nothing further is needed.</p>") % gone
+                    '<p class="done">Your name and address are gone from everything we '
+                    "hold, and we won't email you again. Nothing further is needed \u2014 "
+                    "what you answered on the night was never stored against you.</p>")
         else:
             suppress(email)
             crm.set_suppressed(email)
             body = ('<div class="eyebrow">DONE</div><h1>Unsubscribed</h1>'
-                    '<p class="done">We won\'t email this address again. '
-                    "Your details are still on the list from the night you came \u2014 "
-                    "use the delete option in any earlier email if you'd rather they weren't.</p>")
+                    '<p class="done">We won\'t email this address again. Your name and '
+                    "address are still on the list from the night you came \u2014 use the "
+                    "delete option above if you'd rather they weren't.</p>")
         return self._send(200, UNSUB_PAGE % body, "text/html; charset=utf-8",
                           {"Cache-Control": "no-store"})
 

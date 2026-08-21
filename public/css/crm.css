@@ -128,3 +128,28 @@ td.num b{color:var(--red);}
 @media(max-width:720px){
   .crm-panel{width:100%;}
 }
+
+/* ---- what the room thought, broken down ---- */
+.x-row{margin-top:14px;}
+.x-row.x-all{border-bottom:1px solid var(--line);padding-bottom:14px;}
+.x-row .lb{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);
+  margin-bottom:6px;display:flex;justify-content:space-between;gap:10px;}
+.x-row.x-all .lb{color:var(--ink);}
+.x-row .lb .n{color:var(--dim);}
+.x-row.x-small{opacity:.6;}
+.x-bar{display:flex;height:26px;border-radius:7px;overflow:hidden;background:#121216;}
+.x-seg{display:flex;align-items:center;justify-content:center;font-family:var(--mono);
+  font-size:10px;color:#fff;font-weight:700;min-width:0;}
+.x-key{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px;}
+.x-k{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
+.x-k .dot{width:8px;height:8px;border-radius:2px;display:inline-block;}
+.seg-a{background:var(--red);}
+.seg-b{background:#2f6f8f;}
+.seg-c{background:#7a7a86;}
+.seg-d{background:#8f6f2f;}
+.seg-e{background:#4f8f5f;}
+
+/* said plainly on the contact panel: the answers are not reachable from here */
+.p-private{margin-top:26px;border:1px solid var(--line);border-left:2px solid var(--red);
+  border-radius:10px;padding:14px 16px;color:var(--muted);font-size:13px;line-height:1.6;}
+.p-private b{color:var(--ink);}

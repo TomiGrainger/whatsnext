@@ -50,9 +50,9 @@
     const s = data.summary;
     const host = $("#crm-stats");
     host.innerHTML = "";
-    [["events", s.sessions, false], ["people known", s.people, true],
+    [["events", s.sessions, false], ["contacts", s.people, true],
      ["checked in", s.attendees, false], ["responses", s.responses, false],
-     ["identified", s.identified, false]].forEach(([label, value, lit]) => {
+     ["sign-ups", s.contacts, false]].forEach(([label, value, lit]) => {
       const card = el("div", "crm-stat" + (lit ? " lit" : ""));
       card.append(el("div", "v", String(value ?? 0)), el("div", "k", label.toUpperCase()));
       host.appendChild(card);
@@ -77,7 +77,7 @@
 
     const table = el("table");
     const head = el("tr");
-    ["", "What they do", "Events", "Hands", "Asked", "Last seen"].forEach((h) => {
+    ["", "What they do", "Events", "Hands", "Last seen"].forEach((h) => {
       head.appendChild(el("th", null, h));
     });
     table.appendChild(el("thead")).appendChild(head);
@@ -100,9 +100,8 @@
       const c4 = el("td", "num");
       if (p.hands) c4.appendChild(el("b", null, String(p.hands)));
       else c4.textContent = "—";
-      const c5 = el("td", "num", p.questions ? String(p.questions) : "—");
-      const c6 = el("td", "num", ago(p.last_seen));
-      tr.append(c1, c2, c3, c4, c5, c6);
+      const c5 = el("td", "num", ago(p.last_seen));
+      tr.append(c1, c2, c3, c4, c5);
       body.appendChild(tr);
     });
     table.appendChild(body);
@@ -116,7 +115,7 @@
     $("#events-empty").hidden = sessions.length > 0;
     const table = el("table");
     const head = el("tr");
-    ["Event", "Room", "When", "Attended", "Identified", "Responses"].forEach((h) => {
+    ["Event", "Room", "When", "Checked in", "Sign-ups", "Responses"].forEach((h) => {
       head.appendChild(el("th", null, h));
     });
     table.appendChild(el("thead")).appendChild(head);
@@ -132,7 +131,7 @@
                 el("td", null, s.room_code),
                 el("td", "num", when(s.opened_at)),
                 el("td", "num", String(s.attendees)),
-                el("td", "num", String(s.identified)),
+                el("td", "num", String(s.contacts)),
                 el("td", "num", String(s.responses)));
       body.appendChild(tr);
     });
@@ -176,45 +175,64 @@
       return c;
     };
     chips.append(chip(p.nights === 1 ? "event" : "events", p.nights),
-                 chip("responses", p.responses),
-                 chip(p.questions === 1 ? "question" : "questions", p.questions),
                  chip("hands raised", p.hands));
     if (p.suppressed) chips.appendChild(el("span", "p-chip", "Unsubscribed"));
     body.appendChild(chips);
     body.appendChild(el("p", "p-meta",
       "First seen " + when(p.first_seen) + " · last seen " + ago(p.last_seen)));
 
-    body.appendChild(el("div", "p-h2", "THEIR NIGHTS"));
-    if (!p.sessions.length) {
-      body.appendChild(el("p", "p-none", "No events recorded — they gave an address but "
-        + "never checked in on a phone we could match."));
+    body.appendChild(el("div", "p-h2", "WHERE THEY SIGNED UP"));
+    if (!p.signups.length) {
+      body.appendChild(el("p", "p-none", "No sign-ups recorded."));
     }
-    p.sessions.forEach((s) => {
+    p.signups.forEach((g) => {
       const card = el("div", "p-night");
       const hd = el("div", "hd");
-      hd.append(el("div", "ev", (s.event_name || "Event") + " · " + s.room_code),
-                el("div", "dt", when(s.opened_at)));
+      hd.append(el("div", "ev", (g.event_name || "Event") + " · " + (g.room_code || "—")),
+                el("div", "dt", when(g.at)));
       card.appendChild(hd);
-      if (s.occupation || s.vibe) {
-        card.appendChild(el("div", "dt", [s.occupation, s.vibe].filter(Boolean).join(" · ")));
-      }
-      if (!s.responses.length) {
-        card.appendChild(el("p", "p-none", "Checked in, didn't answer anything."));
-      } else {
-        const grid = el("div", "p-resp");
-        s.responses.forEach((r) => {
-          grid.appendChild(el("div", "k", KIND_LABEL[r.kind] || r.kind.toUpperCase()));
-          const v = el("div", "v", r.value || "—");
-          const q = r.interaction_question || r.topic_question;
-          if (q) v.appendChild(el("small", null, q));
-          grid.appendChild(v);
-        });
-        card.appendChild(grid);
-      }
+      card.appendChild(el("div", "dt", g.kind === "offer"
+        ? "Raised a hand for the offer"
+        : "Asked for the debrief" + (g.sent_at ? " · sent " + when(g.sent_at) : " · not sent yet")));
       body.appendChild(card);
     });
+
+    // Said plainly, because it is the design and not a gap: there is no join
+    // from a contact to an answer, so this panel cannot show one.
+    const note = el("div", "p-private");
+    note.append(el("b", null, "What they said isn't here, and can't be. "),
+      document.createTextNode("Answers are kept as anonymous room data — "
+        + "grouped per person within one event so the room can be broken down "
+        + "by occupation, with nothing tying any of it back to a name."));
+    body.appendChild(note);
+
     openPanel();
     $("#panel").scrollTop = 0;
+  }
+
+  // one stacked bar: each answer a segment, widths in per cent
+  const SEG = ["seg-a", "seg-b", "seg-c", "seg-d", "seg-e"];
+  function bar(answers, pcts, counts) {
+    const wrap = el("div", "x-bar");
+    answers.forEach((a, i) => {
+      if (!pcts[i]) return;
+      const seg = el("div", "x-seg " + SEG[i % SEG.length]);
+      seg.style.width = pcts[i] + "%";
+      seg.title = a + " — " + pcts[i] + "%" + (counts ? " (" + counts[i] + ")" : "");
+      seg.textContent = pcts[i] >= 12 ? pcts[i] + "%" : "";
+      wrap.appendChild(seg);
+    });
+    const key = el("div", "x-key");
+    answers.forEach((a, i) => {
+      if (!pcts[i]) return;
+      const k = el("span", "x-k");
+      k.appendChild(el("i", "dot " + SEG[i % SEG.length]));
+      k.appendChild(document.createTextNode(a));
+      key.appendChild(k);
+    });
+    const box = el("div");
+    box.append(wrap, key);
+    return box;
   }
 
   async function openSession(id) {
@@ -235,7 +253,7 @@
       c.append(el("b", null, String(value)), document.createTextNode(" " + label));
       return c;
     };
-    chips.append(chip("checked in", s.attendees), chip("gave contact details", s.identified));
+    chips.append(chip("checked in", s.attendees), chip("signed up", s.contacts));
     body.appendChild(chips);
 
     if (s.occupations.length) {
@@ -273,7 +291,32 @@
       s.questions.forEach((q) => {
         const card = el("div", "p-night");
         card.appendChild(el("div", "ev", q.text));
-        if (q.name) card.appendChild(el("div", "dt", q.name));
+        body.appendChild(card);
+      });
+    }
+
+    if ((s.answers || []).length) {
+      body.appendChild(el("div", "p-h2", "WHAT THE ROOM THOUGHT"));
+      s.answers.forEach((b) => {
+        const card = el("div", "p-night");
+        card.appendChild(el("div", "ev", b.question));
+        card.appendChild(el("div", "dt", b.total + " answered"));
+
+        // the whole room first, as the headline
+        const overall = el("div", "x-row x-all");
+        overall.appendChild(el("div", "lb", "EVERYONE"));
+        overall.appendChild(bar(b.answers, b.pcts, b.counts));
+        card.appendChild(overall);
+
+        // then the same split, occupation by occupation
+        b.groups.forEach((g) => {
+          const row = el("div", "x-row" + (g.small ? " x-small" : ""));
+          const lb = el("div", "lb", g.label);
+          lb.appendChild(el("span", "n", " " + g.total));
+          row.appendChild(lb);
+          row.appendChild(bar(b.answers, g.pcts));
+          card.appendChild(row);
+        });
         body.appendChild(card);
       });
     }

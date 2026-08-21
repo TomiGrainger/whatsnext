@@ -290,66 +290,69 @@ returning to one later shows what it had.
 
 Everything that happens at an event is copied to `DATA_DIR/crm.sqlite3` as it
 happens — SQLite from the standard library, so the zero-dependency rule still
-holds. The live room stays in memory and a vote never waits on a disk: writes
-are queued and flushed a second at a time. Measured at 1,300 votes/second with
-300 simultaneous voters, all archived.
+holds. Writes are queued and flushed a second at a time; measured at 1,300
+votes/second with 300 simultaneous voters.
 
-The shape worth knowing is that **`attendees` sits between a phone and a
-person**:
+It is deliberately **two halves that never touch**:
 
 ```
-sessions    one run of an event in a room — "the night of the 12th"
-attendees   one phone in one session — name, occupation, vibe, person_id?
-people      identified humans, keyed by email, across every event
+people      name, email, occupation — who to contact, and nothing else
+signups     which evenings someone came to, and whether they raised a hand
+
+sessions    one run of an event in a room
+attendees   one anonymous person-shaped row per event: occupation, vibe
 responses   every vote, word, slider, ranking, question and challenge
-signups     debrief sign-ups and offer hand-raises
 ```
 
-Responses hang off the attendee, never off the person. So everyone's answers
-are recorded whether or not they ever say who they are; identity is layered on
-afterwards for those who give an email; and deleting a person is one join away
-from deleting everything they did.
+There is no join between them, and that is the whole design. An attendee is
+identified by a hash of the phone's token **and the event**, so one person's
+answers group within a single evening — you can ask whether people who arrived
+sceptical shifted more than people who arrived fired up — while the same phone
+at the next event is a different, unlinkable row. The raw token is never stored.
 
-That last point is what makes the earlier privacy promise keepable. **Delete my
-details** and the delete link in the debrief email both reach the archive now,
-not just the live room and the mailing list.
+Two consequences, both intended:
 
-Two things follow from this that didn't work before:
+- Once an evening is over, **nobody — including you — can find out what any
+  named person said.** The contact panel in `/crm` says so on its face.
+- A deletion request removes the contact record and the sign-up log. It doesn't
+  touch the answers, because there is no path from an address to one. There is
+  nothing personal left in them to remove.
 
-- **RESET no longer destroys an evening.** The room is wiped; the record isn't.
-  The session is marked as a rehearsal — kept, and left out of the reports — and
-  the next thing that happens starts a fresh one.
-- **A sign-up now identifies the phone that made it**, so an email address
-  reaches everything that person did that night, and the same person is
-  recognisable across every event they have ever attended.
+What you get instead is the thing worth having: **what the room thought, and who
+thought it.** Every question gets an overall split as counts and percentages,
+then the same split per occupation — "founders 78% agree, students 86%
+disagree". Groups smaller than three are folded into an "Other" row, because a
+breakdown showing one Retired person who disagreed is a name to anyone who was
+in the room.
 
-Existing `leads/` and `interest/` files are folded in on first boot, once; the
-JSON files stay where they are and the download buttons still read them.
+Reports take each person's **last word** on a question. The archive keeps every
+position they held — watching minds change is the point of the app — but a
+report that counted them all would turn someone who switched sides twice into
+three people.
 
-`RETENTION_DAYS` drops sessions older than N days at boot. It defaults to 0 —
-keep everything — because that is the point of an archive, but a real number is
-easier to defend than "forever" if anyone ever asks.
+Existing `leads/` and `interest/` files are folded in on first boot, once. An
+archive written under the older, identified shape is migrated on startup: the
+person links and check-in names come off the attendee rows, occupations move
+across to the contact records, and the tokens become per-event hashes. One-way,
+on purpose.
 
-Crew-only `/api/archive` reports what it holds, without exposing anyone.
+`RETENTION_DAYS` drops sessions older than N days at boot, defaulting to 0.
+Crew-only `/api/archive` reports what it holds.
 
 ### The Rooms — `/crm`
 
 The crew page over the archive, behind the same passcode as everything else.
 
-- **People** — everyone who has ever given an email, searchable, sortable by how
-  often they have come, hands raised for the offer, or questions asked. Clicking
-  one opens their whole history: every night they attended, what they do, how
-  they arrived, and everything they said, in order.
+- **People** — the contact list. Name, email, what they do, how many events they
+  came to and how many times they raised a hand. Searchable and sortable. Not
+  what they said, ever.
 - **Events** — one row per evening, with a report behind it: who was in the room
-  by occupation, how the room split on each topic, and what they asked. The view
-  to show a venue or a sponsor. Rehearsals are labelled and left out of totals.
-- **Export** — `people.csv`, `attendance.csv` and `responses.csv`. Plain CSV, so
-  it opens in Excel and imports into HubSpot or Mailchimp if you ever move.
-
-One rule worth knowing about the reports: the archive keeps *every* position a
-person held — watching minds change is the point of the app — but a report
-counts only their last word on each topic. Otherwise someone who switched sides
-twice would be three people, and a room of forty would report as sixty.
+  by occupation, how it split on each topic, the cross-tabs above, and what was
+  asked. The view to hand a venue or a sponsor. Rehearsals are labelled and left
+  out of the totals.
+- **Export** — `people.csv` (contacts), `attendance.csv` (who came to what) and
+  `responses.csv` (anonymous answers, safe to hand to an analyst). Plain CSV, so
+  it imports into HubSpot or Mailchimp if you ever move.
 
 ## Tests
 

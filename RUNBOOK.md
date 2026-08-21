@@ -98,9 +98,14 @@ in and each phone only gets three words, but no filter catches everything.)
 Every question and challenge has **REMOVE**.
 
 ### Someone wants their data deleted, there and then
-Their phone: profile → **Delete my details** (two taps). That clears their
-profile, check-in, questions and challenges from the room. For an email address,
-the unsubscribe link in any debrief email offers deletion across every list.
+Their phone: profile → **Delete my details** (two taps). During the event this
+also removes their answers from the archive — the phone still knows its own
+token, so the row can be found. After the event it can't be, which is exactly
+what makes those answers anonymous.
+
+For an email address, the unsubscribe link in any debrief email offers deletion
+of the contact record. Their answers aren't affected and don't need to be:
+nothing links them to a person.
 
 ---
 
