@@ -122,12 +122,13 @@ body.s-recap{
 .rc-empty p{color:var(--muted);font-size:16px;margin-top:16px;}
 
 /* ---- the offer, carried into the debrief ---- */
-.rc-offer{display:grid;grid-template-columns:minmax(0,200px) 1fr;gap:24px;align-items:center;
+.rc-offers[hidden]{display:none;}
+.rc-offer-one{display:grid;grid-template-columns:minmax(0,200px) 1fr;gap:24px;align-items:center;
   margin-top:44px;padding:22px;border:1px solid var(--red-dim);border-radius:18px;
   background:linear-gradient(180deg,#14090c,#0b0b0d);}
-.rc-offer[hidden]{display:none;}
-.rc-offer-hero{width:100%;border-radius:12px;display:block;}
-.rc-offer-hero[hidden]{display:none;}
+
+.rc-offer-one .rc-offer-hero{width:100%;border-radius:12px;display:block;}
+.rc-offer-one .rc-offer-hero[hidden]{display:none;}
 .rc-offer-head{font-family:var(--display);text-transform:uppercase;font-size:30px;line-height:1.05;
   color:var(--ink);margin:10px 0 0;}
 .rc-offer-body{color:var(--muted);font-size:15px;line-height:1.55;margin:10px 0 0;max-width:46ch;}
@@ -137,5 +138,5 @@ body.s-recap{
   font-weight:700;padding:13px 20px;border-radius:11px;}
 .rc-offer-cta[hidden]{display:none;}
 @media (max-width:640px){
-  .rc-offer{grid-template-columns:1fr;}
+  .rc-offer-one{grid-template-columns:1fr;}
 }

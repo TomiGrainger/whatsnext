@@ -155,30 +155,28 @@ signs the crew out, and anyone with the code has the controls.
   running. The clip is `public/media/holding.mp4`; drop a different file at that
   path to change it (1920×1080 H.264 plays everywhere, and it ships inside the
   image, so it needs no upload and works even if the venue Wi-Fi is grim).
-- **The offer** — one promotion per event, set up under the topics: a headline,
-  a line of copy, a button label, a link and a piece of artwork. It sits idle
-  until the moderator presses **SHOW OFFER**, at which point it takes over the
-  projector (with a QR of the link for anyone not on their phone) and rises as a
-  sheet on every phone in the room. Tapping the button records interest *in the
-  app* rather than sending anyone off to a landing page mid-event — if the app
-  already has an address, from their profile or the debrief sign-up, it is one
-  tap and nothing to type. The link is still there as a secondary path and opens
-  in a new tab. Pressing the button again takes it down everywhere, and the offer
-  reappears on its own on the closing screen, in the debrief email and on the
-  recap page — so it keeps working after the room goes dark. Hands raised land in
-  `interest/<ROOM>.json`, shown as a **💼 count** against the room in setup and
-  downloadable there; they are kept apart from the debrief list and survive a
-  room RESET, so rehearsing never destroys real leads. Editing the offer reaches
+- **The offer, and the ask** — two promotions per event, set up under the topics:
+  a headline, a line of copy, a button label, a link and artwork each. **YOUR
+  OFFER** is the thing you're selling; **YOUR ASK** is a donation. Identical
+  machinery, its own button in the control room, and only ever one on the screen
+  at a time — putting one up takes the other down.
+
+  Either takes over the projector (with a QR of the link for anyone not on their
+  phone) and rises as a sheet on every phone in the room. Both reappear on their
+  own on the closing screen, in the debrief email and on the recap page, so they
+  keep working after the room goes dark.
+
+  The one place they differ: tapping **I'M INTERESTED** records interest *in the
+  app* rather than sending anyone to a landing page mid-event — where an address
+  is already known, from a profile or the debrief sign-up, it is one tap and
+  nothing to type. Tapping **I'D LIKE TO GIVE** records the same thing *and*
+  opens the link, because giving is an action that happens somewhere else.
+
+  Hands raised land in `interest/<ROOM>.json` tagged with which promo they were
+  for, shown as separate **💼** and **❤️** counts against the room in setup and
+  downloadable there. They are kept apart from the debrief list and survive a
+  room RESET, so rehearsing never destroys real leads. Editing either reaches
   rooms that are already open, so a typo can be fixed mid-event.
-- **Leaving** — every debrief email carries a `List-Unsubscribe` header and a
-  visible link to a page offering two things: stop emailing me, or delete my
-  details entirely. Deleting removes the address from every debrief and offer
-  list across every room, and suppresses it so a later event can't re-add it.
-  The link is signed, so it only ever acts on the address it was issued for, and
-  the action is a POST — a mail client that prefetches links can't unsubscribe
-  anyone by accident. Inside the app, **Delete my details** in the profile sheet
-  (two taps, it can't be undone) wipes that phone's profile, check-in, questions
-  and challenges from the room it's standing in.
 - **Questions from the floor** — guests ask and upvote from the discussion
   screen; the moderator's ranked panel can throw one over the projector (`PUT UP`)
   or grey it off once covered (`DONE`). Separate from the challenge queue: a

@@ -346,7 +346,7 @@ def run(guest, crew, data_dir):
     for kind in ("launchInteraction", "nextTopic", "prevTopic", "reveal", "askAgain",
                  "extend", "pause", "showResults", "backToDiscussion", "removeQuestion",
                  "removeChallenge", "featureQuestion", "featureProfile", "inviteTop",
-                 "showOffer", "showHolding", "showStats", "removeWord", "reset"):
+                 "showPromo", "showHolding", "showStats", "removeWord", "reset"):
         status, _ = guest.act(kind, index=0)
         check("guests are refused: %s" % kind, status == 401, "got %s" % status)
 
@@ -378,22 +378,47 @@ def run(guest, crew, data_dir):
     config["offer"] = {"headline": "Work with me", "body": "Twelve weeks.",
                        "cta": "I'M INTERESTED", "link": "example.com/coaching",
                        "linkLabel": "Details", "image": ""}
+    config["donate"] = {"headline": "Keep these nights free", "body": "Anything helps.",
+                        "cta": "I'D LIKE TO GIVE", "link": "example.com/give",
+                        "linkLabel": "Give here", "image": ""}
     status, body, _ = crew.post("/api/events/demo_event", config)
     check("the offer can be set up", status == 200, body[:120].decode("utf-8", "replace"))
     st = state(guest)
+    promos = st.get("promos") or {}
     check("the offer reaches a room that is already open",
-          (st.get("offer") or {}).get("headline") == "Work with me")
-    check("the offer link is normalised to a real URL",
-          (st.get("offer") or {}).get("link", "").startswith("http"))
-    crew.act("showOffer", on=True)
-    check("the crew can put the offer up", state(guest)["offerLive"] is True)
+          (promos.get("offer") or {}).get("headline") == "Work with me")
+    check("the donate ask does too",
+          (promos.get("donate") or {}).get("headline") == "Keep these nights free")
+    check("promo links are normalised to real URLs",
+          all(p.get("link", "").startswith("http") for p in promos.values()))
+    check("donate opens its link, the offer doesn't",
+          promos["donate"].get("opensLink") is True
+          and not promos["offer"].get("opensLink"))
+
+    crew.act("showPromo", which="offer", on=True)
+    check("the crew can put the offer up", state(guest)["promoLive"] == "offer")
+    # only one takeover at a time, or two things fight over the projector
+    crew.act("showPromo", which="donate", on=True)
+    st = state(guest)
+    check("showing the ask puts the offer away", st["promoLive"] == "donate"
+          and st["promo"]["headline"] == "Keep these nights free", "got %s" % st["promoLive"])
+    crew.act("showPromo", which="donate", on=False)
+    check("and it can be taken down", state(guest)["promoLive"] is None)
+    crew.act("showPromo", which="offer", on=True)
     _, before_rows = crew.json("/api/interest/%s.json" % ROOM)
     guest.act("interested", pid="p_one", name="One", email="one@example.com")
     guest.act("interested", pid="p_one", name="One", email="one@example.com")
+    # the same phone can answer both, and they are counted separately
+    crew.act("showPromo", which="donate", on=True)
+    guest.act("interested", pid="p_one", name="One", email="one@example.com")
+    crew.act("showPromo", which="offer", on=True)
     status, rows = crew.json("/api/interest/%s.json" % ROOM)
-    check("raising a hand is recorded once, however many times it is tapped",
-          status == 200 and len(rows) == len(before_rows) + 1,
+    check("raising a hand is recorded once per promo, however often it is tapped",
+          status == 200 and len(rows) == len(before_rows) + 2,
           "before=%s after=%s" % (len(before_rows), len(rows)))
+    check("the two are told apart in the record",
+          {r.get("promo") for r in rows} >= {"offer", "donate"},
+          "got %s" % [r.get("promo") for r in rows])
     interest_count = len(rows)
     status, _, _ = guest.get("/api/interest/%s.json" % ROOM)
     check("the interest list is crew-only", status == 401, "got %s" % status)

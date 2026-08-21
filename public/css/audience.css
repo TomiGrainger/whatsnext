@@ -384,6 +384,9 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
 .cv-offer-body{color:var(--muted);font-size:14px;line-height:1.5;margin-bottom:14px;}
 .cv-offer .btn{width:100%;margin:0;}
 .cv-offer .btn:disabled{opacity:.6;}
+.cv-offer .offer-link{display:block;text-align:center;margin-top:10px;}
+/* the offer and the ask stack on the closing screen; only the first needs a rule */
+.cv-offer + .cv-offer{margin-top:20px;}
 
 /* ---- check-in ---- */
 .ci-big{font-family:var(--display);text-transform:uppercase;font-size:clamp(38px,13vw,60px);

@@ -24,7 +24,8 @@
   $("#again-btn").addEventListener("click", () => { Live.send("askAgain"); UI.toast("Same poll, round two"); });
   $("#stats-btn").addEventListener("click", () => Live.send("showStats"));
   $("#holding-btn").addEventListener("click", () => Live.send("showHolding"));
-  $("#offer-btn").addEventListener("click", () => Live.send("showOffer"));
+  $("#offer-btn").addEventListener("click", () => Live.send("showPromo", { which: "offer" }));
+  $("#donate-btn").addEventListener("click", () => Live.send("showPromo", { which: "donate" }));
   $("#invite-btn").addEventListener("click", () => { Live.send("inviteTop"); UI.toast("Invited to speak"); });
   // sidebar quick-jumps
   $$('.nav a[data-jump]').forEach((a) => a.addEventListener("click", (e) => {
@@ -247,11 +248,16 @@
     $("#holding-btn").querySelector(".ql").textContent =
       st.holdingLive ? "Hide Holding" : "Holding Screen";
 
-    // the offer only exists if the event was set up with one
-    $("#offer-btn").disabled = !st.offer;
-    $("#offer-btn").classList.toggle("armed", Boolean(st.offerLive));
-    $("#offer-btn").querySelector(".ql").textContent =
-      !st.offer ? "No Offer Set" : (st.offerLive ? "Hide Offer" : "Show Offer");
+    // a promo's button only does anything if the event was set up with one
+    [["offer", "Offer"], ["donate", "Donate"]].forEach(([kind, label]) => {
+      const btn = $("#" + kind + "-btn");
+      const set = Boolean((st.promos || {})[kind]);
+      const on = st.promoLive === kind;
+      btn.disabled = !set;
+      btn.classList.toggle("armed", on);
+      btn.querySelector(".ql").textContent =
+        !set ? "No " + label + " Set" : (on ? "Hide " + label : "Show " + label);
+    });
     $("#prev-btn").disabled = st.topicIndex === 0;
     $("#next-btn").disabled = st.topicIndex >= st.topicCount - 1;
     $("#next-btn-2").disabled = st.topicIndex >= st.topicCount - 1;

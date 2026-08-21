@@ -187,35 +187,53 @@
     return el;
   }
 
-  // ---------------- the offer's artwork ----------------
-  let offerImage = "";
+  // ---------------- the promos' artwork ----------------
+  // The offer and the ask are the same thing twice, so they are wired from one
+  // list rather than two copies that drift apart.
+  const PROMO_KINDS = ["offer", "donate"];
+  const promoImage = { offer: "", donate: "" };
 
-  function paintOfferImage() {
-    const box = $("#offer-img");
-    box.style.backgroundImage = offerImage ? "url(/offers/" + offerImage + ")" : "";
-    box.classList.toggle("has", Boolean(offerImage));
+  function promoPayload(kind) {
+    return {
+      headline: $("#" + kind + "-headline").value,
+      body: $("#" + kind + "-body").value,
+      cta: $("#" + kind + "-cta").value,
+      link: $("#" + kind + "-link").value,
+      linkLabel: $("#" + kind + "-linklabel").value,
+      image: promoImage[kind],
+    };
   }
 
-  $("#offer-file").addEventListener("change", async (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const note = $("#offer-img-note");
-    note.textContent = "Uploading…";
-    try {
-      const r = await fetch("/api/offer-image?slug=" +
-        encodeURIComponent(($("#ev-name").value || "offer").toLowerCase().replace(/[^a-z0-9]+/g, "-")), {
-        method: "POST",
-        headers: { "Content-Type": file.type || "application/octet-stream" },
-        body: file,
-      });
-      const res = await r.json();
-      if (!res.ok) { note.textContent = res.error || "Couldn't upload that."; return; }
-      offerImage = res.image;
-      paintOfferImage();
-      note.textContent = "Image added — remember to save the event";
-    } catch (err) {
-      note.textContent = "No connection — try again.";
-    }
+  function paintPromoImage(kind) {
+    const box = $("#" + kind + "-img");
+    const name = promoImage[kind];
+    box.style.backgroundImage = name ? "url(/offers/" + name + ")" : "";
+    box.classList.toggle("has", Boolean(name));
+  }
+
+  PROMO_KINDS.forEach((kind) => {
+    $("#" + kind + "-file").addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const note = $("#" + kind + "-img-note");
+      note.textContent = "Uploading…";
+      const slug = ((($("#ev-name").value || kind) + "-" + kind)
+        .toLowerCase().replace(/[^a-z0-9]+/g, "-"));
+      try {
+        const r = await fetch("/api/offer-image?slug=" + encodeURIComponent(slug), {
+          method: "POST",
+          headers: { "Content-Type": file.type || "application/octet-stream" },
+          body: file,
+        });
+        const res = await r.json();
+        if (!res.ok) { note.textContent = res.error || "Couldn't upload that."; return; }
+        promoImage[kind] = res.image;
+        paintPromoImage(kind);
+        note.textContent = "Image added — remember to save the event";
+      } catch (err) {
+        note.textContent = "No connection — try again.";
+      }
+    });
   });
 
   $("#add-topic").addEventListener("click", addTopic);
@@ -233,14 +251,16 @@
 
     $("#ev-brand").value = config ? config.brand : "";
     $("#ev-name").value = config ? config.eventName : "";
-    const offer = (config && config.offer) || {};
-    $("#offer-headline").value = offer.headline || "";
-    $("#offer-body").value = offer.body || "";
-    $("#offer-cta").value = offer.cta || "";
-    $("#offer-link").value = offer.link || "";
-    $("#offer-linklabel").value = offer.linkLabel || "";
-    offerImage = offer.image || "";
-    paintOfferImage();
+    PROMO_KINDS.forEach((kind) => {
+      const promo = (config && config[kind]) || {};
+      $("#" + kind + "-headline").value = promo.headline || "";
+      $("#" + kind + "-body").value = promo.body || "";
+      $("#" + kind + "-cta").value = promo.cta || "";
+      $("#" + kind + "-link").value = promo.link || "";
+      $("#" + kind + "-linklabel").value = promo.linkLabel || "";
+      promoImage[kind] = promo.image || "";
+      paintPromoImage(kind);
+    });
     topics = config ? config.topics.map(toModel) : [];
     renderTopics();
     $("#save-msg").textContent = "";
@@ -277,14 +297,8 @@
     return {
       brand: $("#ev-brand").value,
       eventName: $("#ev-name").value,
-      offer: {
-        headline: $("#offer-headline").value,
-        body: $("#offer-body").value,
-        cta: $("#offer-cta").value,
-        link: $("#offer-link").value,
-        linkLabel: $("#offer-linklabel").value,
-        image: offerImage,
-      },
+      offer: promoPayload("offer"),
+      donate: promoPayload("donate"),
       topics: topics.map((t) => ({
         question: t.question,
         settings: { whatsNextThreshold: t.threshold },
@@ -441,14 +455,16 @@
 
       // people who raised a hand for the offer — a separate list to the
       // debrief sign-ups, and downloadable the same way
-      if (r.interest) {
+      [["interest", "\uD83D\uDCBC", "tapped the offer"],
+       ["donations", "\u2764\uFE0F", "said they'd give"]].forEach(([key, icon, what]) => {
+        if (!r[key]) return;
         const want = document.createElement("a");
         want.className = "room-leads has";
         want.href = "/api/interest/" + encodeURIComponent(r.code) + ".json";
-        want.title = "Download the " + r.interest + " person(s) who tapped the offer in this room";
-        want.textContent = "\uD83D\uDCBC " + r.interest;
+        want.title = "Download the " + r[key] + " person(s) who " + what + " in this room";
+        want.textContent = icon + " " + r[key];
         row.appendChild(want);
-      }
+      });
 
       const toggle = document.createElement("button");
       toggle.className = "room-toggle" + (r.closed ? " on" : "");

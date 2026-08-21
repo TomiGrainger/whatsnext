@@ -336,55 +336,100 @@
   // ---- the offer ----
   // Raising a hand keeps you in the room: it records interest against your
   // phone and, where we already have an address, needs nothing typed at all.
-  let offerSeen = null;          // which offer we last auto-opened for
-  let iAmInterested = false;
+  let offerSeen = null;          // which promo we last auto-opened for
+  const interested = {};         // kind -> have they already raised a hand
 
   function offerImageUrl(o) { return o && o.image ? "/offers/" + o.image : ""; }
 
   function paintOffer(st) {
-    const o = st.offer;
-    const live = Boolean(o && st.offerLive && !st.closed);
+    const o = st.promo;                       // the one on screen, if any
+    const live = Boolean(o && st.promoLive && !st.closed);
 
     if (o) {
       const img = offerImageUrl(o);
-      [["#offer-hero", "#offer-headline", "#offer-body"],
-       ["#cv-offer-hero", "#cv-offer-headline", "#cv-offer-body"]].forEach(([i, h, b]) => {
-        const el = $(i);
-        if (img) { el.src = img; el.hidden = false; } else { el.hidden = true; }
-        $(h).textContent = o.headline;
-        $(b).textContent = o.body || "";
-        $(b).hidden = !o.body;
-      });
+      const hero = $("#offer-hero");
+      if (img) { hero.src = img; hero.hidden = false; } else { hero.hidden = true; }
+      $("#offer-headline").textContent = o.headline;
+      $("#offer-body").textContent = o.body || "";
+      $("#offer-body").hidden = !o.body;
       $("#offer-cta").textContent = o.cta;
-      $("#cv-offer-cta").textContent = o.cta;
-      const linkText = o.link ? o.linkLabel : "";
       [["#offer-link", o.link], ["#offer-link-2", o.link]].forEach(([sel, href]) => {
         const a = $(sel);
-        a.textContent = linkText;
+        a.textContent = o.link ? o.linkLabel : "";
         a.href = href || "#";
         a.hidden = !href;
       });
     }
-
-    // on the closing screen it just sits there — no moderator needed
-    $("#cv-offer").hidden = !o;
     paintInterested();
+    paintClosingPromos(st);
 
     // the moderator putting it up opens it once; dismissing it stays dismissed
-    if (joined && live && offerSeen !== o.headline) {
-      offerSeen = o.headline;
+    const key = o ? o.kind + ":" + o.headline : null;
+    if (joined && live && offerSeen !== key) {
+      offerSeen = key;
       openOffer();
     }
-    if (!live && offerSeen && !st.offerLive) { offerSeen = null; closeOffer(); }
+    if (!live && offerSeen) { offerSeen = null; closeOffer(); }
+  }
+
+  // On the closing screen every promo the event has just sits there, no
+  // moderator needed — it is the last thing on the phone for the rest of the night.
+  function paintClosingPromos(st) {
+    const promos = Object.values(st.promos || {});
+    const host = $("#cv-promos");
+    const stamp = promos.map((p) => p.kind + p.headline).join("|") + "/" + doneList().join(",");
+    if (host.dataset.stamp === stamp) return;
+    host.dataset.stamp = stamp;
+    host.innerHTML = "";
+    promos.forEach((p) => {
+      const box = document.createElement("div");
+      box.className = "cv-offer";
+      if (p.image) {
+        const img = document.createElement("img");
+        img.className = "offer-hero";
+        img.src = offerImageUrl(p);
+        img.alt = "";
+        box.appendChild(img);
+      }
+      const h = document.createElement("div");
+      h.className = "cv-offer-head";
+      h.textContent = p.headline;
+      box.appendChild(h);
+      if (p.body) {
+        const b = document.createElement("div");
+        b.className = "cv-offer-body";
+        b.textContent = p.body;
+        box.appendChild(b);
+      }
+      const btn = document.createElement("button");
+      btn.className = "btn";
+      const done = interested[p.kind];
+      btn.disabled = done;
+      btn.textContent = done ? "\u2713 THANK YOU" : p.cta;
+      btn.addEventListener("click", () => { openOffer(p); raiseHand("#offer-email", p); });
+      box.appendChild(btn);
+      if (p.link) {
+        const a = document.createElement("a");
+        a.className = "offer-link";
+        a.href = p.link;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.textContent = p.linkLabel || "See the details";
+        box.appendChild(a);
+      }
+      host.appendChild(box);
+    });
+  }
+
+  function doneList() {
+    return Object.keys(interested).filter((k) => interested[k]);
   }
 
   function paintInterested() {
-    const done = iAmInterested;
+    const o = (Live.get() || {}).promo;
+    const done = Boolean(o && interested[o.kind]);
     $("#offer-ask").hidden = done;
     $("#offer-done").hidden = !done;
-    $("#cv-offer-cta").disabled = done;
-    $("#cv-offer-cta").textContent = done ? "✓ YOU'RE ON THE LIST"
-      : ((Live.get() || {}).offer || {}).cta || "I'M INTERESTED";
   }
 
   function openOffer() {
@@ -398,7 +443,9 @@
   $("#offer-x").addEventListener("click", closeOffer);
   $("#offer-scrim").addEventListener("click", closeOffer);
 
-  async function raiseHand(emailField) {
+  async function raiseHand(emailField, promo) {
+    const o = promo || (Live.get() || {}).promo;
+    if (!o) return;
     // if we have no address for them, ask for one rather than guessing
     const known = (me && me.email) || knownLeadEmail;
     const typed = emailField ? $(emailField).value.trim() : "";
@@ -414,14 +461,17 @@
       UI.toast("That didn't save — try once more");
       return;
     }
-    iAmInterested = true;
+    interested[o.kind] = true;
     paintInterested();
-    UI.toast("You're on the list");
+    paintClosingPromos(Live.get() || {});
+    // a donation happens somewhere else, so the button takes them there as
+    // well as recording the tap
+    if (o.opensLink && o.link) window.open(o.link, "_blank", "noopener");
+    UI.toast(o.kind === "donate" ? "Thank you" : "You're on the list");
     refreshMine();
   }
 
   $("#offer-cta").addEventListener("click", () => raiseHand("#offer-email"));
-  $("#cv-offer-cta").addEventListener("click", () => { openOffer(); raiseHand("#offer-email"); });
 
   // ---- who's in the room ----
   // The snapshot carries the directory but never contact details; those live
@@ -438,7 +488,7 @@
       const d = await r.json();
       if (d.exists) {
         mine = d;
-        if (d.interested) iAmInterested = true;
+        (d.interested || []).forEach((k) => { interested[k] = true; });
         paintRoom(Live.get());
         paintInterested();
       }

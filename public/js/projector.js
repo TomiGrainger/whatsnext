@@ -95,14 +95,15 @@
   // The offer takes the screen only while the moderator holds it up.
   let offerQrFor = null;
   function paintOffer(st) {
-    const o = st.offer;
-    const live = Boolean(o && st.offerLive && !st.closed);
+    const o = st.promo;
+    const live = Boolean(o && st.promoLive && !st.closed);
     $("#offer-veil").hidden = !live;
     if (!live) return;
     const hero = $("#ov-hero");
     if (o.image) { hero.src = "/offers/" + o.image; hero.hidden = false; }
     else { hero.hidden = true; }
     $("#offer-veil").classList.toggle("no-hero", !o.image);
+    $("#ov-tag").textContent = o.eyebrow || "TONIGHT ONLY";
     $("#ov-head").textContent = o.headline;
     $("#ov-body").textContent = o.body || "";
     $("#ov-body").hidden = !o.body;

@@ -84,6 +84,12 @@ Tell anyone who asks: **do nothing, it comes back.** Reloading is safe too.
 Reopen `/projector?room=CODE`. It rejoins whatever is live, including the
 holding loop if that was up. Nothing on the projector holds any state of its own.
 
+### Putting the offer or the ask up
+**SHOW OFFER** and **SHOW DONATE** in the control room. Only one can be on the
+screen at once — pressing the second one puts the first away — and pressing the
+armed one takes it down. A button reading "No Offer Set" means that event hasn't
+been given one in setup.
+
 ### You need the room off the screen *right now*
 **HOLDING SCREEN** in the control room. It covers everything — polls, results,
 the offer, the join code — with the video loop. Press again to go back to

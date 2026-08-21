@@ -270,7 +270,7 @@ def read_interest(code):
         return []
 
 
-def add_interest(code, pid, email, name):
+def add_interest(code, pid, email, name, kind="offer"):
     """One hand raised, deduped by person. Returns "stored", "duplicate" or
     "failed" — a hand raised but not written down is worse than useless, so the
     phone has to be able to tell the difference."""
@@ -278,7 +278,7 @@ def add_interest(code, pid, email, name):
     with INTEREST_LOCK:
         rows = read_interest(code)
         for row in rows:
-            if row.get("pid") == pid:
+            if row.get("pid") == pid and row.get("promo", "offer") == kind:
                 if email and not row.get("email"):
                     row["email"] = email          # they've since given us one
                     break
@@ -286,7 +286,7 @@ def add_interest(code, pid, email, name):
         else:
             room = ROOMS.get(code) or {}
             rows.append({
-                "pid": pid, "name": name or "", "email": email or "",
+                "pid": pid, "promo": kind, "name": name or "", "email": email or "",
                 "at": time.time(), "room": code,
                 "eventName": room.get("eventName", ""),
             })
@@ -316,7 +316,10 @@ def _lead_email(code, pid):
 
 
 def has_interest(code, pid):
-    return any(r.get("pid") == pid for r in read_interest(code))
+    """Which promos this phone has already raised a hand for — so a reload
+    doesn't offer them the same button as though they hadn't."""
+    return sorted({r.get("promo", "offer") for r in read_interest(code)
+                   if r.get("pid") == pid})
 
 
 def _leads_path(code):
@@ -389,7 +392,7 @@ def _smtp_connect():
     return smtp
 
 
-def _debrief_message(to_addr, name, event_name, brand, recap_url, offer=None):
+def _debrief_message(to_addr, name, event_name, brand, recap_url, promos=None):
     msg = EmailMessage()
     msg["Subject"] = "%s — the debrief" % event_name
     msg["From"] = formataddr((brand, MAIL_FROM))
@@ -410,12 +413,14 @@ def _debrief_message(to_addr, name, event_name, brand, recap_url, offer=None):
         "— %s\n"
     ) % (hello, event_name, recap_url, brand)
     text += "\n\nDon't want these? %s\n" % unsub
-    if offer and offer.get("headline"):
-        tail = "\n\n---\n\n%s\n" % offer["headline"]
-        if offer.get("body"):
-            tail += "%s\n" % offer["body"]
-        if offer.get("link"):
-            tail += "%s\n" % offer["link"]
+    for promo in (promos or {}).values():
+        if not promo.get("headline"):
+            continue
+        tail = "\n\n---\n\n%s\n" % promo["headline"]
+        if promo.get("body"):
+            tail += "%s\n" % promo["body"]
+        if promo.get("link"):
+            tail += "%s\n" % promo["link"]
         text += tail
     msg.set_content(text)
 
@@ -443,15 +448,19 @@ def _debrief_message(to_addr, name, event_name, brand, recap_url, offer=None):
     </p>
   </div>
 </body></html>""" % (html_escape(event_name), html_escape(hello), html_escape(recap_url),
-                     html_escape(recap_url), _offer_html(offer),
+                     html_escape(recap_url), _promos_html(promos),
                      html_escape(event_name), html_escape(unsub)), subtype="html")
     return msg
 
 
-def _offer_html(offer):
-    """The pitch as a block at the foot of the debrief. Images are referenced
-    absolutely so they still resolve in a mail client, and the whole block
-    simply disappears when the event has no offer."""
+def _promos_html(promos):
+    return "".join(_promo_html(p) for p in (promos or {}).values())
+
+
+def _promo_html(offer):
+    """One pitch as a block at the foot of the debrief. Images are referenced
+    absolutely so they still resolve in a mail client, and the block simply
+    disappears when the event hasn't set that promo up."""
     if not offer or not offer.get("headline"):
         return ""
     hero = ""
@@ -473,7 +482,7 @@ def _offer_html(offer):
     return ('<div style="margin:30px 0 0;padding:20px;border:1px solid #3a0e15;border-radius:16px;'
             'background:#14090c;">'
             '<div style="font-size:11px;letter-spacing:.2em;color:#FF2D46;font-weight:700;">'
-            "WHAT'S NEXT FOR YOU</div>"
+            + html_escape(offer.get("eyebrow") or "WHAT'S NEXT FOR YOU") + "</div>"
             '%s<h2 style="font-size:22px;line-height:1.15;margin:12px 0 10px;color:#f5f3ef;">%s</h2>'
             '%s%s</div>' % (hero, html_escape(offer["headline"]), body, cta))
 
@@ -487,7 +496,7 @@ def send_debrief(code):
         room = ROOMS.get(code)
         event_name = room.get("eventName", "The event") if room else "The event"
         brand = room.get("brand", "THE UPGRADE") if room else "THE UPGRADE"
-        offer = room_offer(room) if room else None
+        promos = room_promos(room) if room else {}
     recap_url = "%s/recap?room=%s" % (public_base(), code)
 
     with LEAD_LOCK:
@@ -507,7 +516,7 @@ def send_debrief(code):
         for lead in pending:
             try:
                 smtp.send_message(_debrief_message(
-                    lead["email"], lead.get("name", ""), event_name, brand, recap_url, offer))
+                    lead["email"], lead.get("name", ""), event_name, brand, recap_url, promos))
                 lead["sentAt"] = time.time()
                 crm.mark_sent(lead["email"])
                 sent += 1
@@ -767,7 +776,7 @@ def new_room(code, event_id=DEFAULT_EVENT_ID, seed=False):
         "eventId": event_id,
         "brand": config.get("brand", "LIVE EVENT"),
         "eventName": config.get("eventName", "EVENT"),
-        "offerLive": False,
+        "promoLive": None,
         "holdingLive": False,
         "statsLive": False,
         "topics": topics,
@@ -885,23 +894,42 @@ def _validate_interaction(raw, topic_no, index):
     return out
 
 
-def _validate_offer(raw):
-    """The one thing you're selling at this event. Optional — an event without
-    an offer simply never shows one. Text is kept separate from the image so it
-    can be laid out for a phone and a projector independently."""
+# Two things an event can put on the screen: what you're selling, and what
+# you're asking for. Identical machinery — the same fields, the same takeover,
+# the same sheet on the phone — so they share one code path rather than two
+# copies that drift apart. Only ever one on screen at a time.
+PROMOS = {
+    "offer": {"eyebrow": "TONIGHT ONLY", "cta": "I'M INTERESTED",
+              "label": "Show Offer", "hide": "Hide Offer"},
+    # Donating is an action somewhere else, so its button opens the link as
+    # well as recording the tap. The offer deliberately doesn't: sending someone
+    # to a landing page in the middle of an event is how you lose the room.
+    "donate": {"eyebrow": "SUPPORT THIS", "cta": "I'D LIKE TO GIVE",
+               "label": "Show Donate", "hide": "Hide Donate", "opensLink": True},
+}
+
+
+def _validate_offer(raw, kind="offer"):
+    """One promo. Optional — an event without one simply never shows it. Text is
+    kept separate from the image so it can be laid out for a phone and a
+    projector independently."""
     if not isinstance(raw, dict):
         return None
-    headline = _text(raw.get("headline"), "Offer headline", 80, required=False)
+    headline = _text(raw.get("headline"), "Headline", 80, required=False)
     if not headline:
-        return None                      # no headline, no offer
-    link = _text(raw.get("link"), "Offer link", 300, required=False)
+        return None                      # no headline, no promo
+    link = _text(raw.get("link"), "Link", 300, required=False)
     if link and not link.lower().startswith(("http://", "https://")):
         link = "https://" + link
     image = os.path.basename(_text(raw.get("image"), "", 120, required=False))
     return {
         "headline": headline,
         "body": _text(raw.get("body"), "Offer text", 240, required=False),
-        "cta": _text(raw.get("cta"), "Button label", 30, required=False) or "I'M INTERESTED",
+        "cta": (_text(raw.get("cta"), "Button label", 30, required=False)
+                or PROMOS[kind]["cta"]),
+        "eyebrow": (_text(raw.get("eyebrow"), "Eyebrow", 30, required=False)
+                    or PROMOS[kind]["eyebrow"]),
+        "opensLink": bool(PROMOS[kind].get("opensLink")),
         "link": link,
         "linkLabel": _text(raw.get("linkLabel"), "Link label", 40, required=False) or "See the details",
         "image": image,
@@ -949,9 +977,10 @@ def validate_event(payload):
         "eventName": _text(payload.get("eventName"), "Event name", 60),
         "topics": topics,
     }
-    offer = _validate_offer(payload.get("offer"))
-    if offer:
-        out["offer"] = offer
+    for kind in PROMOS:
+        promo = _validate_offer(payload.get(kind), kind)
+        if promo:
+            out[kind] = promo
     return out
 
 
@@ -1407,9 +1436,9 @@ def recap_payload(code):
                           for q in questions[:20]],
             "challengeCount": len(r["challenges"]),
             "topicCount": len(topics),
-            # the pitch travels with the debrief — it's the page people open
-            # days later, so it keeps working long after the room went dark
-            "offer": room_offer(r),
+            # the pitches travel with the debrief — it's the page people open
+            # days later, so they keep working long after the room went dark
+            "promos": room_promos(r),
         }
 
 
@@ -1467,7 +1496,7 @@ def missing_snapshot(code):
         "code": sanitize_code(code),
         "brand": "THE UPGRADE", "eventName": "",
         "closed": False, "joinUrl": join_url(code),
-        "offer": None, "offerLive": False,
+        "promos": {}, "promo": None, "promoLive": None,
         "topic": "", "topicIndex": 0, "topicCount": 0,
         "interactions": [], "activeInteraction": None,
         "mode": "discussion", "revealed": True, "revealable": False, "rerunnable": False,
@@ -1487,11 +1516,22 @@ def missing_snapshot(code):
     }
 
 
-def room_offer(r):
+def room_promo(r, kind):
     """Read live from the event rather than the room's frozen copy, so editing
-    the offer reaches rooms that are already open."""
+    a promo reaches rooms that are already open."""
     cfg = get_event(r.get("eventId", DEFAULT_EVENT_ID)) or {}
-    return cfg.get("offer")
+    promo = cfg.get(kind)
+    return dict(promo, kind=kind) if promo else None
+
+
+def room_promos(r):
+    return {k: room_promo(r, k) for k in PROMOS if room_promo(r, k)}
+
+
+def room_offer(r):
+    """The one that is on screen right now, if any."""
+    live = r.get("promoLive")
+    return room_promo(r, live) if live in PROMOS else None
 
 
 def _featured_profile(r):
@@ -1539,8 +1579,11 @@ def snapshot(code, crew=False):
             "eventName": r["eventName"],
             "closed": r.get("closed", False),
             "joinUrl": join_url(r["code"]),
-            "offer": room_offer(r),
-            "offerLive": bool(r.get("offerLive") and room_offer(r)),
+            # every promo the event has (so the closing screen can show them
+            # all), plus whichever one is on screen right now
+            "promos": room_promos(r),
+            "promo": room_offer(r),
+            "promoLive": r.get("promoLive") if room_offer(r) else None,
             "holdingLive": bool(r.get("holdingLive")),
             "statsLive": bool(r.get("statsLive")),
             # aggregate only — no names, nothing that identifies anyone
@@ -1967,15 +2010,17 @@ def act(code, kind, pid, data):
         elif kind == "interested":
             # Reuse an address we already have — the debrief sign-up or their
             # profile — so for most people this is genuinely one tap.
-            if room_offer(r):
+            live_promo = room_offer(r)
+            if live_promo:
+                which = live_promo.get("kind", "offer")
                 profile = r["profiles"].get(pid, {})
                 given = plausible_email(data.get("email"))
                 known = profile.get("email") or _lead_email(r["code"], pid)
                 who = (data.get("name") or profile.get("name") or "").strip()[:40]
-                outcome = add_interest(r["code"], pid, given or known or "", who)
-                keep("interested", (room_offer(r) or {}).get("headline", ""))
+                outcome = add_interest(r["code"], pid, given or known or "", who, which)
+                keep(which, live_promo.get("headline", ""))
                 crm.signup(session, given or known or "", who,
-                           profile.get("occupation", ""), kind="offer")
+                           profile.get("occupation", ""), kind=which)
                 # "already on the list" is a yes; only a failed write is a no
                 result = {"saved": outcome != "failed"}
 
@@ -2175,11 +2220,13 @@ def act(code, kind, pid, data):
             want = data.get("on")
             r["holdingLive"] = (not r.get("holdingLive")) if want is None else bool(want)
 
-        elif kind == "showOffer":
-            if room_offer(r):
-                # honour an explicit on/off when given, otherwise toggle
+        elif kind == "showPromo":
+            which = data.get("which")
+            if which in PROMOS and room_promo(r, which):
                 want = data.get("on")
-                r["offerLive"] = (not r.get("offerLive")) if want is None else bool(want)
+                on = (r.get("promoLive") != which) if want is None else bool(want)
+                # one takeover at a time: showing one puts the other away
+                r["promoLive"] = which if on else None
 
         elif kind == "featureProfile":
             target = re_pid(data.get("target"))
@@ -2455,7 +2502,12 @@ class Handler(BaseHTTPRequestHandler):
                         "eventName": r.get("eventName", ""), "closed": r.get("closed", False),
                         "leads": len(leads),
                         "unsent": sum(1 for l in leads if not l.get("sentAt")),
-                        "interest": len(read_interest(c)),
+                        # counted apart: a hand raised for the offer and a hand
+                        # raised for the ask are different kinds of yes
+                        "interest": sum(1 for r in read_interest(c)
+                                        if r.get("promo", "offer") == "offer"),
+                        "donations": sum(1 for r in read_interest(c)
+                                         if r.get("promo") == "donate"),
                     })
             return self._send(200, json.dumps({"rooms": rooms, "mailConfigured": mail_configured()}),
                               "application/json", {"Cache-Control": "no-store"})

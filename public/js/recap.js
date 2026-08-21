@@ -74,25 +74,35 @@
       });
     }
 
-    // the offer, if the event has one — shown without a sign-up button
-    // because a debrief reader has no room to raise a hand in
-    if (d.offer && d.offer.headline) {
-      const o = d.offer;
-      const hero = $("#rc-offer-hero");
-      if (o.image) { hero.src = "/offers/" + o.image; hero.hidden = false; }
-      else { hero.hidden = true; }
-      $("#rc-offer-head").textContent = o.headline;
-      $("#rc-offer-body").textContent = o.body || "";
-      $("#rc-offer-body").hidden = !o.body;
-      const link = $("#rc-offer-link");
-      if (o.link) {
-        link.href = o.link;
-        link.textContent = o.linkLabel || "Find out more";
-        link.hidden = false;
-      } else {
-        link.hidden = true;
-      }
-      $("#rc-offer").hidden = false;
+    // whatever the event was promoting, shown without a sign-up button —
+    // a debrief reader has no room to raise a hand in
+    const promos = Object.values(d.promos || {});
+    if (promos.length) {
+      const host = $("#rc-offer");
+      host.innerHTML = "";
+      promos.forEach((o) => {
+        const box = el("section", "rc-offer-one");
+        if (o.image) {
+          const hero = el("img", "rc-offer-hero");
+          hero.src = "/offers/" + o.image;
+          hero.alt = "";
+          box.appendChild(hero);
+        }
+        const txt = el("div", "rc-offer-txt");
+        txt.appendChild(el("div", "rc-eyebrow", o.eyebrow || "WHAT'S NEXT FOR YOU"));
+        txt.appendChild(el("h2", "rc-offer-head", o.headline));
+        if (o.body) txt.appendChild(el("p", "rc-offer-body", o.body));
+        if (o.link) {
+          const a = el("a", "rc-offer-cta", o.linkLabel || "Find out more");
+          a.href = o.link;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          txt.appendChild(a);
+        }
+        box.appendChild(txt);
+        host.appendChild(box);
+      });
+      host.hidden = false;
     }
 
     $("#rc-wrap").hidden = false;
