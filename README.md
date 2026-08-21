@@ -286,6 +286,52 @@ Audience votes flow back the other way into the sentiment ring, the "what's next
 counter, and the challenge queue. Each interaction keeps its own tallies, so
 returning to one later shows what it had.
 
+## The archive
+
+Everything that happens at an event is copied to `DATA_DIR/crm.sqlite3` as it
+happens — SQLite from the standard library, so the zero-dependency rule still
+holds. The live room stays in memory and a vote never waits on a disk: writes
+are queued and flushed a second at a time. Measured at 1,300 votes/second with
+300 simultaneous voters, all archived.
+
+The shape worth knowing is that **`attendees` sits between a phone and a
+person**:
+
+```
+sessions    one run of an event in a room — "the night of the 12th"
+attendees   one phone in one session — name, occupation, vibe, person_id?
+people      identified humans, keyed by email, across every event
+responses   every vote, word, slider, ranking, question and challenge
+signups     debrief sign-ups and offer hand-raises
+```
+
+Responses hang off the attendee, never off the person. So everyone's answers
+are recorded whether or not they ever say who they are; identity is layered on
+afterwards for those who give an email; and deleting a person is one join away
+from deleting everything they did.
+
+That last point is what makes the earlier privacy promise keepable. **Delete my
+details** and the delete link in the debrief email both reach the archive now,
+not just the live room and the mailing list.
+
+Two things follow from this that didn't work before:
+
+- **RESET no longer destroys an evening.** The room is wiped; the record isn't.
+  The session is marked as a rehearsal — kept, and left out of the reports — and
+  the next thing that happens starts a fresh one.
+- **A sign-up now identifies the phone that made it**, so an email address
+  reaches everything that person did that night, and the same person is
+  recognisable across every event they have ever attended.
+
+Existing `leads/` and `interest/` files are folded in on first boot, once; the
+JSON files stay where they are and the download buttons still read them.
+
+`RETENTION_DAYS` drops sessions older than N days at boot. It defaults to 0 —
+keep everything — because that is the point of an archive, but a real number is
+easier to defend than "forever" if anyone ever asks.
+
+Crew-only `/api/archive` reports what it holds, without exposing anyone.
+
 ## Tests
 
 ```bash
@@ -313,6 +359,7 @@ loses signal mid-vote, each one measured rather than assumed.
 
 ```
 server.py              real-time server (stdlib only)
+crm.py                 the archive — SQLite, every event and everyone in it
 test_smoke.py          end-to-end smoke test — run before every deploy
 RUNBOOK.md             what to do on the night when something breaks
 qr.py                  minimal QR encoder for the projector's join code

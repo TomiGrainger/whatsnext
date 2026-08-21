@@ -42,6 +42,7 @@ from email.utils import formataddr, formatdate
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs, quote
 
+import crm
 import qr
 
 HOST = "0.0.0.0"
@@ -106,6 +107,9 @@ DEFAULT_ROOM = "WN25"
 
 SMTP_HOST = os.environ.get("SMTP_HOST", "").strip()
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+# 0 keeps everything. A real number is easier to defend than "forever" — see
+# RUNBOOK.md — but the archive's whole point is that it keeps, so it is opt-in.
+RETENTION_DAYS = int(os.environ.get("RETENTION_DAYS", "0") or 0)
 SMTP_USER = os.environ.get("SMTP_USER", "").strip()
 SMTP_PASS = os.environ.get("SMTP_PASS", "")
 SMTP_TLS = (os.environ.get("SMTP_TLS", "starttls") or "starttls").strip().lower()
@@ -298,8 +302,14 @@ def add_interest(code, pid, email, name):
 
 
 def _lead_email(code, pid):
-    """A debrief sign-up doesn't record who made it, so this only matches when
-    the profile carries the same address — kept as a hook rather than a guess."""
+    """The address this phone gave when it signed up for the debrief, so raising
+    a hand for the offer needs nothing typed. Only possible since sign-ups
+    started recording the phone that made them."""
+    if not pid:
+        return ""
+    for lead in read_leads(code):
+        if lead.get("pid") == pid:
+            return lead.get("email", "")
     return ""
 
 
@@ -334,7 +344,7 @@ def plausible_email(value):
     return value
 
 
-def add_lead(code, email, name):
+def add_lead(code, email, name, pid=""):
     """Returns "stored", "duplicate", or "failed". The three are genuinely
     different to the person standing there: only the last one means their
     address is not on the list, and they need telling."""
@@ -347,6 +357,7 @@ def add_lead(code, email, name):
         leads.append({
             "email": email,
             "name": name or "",
+            "pid": pid or "",
             "at": time.time(),
             "room": code,
             "eventId": room.get("eventId", ""),
@@ -1049,6 +1060,11 @@ def mark_dirty():
     _dirty = True
 
 
+def archive_session(room):
+    """The archive's handle on this room, started on first use."""
+    return crm.session_for(room["code"], room.get("eventId", ""), room.get("eventName", ""))
+
+
 def reset_room(room):
     """Wipe every tally back to zero, keeping the room, its code and its event.
     Used to clear a rehearsal before the doors open — note this always clears
@@ -1063,6 +1079,9 @@ def reset_room(room):
     room["connections"] = []
     room["simParticipants"] = 0
     _activate_topic(room, 0)
+    # the room is wiped, the record is not: the session is marked as a
+    # rehearsal and a fresh one begins with the next thing that happens
+    crm.discard_session(room["code"])
     mark_dirty()
 
 
@@ -1681,10 +1700,11 @@ def suppress(email):
 
 
 def forget_email(email):
-    """Remove every trace of an address: the debrief lists and the offer
-    interest lists, across every room. Asked for, and then done."""
+    """Remove every trace of an address: the debrief lists, the offer interest
+    lists, and the archive — the person, every event they attended and
+    everything they did there. Asked for, and then done."""
     email = (email or "").lower()
-    removed = 0
+    removed = crm.forget_person(email)
     with LEAD_LOCK:
         for folder, lock_free in ((LEADS_DIR, True), (os.path.join(DATA_DIR, "interest"), True)):
             try:
@@ -1844,6 +1864,21 @@ def act(code, kind, pid, data):
         def live(kind_name):
             return item is not None and item["kind"] == kind_name and r["mode"] != "results"
 
+        # Everything a person does is copied to the archive as it happens, so a
+        # RESET clears the room without clearing the record. Queued, never
+        # written on this thread.
+        session = archive_session(r) if kind in AUDIENCE_ACTIONS else None
+
+        def keep(what, value="", value_num=None):
+            crm.record(session, pid, what, topic_index=r["topicIndex"],
+                       topic_question=topic.get("question", ""),
+                       interaction_question=(item or {}).get("question", ""),
+                       value=value, value_num=value_num)
+
+        def label_of(options, oid, field="label"):
+            # store what it said, not its id — an event can be edited later
+            return next((o.get(field, "") for o in options if o["id"] == oid), oid or "")
+
         if kind == "join":
             pass
 
@@ -1858,12 +1893,14 @@ def act(code, kind, pid, data):
                         rt["responses"] += 1
                     rt["sentiment"][choice] += 1
                     rt["_votes"]["sentiment"][pid] = choice
+                    keep("sentiment", choice)
                     _push_history(rt)
 
         elif kind == "whatsnext":
             if pid not in rt["_votes"]["next"]:
                 rt["_votes"]["next"].append(pid)
                 rt["whatsNext"]["votes"] += 1
+                keep("whatsnext")
 
         elif kind == "challenge":
             text = (data.get("text") or "").strip()[:180]
@@ -1876,6 +1913,7 @@ def act(code, kind, pid, data):
                     "pid": pid,
                 })
                 r["challenges"] = r["challenges"][:24]
+                keep("challenge", text)
 
         elif kind == "profile":
             name = (data.get("name") or "").strip()[:40]
@@ -1899,6 +1937,10 @@ def act(code, kind, pid, data):
                     "vibe": vibe or existing.get("vibe"),
                     "onboarded": bool(data.get("checkin")) or existing.get("onboarded", False),
                 }
+                crm.check_in(session, pid, name, occupation,
+                             vibe or existing.get("vibe") or "")
+                if email:
+                    crm.identify(session, pid, email, name)
             elif existing:
                 # cleared every field — drop everything but a photo they kept
                 existing.update({"name": "", "occupation": "", "fact": "", "initials": "?",
@@ -1915,6 +1957,7 @@ def act(code, kind, pid, data):
             r["challenges"] = [c for c in r["challenges"] if c.get("pid") != pid]
             if r.get("featuredProfile") == pid:
                 r["featuredProfile"] = None
+            crm.forget_pid(session, pid)
 
         elif kind == "interested":
             # Reuse an address we already have — the debrief sign-up or their
@@ -1923,8 +1966,10 @@ def act(code, kind, pid, data):
                 profile = r["profiles"].get(pid, {})
                 given = plausible_email(data.get("email"))
                 known = profile.get("email") or _lead_email(r["code"], pid)
-                outcome = add_interest(r["code"], pid, given or known or "",
-                                       (data.get("name") or profile.get("name") or "").strip()[:40])
+                who = (data.get("name") or profile.get("name") or "").strip()[:40]
+                outcome = add_interest(r["code"], pid, given or known or "", who)
+                keep("interested", (room_offer(r) or {}).get("headline", ""))
+                crm.signup(session, pid, given or known or "", who, kind="offer")
                 # "already on the list" is a yes; only a failed write is a no
                 result = {"saved": outcome != "failed"}
 
@@ -1966,6 +2011,7 @@ def act(code, kind, pid, data):
                     "topicIndex": r["topicIndex"],
                     "_voters": [pid],
                 })
+                keep("question", text)
 
         elif kind == "upvote":
             qid = data.get("id")
@@ -1989,6 +2035,7 @@ def act(code, kind, pid, data):
                             irt["votes"][prev] = max(0, irt["votes"][prev] - 1)
                         irt["votes"][opt] += 1
                         irt["_votes"][pid] = opt
+                        keep("poll", label_of(item["options"], opt))
 
         elif kind == "word":
             if live("wordcloud"):
@@ -2002,6 +2049,7 @@ def act(code, kind, pid, data):
                     if (word not in irt.get("banned", [])
                             and not word_is_blocked(word)):
                         irt["words"][word] = irt["words"].get(word, 0) + 1
+                        keep("word", word)   # filtered words are not archived either
                     mine.append(word)
                 result = {"wordsLeft": max(0, MAX_WORDS_PER_PHONE - len(mine))}
 
@@ -2010,6 +2058,7 @@ def act(code, kind, pid, data):
                 oid = data.get("id")
                 if oid in irt["counts"]:
                     irt["counts"][oid] += 1
+                    keep("emoji", label_of(item["options"], oid, "char"))
 
         elif kind == "slider":
             if live("slider"):
@@ -2026,6 +2075,7 @@ def act(code, kind, pid, data):
                         irt["sum"] -= prev
                     irt["sum"] += val
                     irt["_votes"][pid] = val
+                    keep("slider", str(val), float(val))
 
         elif kind == "ranking":
             if live("ranking"):
@@ -2035,6 +2085,7 @@ def act(code, kind, pid, data):
                     for pos, iid in enumerate(order):
                         irt["scores"][iid] += (n - pos)
                     irt["submissions"] = irt.get("submissions", 0) + 1
+                    keep("ranking", " > ".join(label_of(item["items"], i) for i in order))
 
         # ---- moderator: topic flow ----
         elif kind == "launchInteraction":
@@ -2430,6 +2481,13 @@ class Handler(BaseHTTPRequestHandler):
             ) % (html_escape(email), html_escape(email), html_escape(token))
             return self._send(200, UNSUB_PAGE % body, "text/html; charset=utf-8",
                               {"Cache-Control": "no-store"})
+        if path == "/api/archive":
+            # crew-only, and aggregate: proof on sight that the record is being
+            # kept, without exposing a single person's details
+            if not self.authed():
+                return self._deny()
+            return self._send(200, json.dumps(crm.summary()), "application/json",
+                              {"Cache-Control": "no-store"})
         if path == "/api/onboarding":
             payload = {"occupations": occupations(), "vibes": VIBES}
             return self._send(200, json.dumps(payload), "application/json",
@@ -2675,7 +2733,13 @@ class Handler(BaseHTTPRequestHandler):
         if get_room(code) is None:
             return self._send(404, json.dumps({"ok": False, "error": "That room isn't open."}),
                               "application/json")
-        outcome = add_lead(code, email, name)
+        pid = re_pid(data.get("pid"))
+        outcome = add_lead(code, email, name, pid)
+        if outcome != "failed":
+            room = ROOMS.get(code) or {}
+            crm.signup(crm.session_for(code, room.get("eventId", ""),
+                                       room.get("eventName", "")),
+                       pid, email, name, kind="debrief")
         if outcome == "failed":
             # never tell someone they are on a list they are not on
             return self._send(503, json.dumps({
@@ -2710,6 +2774,7 @@ class Handler(BaseHTTPRequestHandler):
                     "and we won't email you again. Nothing further is needed.</p>") % gone
         else:
             suppress(email)
+            crm.set_suppressed(email)
             body = ('<div class="eyebrow">DONE</div><h1>Unsubscribed</h1>'
                     '<p class="done">We won\'t email this address again. '
                     "Your details are still on the list from the night you came \u2014 "
@@ -2789,6 +2854,9 @@ class Handler(BaseHTTPRequestHandler):
                 reset_room(room)
             if "closed" in data:
                 room["closed"] = bool(data.get("closed"))
+                # switching the room off ends the evening in the record too
+                if room["closed"]:
+                    crm.close_session(code)
             mark_dirty()
             closed = room["closed"]
         broadcast(code)
@@ -2890,6 +2958,16 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
+    crm.init(DATA_DIR)
+    brought_in = crm.import_legacy(LEADS_DIR, os.path.join(DATA_DIR, "interest"))
+    if brought_in["people"] or brought_in["signups"]:
+        print("  Archive: brought in %d person/people and %d sign-up(s) from the old files"
+              % (brought_in["people"], brought_in["signups"]))
+    if RETENTION_DAYS:
+        dropped = crm.purge_older_than(RETENTION_DAYS)
+        if dropped:
+            print("  Archive: dropped %d session(s) past the %d-day retention"
+                  % (dropped, RETENTION_DAYS))
     try:
         os.makedirs(DATA_DIR, exist_ok=True)
         copied = seed_events()
@@ -2934,6 +3012,7 @@ def main():
         print("\n  Saving & stopping (%s)…" % signal.Signals(signum).name)
         mark_dirty()
         save_state()
+        crm.close()      # anything queued in the last second still gets written
         os._exit(0)
 
     signal.signal(signal.SIGTERM, stop)

@@ -1097,7 +1097,10 @@
       const r = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name: $("#lead-name").value.trim(), room: Live.room() }),
+        // the phone's id goes with it: that is what ties the address to
+        // everything this phone did tonight
+        body: JSON.stringify({ email, name: $("#lead-name").value.trim(),
+                               room: Live.room(), pid: Live.pid() }),
       });
       const res = await r.json();
       if (!res.ok) {

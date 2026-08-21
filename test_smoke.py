@@ -465,6 +465,48 @@ def run(guest, crew, data_dir):
           st["roomStats"]["checkedIn"] == before - 1
           and not any("deleted" in q["text"] for q in st["questions"]))
 
+    # ---- the archive ----
+    status, _, _ = guest.get("/api/archive")
+    check("the archive summary is crew-only", status == 401, "got %s" % status)
+    status, arc = crew.json("/api/archive")
+    check("the archive is recording responses", status == 200 and arc["responses"] > 0,
+          "got %s" % arc)
+    check("the archive is recording who came", arc["attendees"] >= 3,
+          "attendees=%s" % arc.get("attendees"))
+    check("giving an email identifies that phone", arc["identified"] >= 1,
+          "identified=%s" % arc.get("identified"))
+
+    # a RESET wipes the room but must not wipe the record — this is what the
+    # archive exists for, and what used to destroy an evening
+    before = crew.json("/api/archive")[1]
+    crew.post("/api/rooms/%s" % ROOM, {"reset": True})
+    after = crew.json("/api/archive")[1]
+    check("a reset keeps everyone who attended",
+          after["attendees"] == before["attendees"],
+          "%s then %s" % (before["attendees"], after["attendees"]))
+    check("a reset keeps every response recorded",
+          after["responses"] == before["responses"],
+          "%s then %s" % (before["responses"], after["responses"]))
+    check("a reset marks that session as a rehearsal",
+          after["rehearsals"] > before["rehearsals"],
+          "%s then %s" % (before["rehearsals"], after["rehearsals"]))
+
+    # and deleting yourself has to reach the archive too, or the promise is
+    # only half kept
+    guest.act("join", pid="p_archgone")
+    guest.act("profile", pid="p_archgone", name="Gone", occupation="Student",
+              vibe=vibe_ids[0], checkin=True)
+    guest.act("sentiment", pid="p_archgone", choice="agree")
+    mid = crew.json("/api/archive")[1]
+    guest.act("forgetMe", pid="p_archgone")
+    end = crew.json("/api/archive")[1]
+    check("deleting yourself removes you from the archive",
+          end["attendees"] == mid["attendees"] - 1,
+          "%s then %s" % (mid["attendees"], end["attendees"]))
+    check("and takes your responses with you",
+          end["responses"] < mid["responses"],
+          "%s then %s" % (mid["responses"], end["responses"]))
+
     # ---- the recap is public and carries nothing personal ----
     status, recap = guest.json("/api/recap?room=%s" % ROOM)
     blob = json.dumps(recap).lower()

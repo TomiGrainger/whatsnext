@@ -16,6 +16,7 @@ interest/
 offers/
 suppressed.txt
 secret.key
+crm.sqlite3*
 
 DEPLOY.md
 README.md

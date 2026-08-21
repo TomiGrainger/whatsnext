@@ -23,7 +23,8 @@ Then, in order:
 5. Join from your own phone on **mobile data, not the venue Wi-Fi** — that
    proves the public address works from outside the building.
 6. Press **RESET** in setup. This wipes your rehearsal and the demo's seeded
-   numbers. It does **not** touch debrief sign-ups or offer leads.
+   numbers. It does **not** touch debrief sign-ups, offer leads, or the archive
+   — the rehearsal is marked as a rehearsal and kept out of the reports.
 
 ---
 
@@ -38,11 +39,18 @@ check-ins all come back exactly as they were.
 **Measured: up to 5 seconds of activity is lost.** State is written every 5
 seconds, so the last few votes or a challenge posted in that window can vanish.
 Everything older survives. Debrief sign-ups and offer leads are written the
-instant they happen and are never in that window.
+instant they happen and are never in that window; the archive's queue flushes
+every second, so at most a second of responses is missing from the record.
 
 Nothing to do — it comes back on its own. Carry on from where the screen says
 you are, and if a challenge posted seconds before the crash is missing, ask
 that person to send it again.
+
+### Is the archive actually recording?
+
+`/api/archive` (signed in as crew) answers with what it holds — sessions,
+attendees, responses. Check it once during the first topic. If `responses` is
+climbing, the night is being written down.
 
 ### The state file is corrupt
 **Measured: it falls back to the previous autosave and keeps going.** Every save
@@ -118,6 +126,12 @@ the unsubscribe link in any debrief email offers deletion across every list.
 
 ```bash
 ~/.fly/bin/flyctl ssh console -a whatsnext -C "ls -la /data"
+```
+
+Take a copy of the archive off the machine:
+
+```bash
+~/.fly/bin/flyctl ssh sftp get /data/crm.sqlite3 -a whatsnext
 ```
 
 ```bash

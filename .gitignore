@@ -10,3 +10,6 @@ suppressed.txt
 secret.key
 blocklist.txt
 occupations.txt
+crm.sqlite3
+crm.sqlite3-wal
+crm.sqlite3-shm
