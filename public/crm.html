@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Upgrade LIVE — The Rooms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/crm.css">
+</head>
+<body class="s-crm">
+
+<header class="crm-top">
+  <div>
+    <div class="crm-eyebrow">CREW ONLY</div>
+    <h1 class="crm-title">The Rooms</h1>
+    <p class="crm-sub">Everyone who has been, and everything they said.</p>
+  </div>
+  <nav class="crm-nav">
+    <a href="/setup">Setup</a>
+    <a href="/moderator">Control room</a>
+    <a href="/logout">Sign out</a>
+  </nav>
+</header>
+
+<div class="crm-stats" id="crm-stats"></div>
+
+<div class="crm-tabs">
+  <button class="crm-tab on" data-view="people" type="button">People</button>
+  <button class="crm-tab" data-view="events" type="button">Events</button>
+  <button class="crm-tab" data-view="export" type="button">Export</button>
+</div>
+
+<!-- PEOPLE -->
+<section class="crm-view on" id="view-people">
+  <div class="crm-tools">
+    <input class="crm-search" id="crm-q" type="search" placeholder="Search a name or an email…"
+           autocomplete="off" aria-label="Search people">
+    <select class="crm-sort" id="crm-sort" aria-label="Sort by">
+      <option value="recent">Most recent</option>
+      <option value="nights">Most events attended</option>
+      <option value="hands">Raised a hand for the offer</option>
+      <option value="questions">Asked the most</option>
+      <option value="name">Name</option>
+    </select>
+  </div>
+  <div class="crm-count" id="people-count"></div>
+  <div class="crm-table" id="people-table"></div>
+  <div class="crm-empty" id="people-empty" hidden>
+    <h2>Nobody yet</h2>
+    <p>People appear here once they give an email — at the debrief sign-up, or
+      by raising a hand for the offer. Everyone else is counted in the event
+      reports without being named.</p>
+  </div>
+</section>
+
+<!-- EVENTS -->
+<section class="crm-view" id="view-events">
+  <div class="crm-table" id="events-table"></div>
+  <div class="crm-empty" id="events-empty" hidden>
+    <h2>No events yet</h2>
+    <p>Every room you open is recorded here from the first check-in.</p>
+  </div>
+</section>
+
+<!-- EXPORT -->
+<section class="crm-view" id="view-export">
+  <div class="crm-cards">
+    <a class="crm-card" href="/api/crm/people.csv">
+      <div class="k">people.csv</div>
+      <p>One row per person: contact details, how many events they've been to,
+        hands raised, questions asked. The mailing-list export.</p>
+    </a>
+    <a class="crm-card" href="/api/crm/attendance.csv">
+      <div class="k">attendance.csv</div>
+      <p>One row per person per event — who was in which room, what they do,
+        how they arrived, and how much they took part.</p>
+    </a>
+    <a class="crm-card" href="/api/crm/responses.csv">
+      <div class="k">responses.csv</div>
+      <p>Every answer anyone has ever given, with the topic and question it
+        belonged to. The full picture, and the biggest file.</p>
+    </a>
+  </div>
+  <p class="crm-note">These are plain CSV — they open in Excel or Numbers, and
+    import into HubSpot, Mailchimp or anything else if you ever move.
+    Unsubscribed people are marked rather than removed, so you can filter them
+    out and still know they asked.</p>
+</section>
+
+<!-- one person, in full -->
+<div class="crm-scrim" id="scrim" hidden></div>
+<aside class="crm-panel" id="panel" hidden>
+  <button class="crm-close" id="panel-close" type="button" aria-label="Close">×</button>
+  <div id="panel-body"></div>
+</aside>
+
+<script src="/js/crm.js"></script>
+</body>
+</html>

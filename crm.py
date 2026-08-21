@@ -282,6 +282,11 @@ def _do_check_in(db, session_id, pid, name, occupation, vibe):
     aid = _attendee_id(db, session_id, pid)
     db.execute("UPDATE attendees SET name=?, occupation=?, vibe=? WHERE id=?",
                (name or "", occupation or "", vibe or "", aid))
+    # if this phone is already tied to a person we only know by address, the
+    # name they just gave is the best one we have
+    if name:
+        db.execute("UPDATE people SET name=? WHERE name='' AND id="
+                   "(SELECT person_id FROM attendees WHERE id=?)", (name, aid))
 
 
 def check_in(session_id, pid, name, occupation, vibe):
@@ -499,3 +504,183 @@ def import_legacy(leads_dir, interest_dir):
                     added_signups += cur.rowcount
                 _DB.commit()
     return {"people": added_people, "signups": added_signups}
+
+
+# ---------------------------------------------------------------------------
+# the views behind /crm
+# ---------------------------------------------------------------------------
+
+# Everything below reads. Rehearsal sessions (a room someone RESET) are left
+# out throughout — they are kept so nothing is ever silently dropped, not so
+# they can skew a count.
+
+_PERSON_COLUMNS = """
+  p.id, p.email, p.name, p.first_seen, p.last_seen, p.suppressed,
+  (SELECT COUNT(DISTINCT a.session_id) FROM attendees a
+     JOIN sessions s ON s.id = a.session_id AND s.discarded = 0
+    WHERE a.person_id = p.id) AS nights,
+  (SELECT COUNT(*) FROM signups g
+    WHERE g.person_id = p.id AND g.kind = 'offer') AS hands,
+  (SELECT COUNT(*) FROM responses r JOIN attendees a ON a.id = r.attendee_id
+    WHERE a.person_id = p.id AND r.kind = 'question') AS questions,
+  (SELECT COUNT(*) FROM responses r JOIN attendees a ON a.id = r.attendee_id
+    WHERE a.person_id = p.id) AS responses,
+  (SELECT a.occupation FROM attendees a
+    WHERE a.person_id = p.id AND a.occupation <> ''
+    ORDER BY a.id DESC LIMIT 1) AS occupation
+"""
+
+_SORTS = {
+    "recent": "p.last_seen DESC",
+    "nights": "nights DESC, p.last_seen DESC",
+    "hands": "hands DESC, nights DESC",
+    "questions": "questions DESC, nights DESC",
+    "name": "p.name COLLATE NOCASE, p.email",
+}
+
+
+def people(search="", sort="recent", limit=200, offset=0):
+    like = "%" + (search or "").strip() + "%"
+    order = _SORTS.get(sort, _SORTS["recent"])
+    return query(
+        "SELECT %s FROM people p WHERE (?='' OR p.email LIKE ? OR p.name LIKE ?) "
+        "ORDER BY %s LIMIT ? OFFSET ?" % (_PERSON_COLUMNS, order),
+        ((search or "").strip(), like, like, limit, offset))
+
+
+def people_count(search=""):
+    like = "%" + (search or "").strip() + "%"
+    rows = query("SELECT COUNT(*) n FROM people p WHERE (?='' OR p.email LIKE ? OR p.name LIKE ?)",
+                 ((search or "").strip(), like, like))
+    return rows[0]["n"] if rows else 0
+
+
+def person(person_id):
+    """One person, everything: who they are, the nights they came, and what
+    they did on each of them."""
+    rows = query("SELECT %s FROM people p WHERE p.id = ?" % _PERSON_COLUMNS, (person_id,))
+    if not rows:
+        return None
+    out = rows[0]
+    out["sessions"] = query("""
+        SELECT s.id, s.room_code, s.event_name, s.opened_at, s.closed_at,
+               a.id AS attendee_id, a.name, a.occupation, a.vibe, a.checked_in_at
+        FROM attendees a JOIN sessions s ON s.id = a.session_id
+        WHERE a.person_id = ? AND s.discarded = 0
+        ORDER BY s.opened_at DESC""", (person_id,))
+    for sess in out["sessions"]:
+        sess["responses"] = query("""
+            SELECT kind, topic_question, interaction_question, value, at
+            FROM responses WHERE attendee_id = ? ORDER BY at""", (sess["attendee_id"],))
+    out["signups"] = query("""
+        SELECT g.kind, g.at, g.sent_at, s.room_code, s.event_name
+        FROM signups g LEFT JOIN sessions s ON s.id = g.session_id
+        WHERE g.person_id = ? ORDER BY g.at DESC""", (person_id,))
+    return out
+
+
+def sessions(limit=100):
+    return query("""
+        SELECT s.id, s.room_code, s.event_name, s.opened_at, s.closed_at, s.discarded,
+               (SELECT COUNT(*) FROM attendees a WHERE a.session_id = s.id) AS attendees,
+               (SELECT COUNT(*) FROM attendees a
+                 WHERE a.session_id = s.id AND a.person_id IS NOT NULL) AS identified,
+               (SELECT COUNT(*) FROM responses r WHERE r.session_id = s.id) AS responses
+        FROM sessions s ORDER BY s.opened_at DESC LIMIT ?""", (limit,))
+
+
+def session_report(session_id):
+    """One evening, in the shape you would show a venue or a sponsor."""
+    rows = query("SELECT * FROM sessions WHERE id = ?", (session_id,))
+    if not rows:
+        return None
+    out = rows[0]
+    out["attendees"] = query(
+        "SELECT COUNT(*) n FROM attendees WHERE session_id = ?", (session_id,))[0]["n"]
+    out["identified"] = query(
+        "SELECT COUNT(*) n FROM attendees WHERE session_id = ? AND person_id IS NOT NULL",
+        (session_id,))[0]["n"]
+    out["occupations"] = query("""
+        SELECT occupation AS label, COUNT(*) AS count FROM attendees
+        WHERE session_id = ? AND occupation <> ''
+        GROUP BY occupation ORDER BY count DESC, label""", (session_id,))
+    out["vibes"] = query("""
+        SELECT vibe AS id, COUNT(*) AS count FROM attendees
+        WHERE session_id = ? AND vibe <> '' GROUP BY vibe ORDER BY count DESC""",
+        (session_id,))
+    out["activity"] = query("""
+        SELECT kind, COUNT(*) AS count FROM responses
+        WHERE session_id = ? GROUP BY kind ORDER BY count DESC""", (session_id,))
+    # How the room split on each topic. Only each person's *last* word counts:
+    # every position they held is kept — watching minds change is the point of
+    # the thing — but a report that counted them all would count a person who
+    # switched sides twice, and add up to more people than were in the room.
+    out["topics"] = query("""
+        SELECT topic_index, topic_question,
+               SUM(value = 'agree')    AS agree,
+               SUM(value = 'disagree') AS disagree,
+               SUM(value = 'unsure')   AS unsure
+        FROM responses r
+        WHERE r.session_id = ? AND r.kind = 'sentiment'
+          AND r.id = (SELECT r2.id FROM responses r2
+                       WHERE r2.attendee_id = r.attendee_id AND r2.kind = 'sentiment'
+                         AND r2.topic_index = r.topic_index
+                       ORDER BY r2.at DESC, r2.id DESC LIMIT 1)
+        GROUP BY topic_index ORDER BY topic_index""", (session_id,))
+    out["questions"] = query("""
+        SELECT r.value AS text, a.name FROM responses r
+        JOIN attendees a ON a.id = r.attendee_id
+        WHERE r.session_id = ? AND r.kind = 'question' ORDER BY r.at""", (session_id,))
+    return out
+
+
+def export_rows(what, session_id=None):
+    """(header, rows) for a CSV. Deliberately flat — this is the format that
+    imports into anything else you might move to later."""
+    if what == "people":
+        rows = query("SELECT %s FROM people p ORDER BY p.last_seen DESC" % _PERSON_COLUMNS)
+        header = ["email", "name", "occupation", "events_attended", "hands_raised",
+                  "questions_asked", "responses", "first_seen", "last_seen", "unsubscribed"]
+        return header, [[r["email"], r["name"], r["occupation"] or "", r["nights"],
+                         r["hands"], r["questions"], r["responses"],
+                         _stamp(r["first_seen"]), _stamp(r["last_seen"]),
+                         "yes" if r["suppressed"] else ""] for r in rows]
+    if what == "responses":
+        where = "WHERE s.discarded = 0"
+        args = ()
+        if session_id:
+            where += " AND s.id = ?"
+            args = (session_id,)
+        rows = query("""
+            SELECT s.room_code, s.event_name, p.email, a.name, a.occupation, a.vibe,
+                   r.kind, r.topic_question, r.interaction_question, r.value, r.at
+            FROM responses r
+            JOIN attendees a ON a.id = r.attendee_id
+            JOIN sessions s ON s.id = r.session_id
+            LEFT JOIN people p ON p.id = a.person_id
+            %s ORDER BY r.at""" % where, args)
+        header = ["room", "event", "email", "name", "occupation", "vibe", "kind",
+                  "topic", "question", "answer", "when"]
+        return header, [[r["room_code"], r["event_name"], r["email"] or "", r["name"],
+                         r["occupation"], r["vibe"], r["kind"], r["topic_question"],
+                         r["interaction_question"], r["value"], _stamp(r["at"])]
+                        for r in rows]
+    if what == "attendance":
+        rows = query("""
+            SELECT s.room_code, s.event_name, s.opened_at, p.email,
+                   a.name, a.occupation, a.vibe,
+                   (SELECT COUNT(*) FROM responses r WHERE r.attendee_id = a.id) AS responses
+            FROM attendees a JOIN sessions s ON s.id = a.session_id
+            LEFT JOIN people p ON p.id = a.person_id
+            WHERE s.discarded = 0 ORDER BY s.opened_at DESC, a.name""")
+        header = ["room", "event", "when", "email", "name", "occupation", "vibe", "responses"]
+        return header, [[r["room_code"], r["event_name"], _stamp(r["opened_at"]),
+                         r["email"] or "", r["name"], r["occupation"], r["vibe"],
+                         r["responses"]] for r in rows]
+    return [], []
+
+
+def _stamp(ts):
+    if not ts:
+        return ""
+    return time.strftime("%Y-%m-%d %H:%M", time.localtime(ts))

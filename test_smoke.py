@@ -507,6 +507,76 @@ def run(guest, crew, data_dir):
           end["responses"] < mid["responses"],
           "%s then %s" % (mid["responses"], end["responses"]))
 
+    # ---- the CRM ----
+    for route in ("overview", "people", "person?id=1", "session?id=1", "people.csv"):
+        status, _, _ = guest.get("/api/crm/" + route)
+        check("the CRM is crew-only: %s" % route.split("?")[0], status == 401,
+              "got %s" % status)
+
+    status, over = crew.json("/api/crm/overview")
+    check("the CRM overview reads", status == 200 and over["summary"]["attendees"] > 0)
+    check("it lists the events", len(over["sessions"]) >= 1)
+
+    # Somebody who attends and then identifies themselves. It has to happen
+    # here: the reset tested above marked the earlier session as a rehearsal,
+    # and rehearsals are correctly left out of these counts.
+    guest.act("join", pid="p_crm")
+    guest.act("profile", pid="p_crm", name="Crm Tester",
+              occupation="Founder / Business owner", vibe=vibe_ids[0], checkin=True)
+    guest.act("sentiment", pid="p_crm", choice="agree")
+    # and then changes their mind, twice — the archive keeps all three
+    # positions, but a report that counted them all would say three people
+    # were in a room that held one
+    guest.act("sentiment", pid="p_crm", choice="disagree")
+    guest.act("sentiment", pid="p_crm", choice="unsure")
+    guest.act("ask", pid="p_crm", text="Is any of this written down?")
+    guest.post("/api/leads", {"room": ROOM, "email": "crm@example.com",
+                              "name": "Crm Tester", "pid": "p_crm"})
+
+    status, folk = crew.json("/api/crm/people?sort=nights")
+    check("people appear once they give an email", folk["total"] >= 1,
+          "total=%s" % folk["total"])
+    # sorted by attendance: an address can exist with no nights (given at a
+    # sign-up whose phone never checked in), which is fine but not the case
+    # this is testing
+    who = folk["people"][0]
+    check("a person carries their history", who["nights"] >= 1 and "email" in who,
+          "got %s" % who)
+    check("signing up claims what that phone already did tonight",
+          who["email"] == "crm@example.com" and who["questions"] >= 1,
+          "got %s" % who)
+    status, detail = crew.json("/api/crm/person?id=%s" % who["id"])
+    check("one person's whole record opens", status == 200 and detail["email"] == who["email"])
+    check("their nights carry what they did",
+          any(sess["responses"] for sess in detail["sessions"]),
+          "no responses on any night")
+
+    status, found = crew.json("/api/crm/people?q=" + who["email"].split("@")[0])
+    check("search finds them", found["total"] >= 1, "total=%s" % found["total"])
+    status, none = crew.json("/api/crm/people?q=zzzznobody")
+    check("and finds nothing when there is nothing", none["total"] == 0)
+
+    # a report must never count one person twice, however often they changed
+    # their mind — the archive keeps every position, the report takes the last
+    sess_id = over["sessions"][0]["id"]
+    status, report = crew.json("/api/crm/session?id=%s" % sess_id)
+    check("an event report opens", status == 200 and "occupations" in report)
+    for topic in report.get("topics", []):
+        total = topic["agree"] + topic["disagree"] + topic["unsure"]
+        check("the room's split never exceeds the room (topic %s)" % topic["topic_index"],
+              total <= report["attendees"],
+              "%d votes from %d people" % (total, report["attendees"]))
+
+    status, body, headers = crew.get("/api/crm/people.csv")
+    check("people export as CSV", status == 200 and b"email,name" in body,
+          body[:60].decode("utf-8", "replace"))
+    check("the CSV downloads rather than displays",
+          "attachment" in headers.get("Content-Disposition", ""))
+    status, body, _ = crew.get("/api/crm/responses.csv")
+    check("responses export as CSV", status == 200 and b"room,event" in body)
+    status, body, _ = crew.get("/api/crm/attendance.csv")
+    check("attendance exports as CSV", status == 200 and b"room,event" in body)
+
     # ---- the recap is public and carries nothing personal ----
     status, recap = guest.json("/api/recap?room=%s" % ROOM)
     blob = json.dumps(recap).lower()

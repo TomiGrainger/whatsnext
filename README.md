@@ -332,6 +332,25 @@ easier to defend than "forever" if anyone ever asks.
 
 Crew-only `/api/archive` reports what it holds, without exposing anyone.
 
+### The Rooms — `/crm`
+
+The crew page over the archive, behind the same passcode as everything else.
+
+- **People** — everyone who has ever given an email, searchable, sortable by how
+  often they have come, hands raised for the offer, or questions asked. Clicking
+  one opens their whole history: every night they attended, what they do, how
+  they arrived, and everything they said, in order.
+- **Events** — one row per evening, with a report behind it: who was in the room
+  by occupation, how the room split on each topic, and what they asked. The view
+  to show a venue or a sponsor. Rehearsals are labelled and left out of totals.
+- **Export** — `people.csv`, `attendance.csv` and `responses.csv`. Plain CSV, so
+  it opens in Excel and imports into HubSpot or Mailchimp if you ever move.
+
+One rule worth knowing about the reports: the archive keeps *every* position a
+person held — watching minds change is the point of the app — but a report
+counts only their last word on each topic. Otherwise someone who switched sides
+twice would be three people, and a room of forty would report as sixty.
+
 ## Tests
 
 ```bash
@@ -370,13 +389,14 @@ events/
 public/
   media/holding.mp4    the projector's holding-screen loop
   setup.html           event builder + room launcher
+  crm.html             The Rooms — the crew's view of the archive
   audience.html        mobile surface — 8 interaction screens
   moderator.html       control room dashboard
   projector.html       room display
   css/app.css          shared design system
   css/{audience,moderator,projector,setup}.css
   js/live.js           shared SSE + action client
-  js/{audience,moderator,projector,setup}.js
+  js/{audience,moderator,projector,setup,crm}.js
 Designs/               the visual source of truth (do not redesign)
 events/*.json          event content — one file per event
 leads/<ROOM>.json      debrief sign-ups, written at the event (gitignored)

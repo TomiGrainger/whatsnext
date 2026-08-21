@@ -52,6 +52,10 @@ that person to send it again.
 attendees, responses. Check it once during the first topic. If `responses` is
 climbing, the night is being written down.
 
+### After the event — where everything is
+`/crm` (**The Rooms**) holds it: everyone who came, everything they said, and a
+report per evening. Export from there before you follow anyone up.
+
 ### The state file is corrupt
 **Measured: it falls back to the previous autosave and keeps going.** Every save
 keeps the last good copy as `rooms_state.json.bak`; a corrupt live file costs

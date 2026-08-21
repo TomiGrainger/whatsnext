@@ -25,7 +25,9 @@ Features
 """
 
 import copy
+import csv
 import hmac
+import io
 import json
 import os
 import queue
@@ -507,6 +509,7 @@ def send_debrief(code):
                 smtp.send_message(_debrief_message(
                     lead["email"], lead.get("name", ""), event_name, brand, recap_url, offer))
                 lead["sentAt"] = time.time()
+                crm.mark_sent(lead["email"])
                 sent += 1
             except Exception as exc:
                 failed += 1
@@ -2263,10 +2266,10 @@ STATIC_TYPES = {
 }
 PAGES = {"/": "audience.html", "/moderator": "moderator.html",
          "/projector": "projector.html", "/setup": "setup.html",
-         "/recap": "recap.html"}
+         "/recap": "recap.html", "/crm": "crm.html"}
 # The crew surfaces. The audience page and the projector stay open: the projector
 # is a passive display, often on a machine nobody can type on.
-PROTECTED_PAGES = ("/moderator", "/setup")
+PROTECTED_PAGES = ("/moderator", "/setup", "/crm")
 
 UNSUB_PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
@@ -2481,6 +2484,12 @@ class Handler(BaseHTTPRequestHandler):
             ) % (html_escape(email), html_escape(email), html_escape(token))
             return self._send(200, UNSUB_PAGE % body, "text/html; charset=utf-8",
                               {"Cache-Control": "no-store"})
+        if path.startswith("/api/crm/"):
+            # the whole CRM is crew-only: it is the one place in the app where
+            # a named person's history sits in one view
+            if not self.authed():
+                return self._deny()
+            return self.crm_route(path[len("/api/crm/"):], parse_qs(parsed.query))
         if path == "/api/archive":
             # crew-only, and aggregate: proof on sight that the record is being
             # kept, without exposing a single person's details
@@ -2877,6 +2886,56 @@ class Handler(BaseHTTPRequestHandler):
         broadcast(code)
         body = {"ok": True, "code": code, "eventId": event_id}
         return self._send(200, json.dumps(body), "application/json", {"Cache-Control": "no-store"})
+
+    def crm_route(self, what, qs):
+        one = lambda k, d="": (qs.get(k, [d])[0] or d)
+
+        def num(k, d=0):
+            try:
+                return int(one(k, str(d)))
+            except ValueError:
+                return d
+
+        if what == "overview":
+            return self._json({"summary": crm.summary(), "sessions": crm.sessions()})
+        if what == "people":
+            search = one("q")
+            return self._json({
+                "people": crm.people(search, one("sort", "recent"),
+                                     limit=num("limit", 200), offset=num("offset")),
+                "total": crm.people_count(search),
+            })
+        if what == "person":
+            found = crm.person(num("id"))
+            if found is None:
+                return self._send(404, json.dumps({"ok": False, "error": "No such person"}),
+                                  "application/json")
+            return self._json(found)
+        if what == "session":
+            found = crm.session_report(num("id"))
+            if found is None:
+                return self._send(404, json.dumps({"ok": False, "error": "No such event"}),
+                                  "application/json")
+            return self._json(found)
+        if what.endswith(".csv"):
+            kind = what[:-4]
+            header, rows = crm.export_rows(kind, num("id") or None)
+            if not header:
+                return self._send(404, "Not found")
+            buf = io.StringIO()
+            writer = csv.writer(buf)
+            writer.writerow(header)
+            writer.writerows(rows)
+            name = "%s-%s.csv" % (kind, time.strftime("%Y-%m-%d"))
+            return self._send(200, buf.getvalue(), "text/csv; charset=utf-8", {
+                "Cache-Control": "no-store",
+                "Content-Disposition": 'attachment; filename="%s"' % name,
+            })
+        return self._send(404, "Not found")
+
+    def _json(self, payload):
+        return self._send(200, json.dumps(payload), "application/json",
+                          {"Cache-Control": "no-store"})
 
     def serve_static(self, rel):
         rel = rel.replace("..", "")
