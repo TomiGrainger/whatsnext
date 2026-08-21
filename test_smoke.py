@@ -189,6 +189,32 @@ def run(guest, crew, data_dir):
           sum(v["count"] for v in rs["vibes"]) == 3,
           "vibes=%s" % [v["count"] for v in rs["vibes"]])
 
+    # ---- the lobby ----
+    # A room that hasn't been started keeps everyone in the lobby, and the wall
+    # off the first debate question — nobody should read it before it is asked.
+    st = state(guest)
+    check("a fresh room has not started", st["started"] is False)
+    check("the lobby knows the running order",
+          len(st.get("runningOrder", [])) == st["topicCount"],
+          "%s vs %s" % (len(st.get("runningOrder", [])), st["topicCount"]))
+    status, _ = guest.act("startEvent")
+    check("a guest cannot start the event", status == 401, "got %s" % status)
+    crew.act("startEvent")
+    check("the crew can start it", state(guest)["started"] is True)
+    # and if the crew forgets the button and simply drives the show, the room
+    # must not be left sitting in the lobby
+    crew.post("/api/rooms/%s" % ROOM, {"reset": True})
+    check("a reset puts the room back in the lobby", state(guest)["started"] is False)
+    crew.act("nextTopic")
+    check("driving the show starts it anyway", state(guest)["started"] is True)
+    crew.act("prevTopic")
+    # the reset above emptied the room; put it back so the rest of the run has
+    # the people it expects
+    for pid, occ, vibe in people:
+        guest.act("join", pid=pid)
+        guest.act("profile", pid=pid, name=pid.upper(), occupation=occ,
+                  vibe=vibe, checkin=True)
+
     # ---- every audience action a phone can send ----
     guest.act("sentiment", pid="p_one", choice="agree")
     guest.act("sentiment", pid="p_two", choice="disagree")
@@ -346,7 +372,7 @@ def run(guest, crew, data_dir):
     for kind in ("launchInteraction", "nextTopic", "prevTopic", "reveal", "askAgain",
                  "extend", "pause", "showResults", "backToDiscussion", "removeQuestion",
                  "removeChallenge", "featureQuestion", "featureProfile", "inviteTop",
-                 "showPromo", "showHolding", "showStats", "removeWord", "reset"):
+                 "showScreen", "startEvent", "removeWord", "reset"):
         status, _ = guest.act(kind, index=0)
         check("guests are refused: %s" % kind, status == 401, "got %s" % status)
 
@@ -361,16 +387,16 @@ def run(guest, crew, data_dir):
     check("byte ranges are answered — Safari will not play video without them",
           status == 206 and len(body) == 100 and "Content-Range" in headers,
           "status=%s len=%s" % (status, len(body)))
-    crew.act("showHolding", on=True)
-    check("the crew can raise the holding screen", state(guest)["holdingLive"] is True)
-    crew.act("showHolding", on=False)
-    check("and take it down", state(guest)["holdingLive"] is False)
+    crew.act("showScreen", which="holding", on=True)
+    check("the crew can raise the holding screen", state(guest)["screen"] == "holding")
+    crew.act("showScreen", which="holding", on=False)
+    check("and take it down", state(guest)["screen"] is None)
 
     # ---- state of the room on the wall ----
-    crew.act("showStats", on=True)
+    crew.act("showScreen", which="stats", on=True)
     check("the crew can put the room's make-up on the wall",
-          state(guest)["statsLive"] is True)
-    crew.act("showStats", on=False)
+          state(guest)["screen"] == "stats")
+    crew.act("showScreen", which="stats", on=False)
 
     # ---- the offer ----
     status, ev = crew.json("/api/events/demo_event")
@@ -395,23 +421,31 @@ def run(guest, crew, data_dir):
           promos["donate"].get("opensLink") is True
           and not promos["offer"].get("opensLink"))
 
-    crew.act("showPromo", which="offer", on=True)
-    check("the crew can put the offer up", state(guest)["promoLive"] == "offer")
-    # only one takeover at a time, or two things fight over the projector
-    crew.act("showPromo", which="donate", on=True)
-    st = state(guest)
-    check("showing the ask puts the offer away", st["promoLive"] == "donate"
-          and st["promo"]["headline"] == "Keep these nights free", "got %s" % st["promoLive"])
-    crew.act("showPromo", which="donate", on=False)
-    check("and it can be taken down", state(guest)["promoLive"] is None)
-    crew.act("showPromo", which="offer", on=True)
+    crew.act("showScreen", which="offer", on=True)
+    check("the crew can put the offer up", state(guest)["screen"] == "offer")
+    # One projector, one screen. Every takeover shares the field, so no two can
+    # ever both be up — including the holding loop and the room breakdown.
+    for which in ("donate", "holding", "stats", "offer"):
+        crew.act("showScreen", which=which, on=True)
+        st = state(guest)
+        check("putting up %s takes down whatever was there" % which,
+              st["screen"] == which, "got %s" % st["screen"])
+    crew.act("showScreen", which="offer", on=False)
+    check("and it can be taken down", state(guest)["screen"] is None)
+    # putting a question on the wall has to clear the takeover, or it lands
+    # behind whatever is already there and appears to do nothing
+    crew.act("showScreen", which="offer", on=True)
+    crew.act("featureQuestion", id=qid)
+    check("featuring a question clears the takeover", state(guest)["screen"] is None,
+          "got %s" % state(guest)["screen"])
+    crew.act("showScreen", which="offer", on=True)
     _, before_rows = crew.json("/api/interest/%s.json" % ROOM)
     guest.act("interested", pid="p_one", name="One", email="one@example.com")
     guest.act("interested", pid="p_one", name="One", email="one@example.com")
     # the same phone can answer both, and they are counted separately
-    crew.act("showPromo", which="donate", on=True)
+    crew.act("showScreen", which="donate", on=True)
     guest.act("interested", pid="p_one", name="One", email="one@example.com")
-    crew.act("showPromo", which="offer", on=True)
+    crew.act("showScreen", which="offer", on=True)
     status, rows = crew.json("/api/interest/%s.json" % ROOM)
     check("raising a hand is recorded once per promo, however often it is tapped",
           status == 200 and len(rows) == len(before_rows) + 2,

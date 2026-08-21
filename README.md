@@ -145,6 +145,21 @@ signs the crew out, and anyone with the code has the controls.
   **SAVE TO CONTACTS** producing a vCard stamped with where you met. Nobody can
   collect the room's addresses: a request is a request, not a transfer, and none
   of it reaches the public recap or the moderator.
+- **The lobby** — from checking in until you press **START THE EVENT**, phones
+  show the room filling up: how many are in, what they do, how they're arriving,
+  and tonight's running order. It beats a countdown because it is about them,
+  and it makes a half-empty room feel full. The projector holds the join code
+  with the same picture building underneath, so the wall is never showing the
+  first debate question before it has been asked. Driving the show — launching
+  anything, moving topic — starts the event too, so nobody is left in the lobby
+  because a button was skipped. A RESET puts the room back there.
+- **One screen at a time** — **HOLDING**, **STATE OF THE ROOM**, **SHOW OFFER**
+  and **SHOW DONATE** are one exclusive set: there is one projector, so putting
+  one up takes down whatever was there, and pressing the armed one takes it
+  down. The room holds *which* screen is up rather than a flag each, so the lit
+  button is always the thing actually on the wall. Putting a question or a
+  person on the big screen clears it too — otherwise it lands behind the
+  takeover and appears to do nothing.
 - **The holding screen** — **HOLDING SCREEN** in the control room throws a
   full-screen video loop over the projector: before doors, during the break,
   while you fix something. Press again and the room comes straight back to

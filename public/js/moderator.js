@@ -22,10 +22,12 @@
   $("#discussion-btn").addEventListener("click", () => { Live.send("backToDiscussion"); UI.toast("Back to discussion"); });
   $("#reveal-btn").addEventListener("click", () => { Live.send("reveal"); UI.toast("Results revealed"); });
   $("#again-btn").addEventListener("click", () => { Live.send("askAgain"); UI.toast("Same poll, round two"); });
-  $("#stats-btn").addEventListener("click", () => Live.send("showStats"));
-  $("#holding-btn").addEventListener("click", () => Live.send("showHolding"));
-  $("#offer-btn").addEventListener("click", () => Live.send("showPromo", { which: "offer" }));
-  $("#donate-btn").addEventListener("click", () => Live.send("showPromo", { which: "donate" }));
+  // one exclusive set: there is one projector, so one screen at a time
+  [["stats-btn", "stats"], ["holding-btn", "holding"],
+   ["offer-btn", "offer"], ["donate-btn", "donate"]].forEach(([id, which]) => {
+    $("#" + id).addEventListener("click", () => Live.send("showScreen", { which }));
+  });
+  $("#start-btn").addEventListener("click", () => Live.send("startEvent"));
   $("#invite-btn").addEventListener("click", () => { Live.send("inviteTop"); UI.toast("Invited to speak"); });
   // sidebar quick-jumps
   $$('.nav a[data-jump]').forEach((a) => a.addEventListener("click", (e) => {
@@ -200,11 +202,6 @@
       vhost.appendChild(chip);
     });
 
-    const btn = $("#stats-btn");
-    btn.disabled = !any;
-    btn.classList.toggle("armed", Boolean(st.statsLive));
-    btn.querySelector(".ql").textContent =
-      !any ? "State of the Room" : (st.statsLive ? "Hide the Room" : "State of the Room");
   }
 
   function render(st) {
@@ -244,20 +241,25 @@
     $("#again-btn").disabled = !st.rerunnable;
     $("#again-btn").querySelector(".ql").textContent =
       st.poll.round > 1 ? "Round " + st.poll.round : "Ask Again";
-    $("#holding-btn").classList.toggle("armed", Boolean(st.holdingLive));
-    $("#holding-btn").querySelector(".ql").textContent =
-      st.holdingLive ? "Hide Holding" : "Holding Screen";
 
-    // a promo's button only does anything if the event was set up with one
-    [["offer", "Offer"], ["donate", "Donate"]].forEach(([kind, label]) => {
-      const btn = $("#" + kind + "-btn");
-      const set = Boolean((st.promos || {})[kind]);
-      const on = st.promoLive === kind;
-      btn.disabled = !set;
-      btn.classList.toggle("armed", on);
-      btn.querySelector(".ql").textContent =
-        !set ? "No " + label + " Set" : (on ? "Hide " + label : "Show " + label);
-    });
+    // Every screen button reads the same field, so the armed one is always the
+    // one actually on the wall — they cannot disagree.
+    const promos = st.promos || {};
+    [["holding", "Holding Screen", "Hide Holding", true],
+     ["stats", "State of the Room", "Hide the Room", (st.roomStats || {}).checkedIn > 0],
+     ["offer", "Show Offer", "Hide Offer", Boolean(promos.offer)],
+     ["donate", "Show Donate", "Hide Donate", Boolean(promos.donate)]]
+      .forEach(([which, label, hide, ready]) => {
+        const btn = $("#" + which + "-btn");
+        const on = st.screen === which;
+        btn.disabled = !ready && !on;
+        btn.classList.toggle("armed", on);
+        btn.querySelector(".ql").textContent = on ? hide
+          : (ready ? label : "No " + label.replace(/^Show /, "") + " Set");
+      });
+
+    // the START bar is only there until the night begins
+    $("#start-bar").hidden = Boolean(st.started) || st.exists === false;
     $("#prev-btn").disabled = st.topicIndex === 0;
     $("#next-btn").disabled = st.topicIndex >= st.topicCount - 1;
     $("#next-btn-2").disabled = st.topicIndex >= st.topicCount - 1;

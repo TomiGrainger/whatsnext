@@ -333,6 +333,67 @@
     render(Live.get(), true);
   });
 
+  // ---- the lobby ----
+  // From checking in until the crew starts. The room filling up beats a
+  // countdown: it is about them, and it makes a half-empty room feel full.
+  function paintLobby(st) {
+    const rs = st.roomStats;
+    if (!rs) return;
+    $("#lb-n").textContent = rs.checkedIn;
+    $("#lb-n-lab").textContent = rs.checkedIn === 1
+      ? "here so far — you're the first" : "here so far";
+
+    $("#lb-occ-block").hidden = !rs.occupations.length;
+    const top = Math.max(1, ...rs.occupations.map((o) => o.count));
+    const host = $("#lb-occ");
+    host.innerHTML = "";
+    rs.occupations.slice(0, 6).forEach((o) => {
+      const row = document.createElement("div");
+      row.className = "lb-bar";
+      const fill = document.createElement("div");
+      fill.className = "fill";
+      fill.style.width = Math.round((o.count / top) * 100) + "%";
+      const t = document.createElement("span");
+      t.className = "t";
+      t.textContent = o.label;
+      const n = document.createElement("span");
+      n.className = "n";
+      n.textContent = o.count;
+      row.append(fill, t, n);
+      host.appendChild(row);
+    });
+
+    const vibes = rs.vibes.filter((v) => v.count > 0).sort((a, b) => b.count - a.count);
+    $("#lb-vibe-block").hidden = !vibes.length;
+    const vhost = $("#lb-vibes");
+    vhost.innerHTML = "";
+    vibes.forEach((v) => {
+      const chip = document.createElement("div");
+      chip.className = "lb-vibe";
+      const e = document.createElement("span");
+      e.className = "e";
+      e.textContent = v.char;
+      const n = document.createElement("span");
+      n.className = "n";
+      n.textContent = v.count;
+      chip.append(e, n);
+      vhost.appendChild(chip);
+    });
+
+    const order = st.runningOrder || [];
+    $("#lb-order-block").hidden = !order.length;
+    const ohost = $("#lb-order");
+    if (ohost.dataset.stamp !== order.join("|")) {
+      ohost.dataset.stamp = order.join("|");
+      ohost.innerHTML = "";
+      order.forEach((q) => {
+        const li = document.createElement("li");
+        li.textContent = q;
+        ohost.appendChild(li);
+      });
+    }
+  }
+
   // ---- the offer ----
   // Raising a hand keeps you in the room: it records interest against your
   // phone and, where we already have an address, needs nothing typed at all.
@@ -972,11 +1033,13 @@
     $("#closed-veil").hidden = missing || !st.closed;
     $("#recap-link").href = "/recap?room=" + encodeURIComponent(st.code);
     if (missing) return;
+    paintLobby(st);
 
     // choose screen
     const targetMode = st.mode;
     const screenId = !joined ? "s-join"
       : !checkedIn ? "s-checkin"
+      : !st.started ? "s-lobby"
       : (MODE_SCREEN[targetMode] || "s-discussion");
     const active = $(".screen.active");
     if (!active || active.id !== screenId || force) showScreen(screenId);

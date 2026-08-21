@@ -22,7 +22,7 @@ Then, in order:
 4. Open `/moderator` on your laptop. Confirm the room code matches.
 5. Join from your own phone on **mobile data, not the venue Wi-Fi** — that
    proves the public address works from outside the building.
-6. Press **RESET** in setup. This wipes your rehearsal and the demo's seeded
+6. Press **RESET** in setup — which also puts the room back into the lobby. This wipes your rehearsal and the demo's seeded
    numbers. It does **not** touch debrief sign-ups, offer leads, or the archive
    — the rehearsal is marked as a rehearsal and kept out of the reports.
 
@@ -84,11 +84,16 @@ Tell anyone who asks: **do nothing, it comes back.** Reloading is safe too.
 Reopen `/projector?room=CODE`. It rejoins whatever is live, including the
 holding loop if that was up. Nothing on the projector holds any state of its own.
 
-### Putting the offer or the ask up
-**SHOW OFFER** and **SHOW DONATE** in the control room. Only one can be on the
-screen at once — pressing the second one puts the first away — and pressing the
-armed one takes it down. A button reading "No Offer Set" means that event hasn't
-been given one in setup.
+### Starting the night
+Everyone who checks in sits in the lobby — the room filling up — and the wall
+holds the join code. Press **START THE EVENT** when you're ready. If you forget
+and simply launch something, that starts it too.
+
+### Putting a screen up
+**HOLDING**, **STATE OF THE ROOM**, **SHOW OFFER** and **SHOW DONATE** are one
+exclusive set: one projector, one screen. Pressing another swaps it; pressing
+the lit one takes it down. A button reading "No Offer Set" means that event
+hasn't been given one in setup.
 
 ### You need the room off the screen *right now*
 **HOLDING SCREEN** in the control room. It covers everything — polls, results,

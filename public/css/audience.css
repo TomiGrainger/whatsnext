@@ -421,3 +421,37 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
 .me-forget:hover{color:var(--red);}
 .me-forget.arm{color:var(--red);text-decoration:none;border:1px solid var(--red);
   border-radius:10px;}
+
+/* ---- the lobby ---- */
+.lb-big{font-family:var(--display);text-transform:uppercase;font-size:clamp(30px,10vw,46px);
+  line-height:.95;color:var(--ink);margin:6px 0 14px;}
+.lb-big b{color:var(--red);display:block;}
+.lb-count{display:flex;align-items:baseline;gap:10px;margin-bottom:8px;}
+.lb-count b{font-family:var(--display);font-size:52px;color:var(--red);line-height:1;}
+.lb-count span{color:var(--muted);font-size:14px;}
+.lb-block{margin-top:22px;}
+.lb-block[hidden]{display:none;}
+.lb-lab{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--red);
+  font-weight:700;margin-bottom:10px;}
+.lb-bars{display:flex;flex-direction:column;gap:7px;}
+.lb-bar{position:relative;background:#121216;border:1px solid var(--line);border-radius:10px;
+  padding:10px 13px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+  overflow:hidden;}
+.lb-bar .fill{position:absolute;inset:0 auto 0 0;background:var(--red-dim);
+  border-right:1px solid var(--red);}
+.lb-bar .t,.lb-bar .n{position:relative;}
+.lb-bar .t{font-size:14px;color:var(--ink);}
+.lb-bar .n{font-family:var(--mono);font-size:12px;color:var(--red);font-weight:700;}
+.lb-vibes{display:flex;flex-wrap:wrap;gap:8px;}
+.lb-vibe{display:flex;align-items:center;gap:6px;background:#121216;
+  border:1px solid var(--line);border-radius:999px;padding:7px 12px;}
+.lb-vibe .e{font-size:17px;line-height:1;}
+.lb-vibe .n{font-family:var(--mono);font-size:12px;color:var(--ink);font-weight:700;}
+.lb-order{list-style:none;counter-reset:t;padding:0;margin:0;
+  display:flex;flex-direction:column;gap:8px;}
+.lb-order li{counter-increment:t;display:grid;grid-template-columns:auto 1fr;gap:12px;
+  align-items:center;background:#121216;border:1px solid var(--line);border-radius:10px;
+  padding:11px 13px;font-size:14px;color:var(--ink);line-height:1.35;}
+.lb-order li::before{content:counter(t,decimal-leading-zero);font-family:var(--mono);
+  font-size:11px;color:var(--red);font-weight:700;}
+.lb-wait{color:var(--dim);font-size:13px;text-align:center;padding:16px 0 4px;}

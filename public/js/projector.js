@@ -30,7 +30,7 @@
   // Who is in the room, on the wall — the moment that turns a crowd into a room.
   function paintRoomStats(st) {
     const rs = st.roomStats;
-    const on = Boolean(st.statsLive && rs && rs.checkedIn && !st.closed);
+    const on = st.screen === "stats" && rs && rs.checkedIn > 0 && !st.closed;
     $("#stats-veil").hidden = !on;
     if (!on) return;
     $("#sv-n").textContent = rs.checkedIn;
@@ -76,10 +76,54 @@
       });
   }
 
+  // The room filling up, under the join code, while people arrive.
+  function paintLobby(st) {
+    const rs = st.roomStats;
+    const any = rs && rs.checkedIn > 0;
+    $("#wait-room").hidden = !any;
+    if (!any) return;
+    $("#wr-n").textContent = rs.checkedIn;
+
+    const top = Math.max(1, ...rs.occupations.map((o) => o.count));
+    const host = $("#wr-occ");
+    host.innerHTML = "";
+    rs.occupations.slice(0, 5).forEach((o) => {
+      const row = document.createElement("div");
+      row.className = "wr-bar";
+      const fill = document.createElement("div");
+      fill.className = "fill";
+      fill.style.width = Math.round((o.count / top) * 100) + "%";
+      const t = document.createElement("span");
+      t.className = "t";
+      t.textContent = o.label;
+      const n = document.createElement("span");
+      n.className = "n";
+      n.textContent = o.count;
+      row.append(fill, t, n);
+      host.appendChild(row);
+    });
+
+    const vhost = $("#wr-vibes");
+    vhost.innerHTML = "";
+    rs.vibes.filter((v) => v.count > 0).sort((a, b) => b.count - a.count)
+      .slice(0, 6).forEach((v) => {
+        const cell = document.createElement("div");
+        cell.className = "wr-vibe";
+        const e = document.createElement("span");
+        e.className = "e";
+        e.textContent = v.char;
+        const n = document.createElement("span");
+        n.className = "n";
+        n.textContent = v.count;
+        cell.append(e, n);
+        vhost.appendChild(cell);
+      });
+  }
+
   // The holding loop. Muted is not a style choice: a browser will refuse to
   // autoplay anything with sound, and nobody is at the projector to press play.
   function paintHolding(st) {
-    const on = Boolean(st.holdingLive);
+    const on = st.screen === "holding";
     const veil = $("#hold-veil");
     const video = $("#hold-video");
     if (on === !veil.hidden) return;          // already in the right state
@@ -96,7 +140,7 @@
   let offerQrFor = null;
   function paintOffer(st) {
     const o = st.promo;
-    const live = Boolean(o && st.promoLive && !st.closed);
+    const live = Boolean(o && !st.closed);
     $("#offer-veil").hidden = !live;
     if (!live) return;
     const hero = $("#ov-hero");
@@ -203,8 +247,11 @@
     paintFeaturedProfile(st);
     paintOffer(st);
     $("#closed-veil").hidden = !st.closed;
-    // nobody in the room yet — show the join code rather than an empty stage
-    $("#waiting-veil").hidden = st.closed || st.inRoom > 0;
+    // Before the crew starts, the wall stays on the join code and the room
+    // filling up behind it — never on the first debate question, which nobody
+    // should read before it is asked.
+    $("#waiting-veil").hidden = st.closed || (st.started && st.inRoom > 0);
+    paintLobby(st);
     $("#p-n").textContent = st.topicIndex + 1;
     $("#p-t").textContent = st.topicCount;
     showView(MODE_VIEW[st.mode] || "pv-discussion");

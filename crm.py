@@ -509,7 +509,10 @@ def query(sql, args=()):
 
 
 def summary():
-    """Enough to prove on sight that the archive is doing its job."""
+    """Enough to prove on sight that the archive is doing its job. Settles the
+    queue first: a count that lags a second behind is worse than useless when
+    the whole point is answering "is tonight being written down?"."""
+    flush()
     with _LOCK:
         if _DB is None:
             return {}

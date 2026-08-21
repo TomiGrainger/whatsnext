@@ -212,3 +212,15 @@ body.s-moderator{background:#060607;min-height:100vh;}
 .sr-vibe .l{font-size:11px;color:var(--muted);}
 .qa.stats.armed{border-color:var(--red);background:var(--red);}
 .qa.stats.armed .ql{color:#fff;font-weight:700;}
+
+/* ---- the start bar: there until the night begins, then never again ---- */
+.start-bar{display:flex;align-items:center;justify-content:space-between;gap:20px;
+  flex-wrap:wrap;background:linear-gradient(180deg,#16090c,#0e0e11);
+  border:1px solid var(--red);border-radius:16px;padding:18px 22px;margin:18px 0 4px;}
+.start-bar[hidden]{display:none;}
+.sb-k{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--red);font-weight:700;}
+.sb-d{color:var(--muted);font-size:13.5px;margin-top:5px;}
+.sb-btn{background:var(--red);color:#fff;border:none;border-radius:12px;
+  font-family:var(--mono);font-size:12px;letter-spacing:.14em;font-weight:700;
+  padding:15px 26px;cursor:pointer;}
+.sb-btn:hover{background:var(--red-2);}

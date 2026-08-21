@@ -776,9 +776,8 @@ def new_room(code, event_id=DEFAULT_EVENT_ID, seed=False):
         "eventId": event_id,
         "brand": config.get("brand", "LIVE EVENT"),
         "eventName": config.get("eventName", "EVENT"),
-        "promoLive": None,
-        "holdingLive": False,
-        "statsLive": False,
+        "screen": None,     # holding | stats | offer | donate | None
+        "started": False,   # until the crew starts, everyone sits in the lobby
         "topics": topics,
         "topicIndex": 0,
         "topicCount": len(topics),
@@ -898,6 +897,20 @@ def _validate_interaction(raw, topic_no, index):
 # you're asking for. Identical machinery — the same fields, the same takeover,
 # the same sheet on the phone — so they share one code path rather than two
 # copies that drift apart. Only ever one on screen at a time.
+# The screens one button each can put on the projector. Exactly one at a time.
+SCREENS = ("holding", "stats", "offer", "donate")
+
+
+def _screen_ready(r, which):
+    """A button does nothing if there is nothing behind it — no offer set up,
+    or nobody checked in yet to make a room worth showing."""
+    if which in PROMOS:
+        return bool(room_promo(r, which))
+    if which == "stats":
+        return room_stats(r)["checkedIn"] > 0
+    return True
+
+
 PROMOS = {
     "offer": {"eyebrow": "TONIGHT ONLY", "cta": "I'M INTERESTED",
               "label": "Show Offer", "hide": "Hide Offer"},
@@ -1110,6 +1123,9 @@ def reset_room(room):
     room["featuredProfile"] = None
     room["connections"] = []
     room["simParticipants"] = 0
+    # a reset is "back to before the doors opened", so the lobby comes back too
+    room["started"] = False
+    room["screen"] = None
     _activate_topic(room, 0)
     # the room is wiped, the record is not: the session is marked as a
     # rehearsal and a fresh one begins with the next thing that happens
@@ -1496,7 +1512,8 @@ def missing_snapshot(code):
         "code": sanitize_code(code),
         "brand": "THE UPGRADE", "eventName": "",
         "closed": False, "joinUrl": join_url(code),
-        "promos": {}, "promo": None, "promoLive": None,
+        "promos": {}, "promo": None, "screen": None, "started": False,
+        "runningOrder": [],
         "topic": "", "topicIndex": 0, "topicCount": 0,
         "interactions": [], "activeInteraction": None,
         "mode": "discussion", "revealed": True, "revealable": False, "rerunnable": False,
@@ -1529,8 +1546,8 @@ def room_promos(r):
 
 
 def room_offer(r):
-    """The one that is on screen right now, if any."""
-    live = r.get("promoLive")
+    """The promo on screen right now, if the screen is showing one."""
+    live = r.get("screen")
     return room_promo(r, live) if live in PROMOS else None
 
 
@@ -1583,9 +1600,12 @@ def snapshot(code, crew=False):
             # all), plus whichever one is on screen right now
             "promos": room_promos(r),
             "promo": room_offer(r),
-            "promoLive": r.get("promoLive") if room_offer(r) else None,
-            "holdingLive": bool(r.get("holdingLive")),
-            "statsLive": bool(r.get("statsLive")),
+            # whichever takeover is up, or nothing. One at a time, always.
+            "screen": r.get("screen"),
+            "started": bool(r.get("started")),
+            # the night's running order, so the lobby can show what's coming
+            "runningOrder": [t["question"] for t in r["topics"]],
+
             # aggregate only — no names, nothing that identifies anyone
             "roomStats": room_stats(r),
             "topic": topic.get("question", ""),
@@ -1910,6 +1930,12 @@ def act(code, kind, pid, data):
         def live(kind_name):
             return item is not None and item["kind"] == kind_name and r["mode"] != "results"
 
+        # If the crew drives the show without pressing START, the event has
+        # plainly started — nobody should be left looking at the lobby because
+        # a button was skipped.
+        if kind in ("launchInteraction", "nextTopic", "prevTopic", "showResults"):
+            r["started"] = True
+
         # Everything a person does is copied to the archive as it happens, so a
         # RESET clears the room without clearing the record. Queued, never
         # written on this thread.
@@ -2201,9 +2227,10 @@ def act(code, kind, pid, data):
                 except OSError:
                     pass
 
-        elif kind == "showStats":
-            want = data.get("on")
-            r["statsLive"] = (not r.get("statsLive")) if want is None else bool(want)
+
+        elif kind == "startEvent":
+            r["started"] = True
+            r["screen"] = None
 
         elif kind == "removeWord":
             # pulls it off the projector and stops it coming straight back
@@ -2216,23 +2243,23 @@ def act(code, kind, pid, data):
                         if word not in banned:
                             banned.append(word)
 
-        elif kind == "showHolding":
-            want = data.get("on")
-            r["holdingLive"] = (not r.get("holdingLive")) if want is None else bool(want)
-
-        elif kind == "showPromo":
+        elif kind == "showScreen":
+            # One takeover at a time, because there is one projector. Putting a
+            # screen up takes down whatever was there; pressing the one that is
+            # already up takes it down.
             which = data.get("which")
-            if which in PROMOS and room_promo(r, which):
+            if which in SCREENS and _screen_ready(r, which):
                 want = data.get("on")
-                on = (r.get("promoLive") != which) if want is None else bool(want)
-                # one takeover at a time: showing one puts the other away
-                r["promoLive"] = which if on else None
+                on = (r.get("screen") != which) if want is None else bool(want)
+                r["screen"] = which if on else None
 
         elif kind == "featureProfile":
+            r["screen"] = None
             target = re_pid(data.get("target"))
             if target in r["profiles"]:
                 r["featuredProfile"] = None if r.get("featuredProfile") == target else target
         elif kind == "featureQuestion":
+            r["screen"] = None
             qid = data.get("id")
             # tapping the live one again takes it off the big screen
             r["featuredQuestion"] = None if r.get("featuredQuestion") == qid else qid

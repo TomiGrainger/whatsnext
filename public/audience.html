@@ -64,6 +64,33 @@
     <button class="btn" id="ci-done" disabled>I'M IN →</button>
   </section>
 
+  <!-- 01c LOBBY: from checking in until the crew starts. The room filling up,
+       which is more interesting than a countdown and makes a half-empty room
+       feel full. -->
+  <section class="screen" id="s-lobby">
+    <div class="eyebrow-c">YOU'RE IN</div>
+    <div class="lb-big">THE ROOM IS<b>FILLING UP</b></div>
+    <div class="lb-count"><b id="lb-n">0</b><span id="lb-n-lab">here so far</span></div>
+
+    <div class="lb-block" id="lb-occ-block" hidden>
+      <div class="lb-lab">WHO'S HERE</div>
+      <div class="lb-bars" id="lb-occ"></div>
+    </div>
+
+    <div class="lb-block" id="lb-vibe-block" hidden>
+      <div class="lb-lab">HOW THE ROOM'S ARRIVING</div>
+      <div class="lb-vibes" id="lb-vibes"></div>
+    </div>
+
+    <div class="lb-block" id="lb-order-block" hidden>
+      <div class="lb-lab">TONIGHT'S RUNNING ORDER</div>
+      <ol class="lb-order" id="lb-order"></ol>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="lb-wait">Sit tight — we'll start shortly.</div>
+  </section>
+
   <!-- 02 DISCUSSION -->
   <section class="screen" id="s-discussion">
     <div class="q-eyebrow">THE QUESTION</div>
