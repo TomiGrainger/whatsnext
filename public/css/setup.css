@@ -203,3 +203,9 @@
 
 .room-tonight{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--red);
   border:1px solid var(--red);border-radius:999px;padding:3px 8px;white-space:nowrap;}
+
+.mail-state{font-size:12.5px;line-height:1.5;border-radius:10px;padding:10px 13px;
+  margin:14px 0 4px;border:1px solid var(--line);color:var(--muted);}
+.mail-state[hidden]{display:none;}
+.mail-state.on{border-color:#1f5f3f;color:#8fd6b0;}
+.mail-state.off{border-color:#3a0e15;color:var(--muted);}

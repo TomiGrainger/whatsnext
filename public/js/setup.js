@@ -419,6 +419,16 @@
   async function loadRooms() {
     const data = await get("/api/rooms");
     mailConfigured = Boolean(data.mailConfigured);
+    // Say plainly whether the debrief can send. The SEND button only exists on
+    // a room that has sign-ups, so before tonight there was nothing on this
+    // page that told you either way.
+    const ms = $("#mail-state");
+    ms.hidden = false;
+    ms.className = "mail-state " + (mailConfigured ? "on" : "off");
+    ms.textContent = mailConfigured
+      ? "\u2713 Mail is set up — the debrief can send itself."
+      : "Mail isn't set up, so the debrief can't send. Sign-ups are still saved "
+        + "and downloadable; see DEPLOY.md to switch sending on.";
     const host = $("#rooms-open");
     if (!data.rooms.length) { host.innerHTML = ""; return; }
     host.innerHTML = '<div class="rl">Rooms</div>';

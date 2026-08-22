@@ -523,6 +523,9 @@ def run(guest, crew, data_dir):
           "got %s" % status)
     status, body, _ = guest.post("/api/leads", {"room": ROOM, "email": "not-an-email"})
     check("a bad address is refused", status == 400, "got %s" % status)
+    status, rooms_now = crew.json("/api/rooms")
+    check("setup is told whether mail can send, without needing a sign-up first",
+          "mailConfigured" in rooms_now, "keys: %s" % list(rooms_now))
     status, leads = crew.json("/api/leads/%s.json" % ROOM)
     check("sign-ups are readable by the crew", status == 200 and len(leads) == 1)
     lead_count = len(leads)

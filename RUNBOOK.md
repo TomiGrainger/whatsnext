@@ -88,6 +88,11 @@ Tell anyone who asks: **do nothing, it comes back.** Reloading is safe too.
 Reopen `/projector?room=CODE`. It rejoins whatever is live, including the
 holding loop if that was up. Nothing on the projector holds any state of its own.
 
+### Is the debrief able to send?
+The setup page says so in a line above the room list. **SEND DEBRIEF** itself
+only appears on a room that already has sign-ups — no sign-ups, no button — so
+its absence tells you nothing either way.
+
 ### Starting the night
 Everyone who checks in sits in the lobby — the room filling up — and the wall
 holds the join code. Press **START THE EVENT** when you're ready. If you forget
