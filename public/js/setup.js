@@ -454,6 +454,15 @@
       row.appendChild(a);
 
       // sign-ups collected in this room, downloadable as JSON
+      // exactly what the debrief email looks like for this room
+      const peek = document.createElement("a");
+      peek.className = "room-leads";
+      peek.href = "/api/debrief-preview/" + encodeURIComponent(r.code);
+      peek.target = "_blank";
+      peek.title = "See exactly what the debrief email says for this room";
+      peek.textContent = "\u2709 preview";
+      row.appendChild(peek);
+
       // table cards and a door poster for this room
       const print = document.createElement("a");
       print.className = "room-leads";

@@ -205,6 +205,13 @@ signs the crew out, and anyone with the code has the controls.
   nothing to type. Tapping **I'D LIKE TO GIVE** records the same thing *and*
   opens the link, because giving is an action that happens somewhere else.
 
+  An address given to either one **also joins that room's debrief list**, and
+  the sheet says so before they tap. Someone who hands you their email at your
+  event expects the results of the night they attended; leaving them on a list
+  that never gets sent is the worst of both — you hold their address and they
+  hear nothing. The lists stay separate for their own job: following up an
+  offer is not the same as mailing the results.
+
   Hands raised land in `interest/<ROOM>.json` tagged with which promo they were
   for, shown as separate **💼** and **❤️** counts against the room in setup and
   downloadable there. They are kept apart from the debrief list and survive a
@@ -404,7 +411,11 @@ audience list and sent every phone that scanned the QR to the crew passcode
 screen, and a suite that only checked the crew gate would have passed happily
 through it. It now fails within a second.
 
-Run it before every deploy. [RUNBOOK.md](RUNBOOK.md) covers the other half —
+Run it before every deploy.
+
+**✉ preview** on each room in setup renders the exact debrief email that room
+would send, without needing mail to be working — which is usually the thing you
+are trying to check. [RUNBOOK.md](RUNBOOK.md) covers the other half —
 what actually happens when the machine dies, the volume fills up or a phone
 loses signal mid-vote, each one measured rather than assumed.
 

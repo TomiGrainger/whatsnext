@@ -523,12 +523,42 @@ def run(guest, crew, data_dir):
           "got %s" % status)
     status, body, _ = guest.post("/api/leads", {"room": ROOM, "email": "not-an-email"})
     check("a bad address is refused", status == 400, "got %s" % status)
+
+    # An address given to the offer is an address given at this event: it has to
+    # reach the debrief list too, or the person is stranded on a list that never
+    # gets sent and the crew never knows they are owed anything.
+    _, before_leads = crew.json("/api/leads/%s.json" % ROOM)
+    crew.act("showScreen", which="offer", on=True)
+    guest.act("interested", pid="p_stranded", name="Stranded",
+              email="stranded@example.com")
+    _, after_leads = crew.json("/api/leads/%s.json" % ROOM)
+    check("an address given to the offer joins the debrief list",
+          any(l["email"] == "stranded@example.com" for l in after_leads)
+          and len(after_leads) == len(before_leads) + 1,
+          "%d then %d" % (len(before_leads), len(after_leads)))
+    _, interest_rows = crew.json("/api/interest/%s.json" % ROOM)
+    check("and still counts separately as an offer hand-raise",
+          any(i["email"] == "stranded@example.com" and i.get("promo") == "offer"
+              for i in interest_rows))
+    guest.act("interested", pid="p_stranded", name="Stranded",
+              email="stranded@example.com")
+    _, again = crew.json("/api/leads/%s.json" % ROOM)
+    check("tapping it twice doesn't double them up",
+          len(again) == len(after_leads), "%d then %d" % (len(after_leads), len(again)))
     status, rooms_now = crew.json("/api/rooms")
     check("setup is told whether mail can send, without needing a sign-up first",
           "mailConfigured" in rooms_now, "keys: %s" % list(rooms_now))
+
+    # the debrief email, viewable without needing mail to work first
+    status, _, _ = guest.get("/api/debrief-preview/%s" % ROOM)
+    check("the email preview is crew-only", status == 401, "got %s" % status)
+    status, body, _ = crew.get("/api/debrief-preview/%s" % ROOM)
+    check("the crew can read the exact email before sending it",
+          status == 200 and b"THE DEBRIEF" in body and b"Unsubscribe" in body,
+          "got %s" % status)
     status, leads = crew.json("/api/leads/%s.json" % ROOM)
-    check("sign-ups are readable by the crew", status == 200 and len(leads) == 1)
-    lead_count = len(leads)
+    check("sign-ups are readable by the crew", status == 200 and len(leads) >= 1,
+          "got %s rows" % (len(leads) if leads is not None else None))
     status, _, _ = guest.get("/api/leads/%s.json" % ROOM)
     check("but not by anyone else", status == 401, "got %s" % status)
 
@@ -556,13 +586,14 @@ def run(guest, crew, data_dir):
                                                     "email": "unsaveable@example.com"})
         check("and it works again once the volume is writable", status == 200,
               "got %s" % status)
-        lead_count = len(crew.json("/api/leads/%s.json" % ROOM)[1])
 
     # ---- unsubscribe and deletion ----
     status, body, _ = guest.get("/unsubscribe?e=sign%40example.com&t=forged")
     check("a forged unsubscribe link is refused", status == 400, "got %s" % status)
 
     # ---- reset keeps the things that are not rehearsal data ----
+    lead_count = len(crew.json("/api/leads/%s.json" % ROOM)[1])
+    interest_count = len(crew.json("/api/interest/%s.json" % ROOM)[1])
     crew.post("/api/rooms/%s" % ROOM, {"reset": True})
     st = state(guest)
     check("reset clears the room", st["sentiment"]["agree"] == 0

@@ -2063,7 +2063,14 @@ def act(code, kind, pid, data):
                 given = plausible_email(data.get("email"))
                 known = profile.get("email") or _lead_email(r["code"], pid)
                 who = (data.get("name") or profile.get("name") or "").strip()[:40]
-                outcome = add_interest(r["code"], pid, given or known or "", who, which)
+                addr = given or known or ""
+                outcome = add_interest(r["code"], pid, addr, who, which)
+                # An address given here is an address given at this event. It
+                # joins the debrief list too, so nobody who handed over their
+                # email ends up stranded on a list that never gets written to.
+                # The sheet says this out loud before they tap.
+                if addr:
+                    add_lead(r["code"], addr, who, pid)
                 keep(which, live_promo.get("headline", ""))
                 crm.signup(session, given or known or "", who,
                            profile.get("occupation", ""), kind=which)
@@ -2603,6 +2610,26 @@ class Handler(BaseHTTPRequestHandler):
             if not self.authed():
                 return self._deny()
             return self.crm_route(path[len("/api/crm/"):], parse_qs(parsed.query))
+        if path.startswith("/api/debrief-preview/"):
+            # Exactly the mail that would go out for this room, rendered in the
+            # browser. Sending yourself a test is the only other way to see it,
+            # and that needs mail working — which is usually what you are trying
+            # to check in the first place.
+            if not self.authed():
+                return self._deny()
+            code = sanitize_code(path[len("/api/debrief-preview/"):])
+            with LOCK:
+                room = ROOMS.get(code)
+            if room is None:
+                return self._send(404, "That room isn't open.")
+            msg = _debrief_message(
+                MAIL_FROM or "you@example.com", "Sam",
+                room.get("eventName", "The event"), room.get("brand", "THE UPGRADE"),
+                "%s/recap?room=%s" % (public_base(), code), room_promos(room))
+            html = [p for p in msg.walk() if p.get_content_type() == "text/html"]
+            body = html[0].get_content() if html else msg.get_content()
+            return self._send(200, body, "text/html; charset=utf-8",
+                              {"Cache-Control": "no-store"})
         if path == "/api/archive":
             # crew-only, and aggregate: proof on sight that the record is being
             # kept, without exposing a single person's details

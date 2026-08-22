@@ -88,6 +88,9 @@ Tell anyone who asks: **do nothing, it comes back.** Reloading is safe too.
 Reopen `/projector?room=CODE`. It rejoins whatever is live, including the
 holding loop if that was up. Nothing on the projector holds any state of its own.
 
+### What does the debrief actually say?
+**✉ preview** on the room's row in setup shows the exact email, offer and all.
+
 ### Is the debrief able to send?
 The setup page says so in a line above the room list. **SEND DEBRIEF** itself
 only appears on a room that already has sign-ups — no sign-ups, no button — so
