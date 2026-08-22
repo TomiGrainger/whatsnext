@@ -175,11 +175,15 @@ signs the crew out, and anyone with the code has the controls.
   first debate question before it has been asked. Driving the show — launching
   anything, moving topic — starts the event too, so nobody is left in the lobby
   because a button was skipped. A RESET puts the room back there.
-- **How it works** — a seven-slide loop explaining the app to a room that has
-  never used it: scan to join, say where you stand, vote, ask, take the mic,
-  react, take it home. Big type, no voice-over, nothing to press — it runs
-  itself and loops until taken down. A person walking in reads a wall for about
-  six seconds, so each slide gets seven.
+- **How it works** — a two-and-a-half minute animated explainer for a room that
+  has never used any of this: scan to join, say where you stand, vote, ask, take
+  the mic, react, take it home. Each of the seven gets **20 seconds** and its own
+  working demo — a phone being scanned, poll bars filling, questions being
+  upvoted, someone brought onto the mic, reactions drifting up the wall — built
+  from the app's own vocabulary, so the room recognises the real thing when it
+  arrives a minute later. All CSS animation on a loop; no video file, nothing to
+  press, and it runs itself until taken down. `HOW_DWELL` in `projector.js` is
+  the one number if you want it faster or slower.
 - **One screen at a time** — **HOLDING**, **HOW IT WORKS**, **STATE OF THE
   ROOM**, **SHOW OFFER** and **SHOW DONATE** are one exclusive set: there is one projector, so putting
   one up takes down whatever was there, and pressing the armed one takes it

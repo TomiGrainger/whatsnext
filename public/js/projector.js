@@ -80,23 +80,100 @@
   // A room that has never used this needs telling once, and a person walking in
   // reads a wall for about six seconds. So: short slides, big type, no voice-over
   // and nothing to press. It runs itself and loops until taken down.
-  const HOW_DWELL = 7000;
+  const HOW_DWELL = 20000;        // long enough to read, watch, and understand
+
+  const mk = (tag, cls, text) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  };
+
+  // Each demo is a small working mock of the feature, animated on a loop in CSS
+  // and built from the app's own vocabulary — so when the real thing appears a
+  // minute later, the room has already seen it.
+  const DEMOS = {
+    join(st) {
+      const phone = mk("div", "d-phone");
+      const screen = mk("div", "d-screen");
+      const qr = mk("div", "d-qr");
+      const img = document.createElement("img");
+      img.src = "/qr.svg?url=" + encodeURIComponent(st.joinUrl || "");
+      img.alt = "";
+      qr.appendChild(img);
+      screen.append(qr, mk("div", "d-sub", (st.code || "")));
+      const done = mk("div", "d-in");
+      done.append(mk("div", "d-tick", "\u2713"), mk("div", "d-lab", "YOU'RE IN"));
+      phone.append(screen, mk("div", "d-scan"), done);
+      return phone;
+    },
+    stand() {
+      const phone = mk("div", "d-phone");
+      const screen = mk("div", "d-screen");
+      const box = mk("div", "d-choices");
+      box.append(mk("div", "d-choice a", "AGREE"),
+                 mk("div", "d-choice b", "DISAGREE"),
+                 mk("div", "d-choice c", "UNSURE"));
+      screen.appendChild(box);
+      phone.appendChild(screen);
+      return phone;
+    },
+    vote() {
+      const bars = mk("div", "d-bars");
+      for (let i = 0; i < 4; i++) {
+        const b = mk("div", "d-bar");
+        b.appendChild(document.createElement("i"));
+        bars.appendChild(b);
+      }
+      return bars;
+    },
+    ask() {
+      const cards = mk("div", "d-cards");
+      [12, 8, 3].forEach((n) => {
+        const c = mk("div", "d-card");
+        c.append(mk("div", "d-vote", "\u25B2 " + n), mk("div", "d-qtext"));
+        cards.appendChild(c);
+      });
+      return cards;
+    },
+    mic() {
+      const row = mk("div", "d-faces");
+      ["AR", "ML", "JT"].forEach((i) => row.appendChild(mk("div", "d-face", i)));
+      return row;
+    },
+    react() {
+      const box = mk("div", "d-react");
+      ["\u{1F525}", "\u{1F44F}", "\u2764\uFE0F", "\u{1F914}", "\u{1F389}"]
+        .forEach((e) => box.appendChild(mk("span", "d-em", e)));
+      return box;
+    },
+    mail() {
+      const m = mk("div", "d-mail");
+      const bd = mk("div", "bd");
+      bd.append(mk("div", "ln"), mk("div", "ln s"), mk("div", "ln"),
+                mk("div", "btn"));
+      m.append(mk("div", "hd"), bd);
+      return m;
+    },
+  };
+
   const HOW_SLIDES = [
-    { art: "qr",  head: ["SCAN TO", "JOIN"],
-      body: "Point your camera at the code. No app, no sign-up, no account." },
-    { art: "\u270B", head: ["SAY WHERE", "YOU STAND"],
-      body: "Agree, disagree or unsure — and change your mind whenever you like. The wall moves with you." },
-    { art: "\u{1F4CA}", head: ["VOTE ON", "EVERYTHING"],
-      body: "Polls, word clouds, sliders, rankings. Everyone answers at once, and the room sees itself think." },
-    { art: "\u{1F64B}", head: ["ASK THE", "QUESTION"],
-      body: "Put a question up and upvote the ones you want answered. The best-backed ones reach the stage." },
-    { art: "\u{1F5E3}", head: ["TAKE THE", "MIC"],
-      body: "Disagree out loud. Join the challenge queue and the moderator can bring you in." },
-    { art: "\u{1F525}", head: ["REACT AS", "IT HAPPENS"],
-      body: "Hold an emoji and it floats up the wall. The room reacts without interrupting." },
-    { art: "\u2709\uFE0F", head: ["TAKE IT", "HOME"],
-      body: "Leave your email at the end and the full results land in your inbox." },
+    { demo: "join", head: ["SCAN TO", "JOIN"],
+      body: "Point your camera at the code. It opens in your browser — no app, no sign-up, no account to make." },
+    { demo: "stand", head: ["SAY WHERE", "YOU STAND"],
+      body: "Agree, disagree or unsure on every question. Change your mind whenever you like — the wall moves with you, and changing it is the interesting part." },
+    { demo: "vote", head: ["VOTE ON", "EVERYTHING"],
+      body: "Polls, word clouds, sliders and rankings. Everyone answers at once and the results build on the screen in front of you." },
+    { demo: "ask", head: ["ASK THE", "QUESTION"],
+      body: "Put a question to the room and upvote the ones you want answered. The best-backed questions go up on the big screen." },
+    { demo: "mic", head: ["TAKE THE", "MIC"],
+      body: "Disagree out loud. Join the challenge queue and the host can bring you in to say it to the room." },
+    { demo: "react", head: ["REACT AS", "IT HAPPENS"],
+      body: "Hold an emoji and it floats up the wall. React to what's being said without interrupting anyone." },
+    { demo: "mail", head: ["TAKE IT", "HOME"],
+      body: "Leave your email at the end and the full results — every topic, every vote, every question — land in your inbox." },
   ];
+
   let howTimer = null;
   let howAt = 0;
 
@@ -122,14 +199,7 @@
 
     const art = document.createElement("div");
     art.className = "how-art";
-    if (slide.art === "qr") {
-      const img = document.createElement("img");
-      img.src = "/qr.svg?url=" + encodeURIComponent(st.joinUrl || "");
-      img.alt = "";
-      art.appendChild(img);
-    } else {
-      art.textContent = slide.art;
-    }
+    art.appendChild((DEMOS[slide.demo] || DEMOS.join)(st));
     stage.append(txt, art);
 
     const rail = $("#how-rail");

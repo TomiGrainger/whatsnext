@@ -493,6 +493,15 @@ def run(guest, crew, data_dir):
     # ---- state of the room on the wall ----
     crew.act("showScreen", which="explainer", on=True)
     check("the crew can put the explainer up", state(guest)["screen"] == "explainer")
+    # the explainer is what a room watches before anything else happens, so the
+    # slides and their demos have to exist rather than silently render nothing
+    _, proj_js, _ = guest.get("/js/projector.js")
+    for demo in (b"join", b"stand", b"vote", b"ask", b"mic", b"react", b"mail"):
+        check("the explainer has a demo for: %s" % demo.decode(),
+              b'demo: "' + demo + b'"' in proj_js)
+    check("each slide is given time to be watched, not just read",
+          b"HOW_DWELL = 20000" in proj_js,
+          "dwell is not 20s — a shortened one may have been left in from testing")
     crew.act("showScreen", which="stats", on=True)
     check("the crew can put the room's make-up on the wall",
           state(guest)["screen"] == "stats")
