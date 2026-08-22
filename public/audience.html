@@ -139,7 +139,7 @@
     <h1 class="s-title" id="wc-q">ONE WORD FOR THE FUTURE?</h1>
     <div class="cloud" id="wc-cloud"></div>
     <div class="word-input">
-      <input class="field" id="wc-input" maxlength="20" placeholder="Your word…" autocomplete="off">
+      <input class="field" id="wc-input" maxlength="20" placeholder="Your word…" autocomplete="off" aria-label="Your word for the cloud">
       <button class="btn" id="wc-send">→</button>
     </div>
     <div class="foot" id="wc-foot">50 RESPONSES</div>
@@ -161,7 +161,7 @@
     <div class="big-pct"><span id="slider-pct">72</span>%</div>
     <div class="res-lab" id="slider-res">VERY CONCERNED</div>
     <div class="range-wrap">
-      <input type="range" min="0" max="100" value="72" class="slider" id="slider-input">
+      <input type="range" min="0" max="100" value="72" class="slider" id="slider-input" aria-label="Your answer on the slider">
       <div class="range-ends"><span>0% · <span id="slider-left">not worried</span></span><span>100% · <span id="slider-right">very</span></span></div>
     </div>
     <div class="pad"></div>
@@ -248,13 +248,13 @@
     </div>
   </div>
 
-  <input class="field" id="me-name" maxlength="40" placeholder="Your name" autocomplete="name">
-  <input class="field" id="me-occupation" maxlength="60" placeholder="What you do">
-  <input class="field" id="me-fact" maxlength="120" placeholder="A quirky fact about you">
+  <input class="field" id="me-name" maxlength="40" placeholder="Your name" autocomplete="name" aria-label="Your name">
+  <input class="field" id="me-occupation" maxlength="60" placeholder="What you do" aria-label="What you do">
+  <input class="field" id="me-fact" maxlength="120" placeholder="A quirky fact about you" aria-label="A quirky fact about you">
 
   <!-- everything below here is opt-in, and off unless they turn it on -->
   <label class="me-share" for="me-shared">
-    <input type="checkbox" id="me-shared">
+    <input type="checkbox" id="me-shared" aria-label="Show me in the room directory">
     <span class="ms-txt">
       <b>Show me in the room directory</b>
       <em>Other guests can see your name, job, fact and photo — and ask to connect.
@@ -265,8 +265,8 @@
   <div class="me-contact" id="me-contact" hidden>
     <div class="mc-lab">Shared only with people whose connection request you accept</div>
     <input class="field" id="me-email" type="email" maxlength="200"
-           placeholder="Your email (optional)" autocomplete="email">
-    <input class="field" id="me-link" maxlength="120" placeholder="LinkedIn or website (optional)">
+           placeholder="Your email (optional)" autocomplete="email" aria-label="Your email, shared only with people you connect with">
+    <input class="field" id="me-link" maxlength="120" placeholder="LinkedIn or website (optional)" aria-label="A link to share">
   </div>
 
   <div class="note" id="me-note">Only the crew sees this, unless they put you on the big screen.</div>
@@ -285,7 +285,7 @@
   <div id="offer-ask">
     <div class="offer-email" id="offer-email-wrap" hidden>
       <input class="field" id="offer-email" type="email" inputmode="email"
-             maxlength="200" placeholder="Where should I send it?" autocomplete="email">
+             maxlength="200" placeholder="Where should I send it?" autocomplete="email" aria-label="Your email">
     </div>
     <button class="btn" id="offer-cta">I'M INTERESTED</button>
     <p class="offer-also">We'll send tonight's results to the same address.
@@ -332,7 +332,7 @@
   <h3>ASK THE <b>ROOM</b></h3>
   <p class="hint">Questions the room votes up go to the front of the queue.</p>
   <div class="qa-compose">
-    <input class="field" id="qa-text" maxlength="200" placeholder="What do you want answered?">
+    <input class="field" id="qa-text" maxlength="200" placeholder="What do you want answered?" aria-label="Your question for the room">
     <button class="btn" id="qa-send">ASK →</button>
   </div>
   <div class="qa-list" id="qa-list"></div>
@@ -345,8 +345,8 @@
   <div class="tag"><span class="bolt">⚡</span> CHALLENGE</div>
   <h3 id="sheet-title">WHY DO YOU <b>DISAGREE?</b></h3>
   <p class="hint">One sentence. Make it count.</p>
-  <textarea class="field" id="sheet-text" maxlength="180" placeholder="Convenience is a tool, not the problem…"></textarea>
-  <input class="field" id="sheet-name" maxlength="40" placeholder="Your name (optional)">
+  <textarea class="field" id="sheet-text" maxlength="180" placeholder="Convenience is a tool, not the problem…" aria-label="What you want to say"></textarea>
+  <input class="field" id="sheet-name" maxlength="40" placeholder="Your name (optional)" aria-label="Your name, optional">
   <div class="note">The moderator may invite you to speak live.</div>
   <div class="row">
     <button class="btn ghost" id="sheet-cancel">CANCEL</button>

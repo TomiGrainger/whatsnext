@@ -28,6 +28,10 @@
     $("#" + id).addEventListener("click", () => Live.send("showScreen", { which }));
   });
   $("#start-btn").addEventListener("click", () => Live.send("startEvent"));
+  $("#undo-btn").addEventListener("click", () => {
+    Live.send("undoRemove");
+    $("#undo-bar").hidden = true;
+  });
   $("#invite-btn").addEventListener("click", () => { Live.send("inviteTop"); UI.toast("Invited to speak"); });
   // sidebar quick-jumps
   $$('.nav a[data-jump]').forEach((a) => a.addEventListener("click", (e) => {
@@ -209,8 +213,25 @@
     paintWordCloud(st);
     paintRoomStats(st);
     $("#mod-brand").innerHTML = st.brand + " <em>LIVE</em>";
-    $("#mode-label").textContent = (MODE_LABEL[st.mode] || "DISCUSSION") + (st.revealed ? "" : " · HIDDEN");
-    $("#mode-label").classList.toggle("hidden-state", !st.revealed);
+    // What the room is actually looking at. A takeover covers everything, so
+    // saying "DISCUSSION" while the holding loop is up describes the moderator's
+    // intent rather than the audience's experience — and that is the gap where
+    // you talk over a screen nobody can see past.
+    const SCREEN_LABEL = {
+      holding: "HOLDING SCREEN", explainer: "HOW IT WORKS",
+      stats: "STATE OF THE ROOM", offer: "THE OFFER", donate: "THE ASK",
+    };
+    const onWall = SCREEN_LABEL[st.screen];
+    const label = $("#mode-label");
+    if (onWall) {
+      label.textContent = "ON THE WALL · " + onWall;
+      label.classList.add("takeover");
+      label.classList.remove("hidden-state");
+    } else {
+      label.textContent = (MODE_LABEL[st.mode] || "DISCUSSION") + (st.revealed ? "" : " · HIDDEN");
+      label.classList.remove("takeover");
+      label.classList.toggle("hidden-state", !st.revealed);
+    }
     const missing = st.exists === false;
     $("#closed-banner").hidden = !missing && !st.closed;
     $("#closed-banner").textContent = missing
@@ -245,19 +266,24 @@
     // Every screen button reads the same field, so the armed one is always the
     // one actually on the wall — they cannot disagree.
     const promos = st.promos || {};
-    [["holding", "Holding Screen", "Hide Holding", true],
-     ["explainer", "How It Works", "Hide Explainer", true],
-     ["stats", "State of the Room", "Hide the Room", (st.roomStats || {}).checkedIn > 0],
-     ["offer", "Show Offer", "Hide Offer", Boolean(promos.offer)],
-     ["donate", "Show Donate", "Hide Donate", Boolean(promos.donate)]]
-      .forEach(([which, label, hide, ready]) => {
+    // Each says why it can't be pressed in its own words — a derived string
+    // produced "No State of the Room Set", which explains nothing.
+    [["holding", "Holding Screen", "Hide Holding", true, ""],
+     ["explainer", "How It Works", "Hide Explainer", true, ""],
+     ["stats", "State of the Room", "Hide the Room",
+      (st.roomStats || {}).checkedIn > 0, "Nobody Checked In Yet"],
+     ["offer", "Show Offer", "Hide Offer", Boolean(promos.offer), "No Offer Set"],
+     ["donate", "Show Donate", "Hide Donate", Boolean(promos.donate), "No Ask Set"]]
+      .forEach(([which, label, hide, ready, why]) => {
         const btn = $("#" + which + "-btn");
         const on = st.screen === which;
         btn.disabled = !ready && !on;
         btn.classList.toggle("armed", on);
-        btn.querySelector(".ql").textContent = on ? hide
-          : (ready ? label : "No " + label.replace(/^Show /, "") + " Set");
+        btn.querySelector(".ql").textContent = on ? hide : (ready ? label : why);
       });
+
+    // the undo offer, for as long as the server will still honour it
+    $("#undo-bar").hidden = !st.undoable;
 
     // the START bar is only there until the night begins
     $("#start-bar").hidden = Boolean(st.started) || st.exists === false;

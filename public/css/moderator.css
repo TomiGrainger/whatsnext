@@ -107,12 +107,15 @@ body.s-moderator{background:#060607;min-height:100vh;}
 
 /* quick actions */
 .qa-lab{font-family:var(--mono);letter-spacing:.2em;font-size:12px;color:var(--muted);margin:26px 0 12px;text-transform:uppercase;}
-.qa-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:14px;}
+.qa-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(134px,1fr));gap:14px;}
+.qa-row + .qa-lab{margin-top:22px;}
 /* the reveal is the moment — make it findable without looking */
 .qa.reveal.armed{border-color:var(--red);background:var(--red-dim);animation:revealready 1.6s ease-in-out infinite;}
 .qa.reveal.armed .ql{color:var(--red);font-weight:700;}
 @keyframes revealready{0%,100%{box-shadow:0 0 0 0 rgba(255,45,70,.35);}50%{box-shadow:0 0 0 6px rgba(255,45,70,0);}}
-.qa{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 10px;display:flex;flex-direction:column;align-items:center;gap:10px;transition:transform .08s,filter .15s;}
+/* bigger than a mouse strictly needs: this gets driven on a laptop, in the
+   dark, mid-sentence */
+.qa{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;transition:transform .08s,filter .15s;}
 .qa:hover{filter:brightness(1.2);} .qa:active{transform:scale(.97);}
 .qa .qi{font-size:22px;}
 .qa .ql{font-family:var(--mono);font-weight:700;letter-spacing:.08em;font-size:12px;text-transform:uppercase;color:var(--ink);}
@@ -139,7 +142,7 @@ body.s-moderator{background:#060607;min-height:100vh;}
 .mq-body .qt{font-size:14.5px;line-height:1.35;color:var(--ink);}
 .mq-body .qm{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--dim);margin-top:4px;text-transform:uppercase;}
 .mq-acts{display:flex;flex-direction:column;gap:5px;flex:0 0 auto;}
-.mq-btn{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;font-weight:700;
+.mq-btn{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;font-weight:700;
   padding:6px 8px;border-radius:8px;background:var(--card-2);border:1px solid var(--line);color:var(--muted);}
 .mq-btn:hover{color:var(--ink);border-color:var(--line-2);}
 .mq-btn.on{background:var(--red);border-color:var(--red);color:#fff;}
@@ -224,3 +227,16 @@ body.s-moderator{background:#060607;min-height:100vh;}
   font-family:var(--mono);font-size:12px;letter-spacing:.14em;font-weight:700;
   padding:15px 26px;cursor:pointer;}
 .sb-btn:hover{background:var(--red-2);}
+
+/* ---- undo: a mis-tap in front of a room shouldn't be final ---- */
+.undo-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  background:#141418;border:1px solid var(--red);border-radius:12px;
+  padding:12px 16px;margin:14px 0 0;font-size:14px;color:var(--ink);}
+.undo-bar[hidden]{display:none;}
+.undo-btn{background:var(--red);color:#fff;border:none;border-radius:9px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;font-weight:700;
+  padding:10px 20px;cursor:pointer;}
+.undo-btn:hover{background:var(--red-2);}
+
+/* the room is looking at something other than the show — say so loudly */
+.mode-now.takeover{background:var(--red);color:#fff;border-color:var(--red);}

@@ -124,7 +124,8 @@ goes immediately and cannot be re-submitted. (Profanity is filtered on the way
 in and each phone only gets three words, but no filter catches everything.)
 
 ### A question or challenge needs to go
-Every question and challenge has **REMOVE**.
+Every question and challenge has **REMOVE** — and an **UNDO** appears for twelve
+seconds afterwards if you hit the wrong one.
 
 ### Someone wants their data deleted, there and then
 Their phone: profile → **Delete my details** (two taps). During the event this

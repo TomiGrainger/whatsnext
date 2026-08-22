@@ -330,6 +330,18 @@ live for everyone at once.
 
 ## The moderator drives the show
 
+Two rows of buttons, split on purpose. **On the wall** — holding, how it works,
+state of the room, offer, ask — is what the audience is looking at. **Run the
+show** is what happens next. Hunting for a button mid-sentence is how the wrong
+thing ends up on the screen.
+
+The header says what the room can actually see: while a takeover is up it reads
+**ON THE WALL · HOLDING SCREEN** in red rather than "DISCUSSION", because the
+second describes your intent and the first describes their experience.
+
+Removing a question or a challenge offers an **UNDO** for twelve seconds. A
+mis-tap in front of a room shouldn't be final.
+
 The Control Room mirrors how the event was set up. Under the current topic sits a
 row of buttons: **Discussion** (always first, no timer) followed by exactly the
 interactions that topic was given, in order, each showing its length. Tap one and
@@ -408,6 +420,15 @@ The crew page over the archive, behind the same passcode as everything else.
 - **Export** — `people.csv` (contacts), `attendance.csv` (who came to what) and
   `responses.csv` (anonymous answers, safe to hand to an analyst). Plain CSV, so
   it imports into HubSpot or Mailchimp if you ever move.
+
+## Readable in a dark room
+
+The palette is checked rather than eyeballed: every text colour is measured
+against the background for WCAG contrast, and the suite fails if one drops below
+4.5:1. `--dim` sat at 2.76 for a long time — unreadable on a phone at arm's
+length in a venue — while carrying real text, not just decoration. Nothing on
+any surface is smaller than 10px, every field a guest types into carries an
+`aria-label`, and agree/disagree/unsure are labelled in words as well as colour.
 
 ## Tests
 

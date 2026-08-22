@@ -449,7 +449,7 @@ body.reveal-flash .pv-slider .big{animation:revealglow .9s ease;}
 .d-tick{width:44px;height:44px;border-radius:50%;background:var(--red);color:#fff;
   display:flex;align-items:center;justify-content:center;font-size:24px;}
 .d-lab{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--ink);}
-.d-sub{font-family:var(--mono);font-size:9px;color:var(--muted);}
+.d-sub{font-family:var(--mono);font-size:10.5px;color:var(--muted);}
 
 /* sentiment: three choices, one being tapped */
 .d-choices{display:flex;flex-direction:column;gap:8px;width:100%;}

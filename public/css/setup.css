@@ -129,7 +129,7 @@
 }
 .inter .sub-lab{margin:8px 0 5px;}
 .inter-adds{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
-.inter-adds .mini{margin-top:0;font-size:9.5px;padding:8px 9px;}
+.inter-adds .mini{margin-top:0;font-size:10.5px;padding:8px 9px;}
 
 /* ---- messages + links ---- */
 .msg{font-size:13.5px;margin-top:12px;min-height:19px;line-height:1.45;}
@@ -201,7 +201,7 @@
   letter-spacing:.12em;color:var(--red);text-decoration:none;}
 .page-link:hover{text-decoration:underline;}
 
-.room-tonight{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--red);
+.room-tonight{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--red);
   border:1px solid var(--red);border-radius:999px;padding:3px 8px;white-space:nowrap;}
 
 .mail-state{font-size:12.5px;line-height:1.5;border-radius:10px;padding:10px 13px;

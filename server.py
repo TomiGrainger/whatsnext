@@ -1625,6 +1625,9 @@ def snapshot(code, crew=False):
             "promo": room_offer(r),
             # whichever takeover is up, or nothing. One at a time, always.
             "screen": r.get("screen"),
+            "undoable": bool(r.get("_undo")
+                             and time.time() - r["_undo"]["at"] <= UNDO_WINDOW
+                             and crew),
             "started": bool(r.get("started")),
             # the night's running order, so the lobby can show what's coming
             "runningOrder": [t["question"] for t in r["topics"]],
@@ -1913,6 +1916,16 @@ def word_is_blocked(word):
                     c.isdigit() or c == bc for c, bc in zip(lowered, b)):
                 return True
     return False
+
+
+# How long a removal can be taken back. Long enough to notice a mis-tap and
+# reach for it, short enough that the button has gone by the time you have
+# moved on.
+UNDO_WINDOW = 12
+
+
+def _hold_undo(room, what, item):
+    room["_undo"] = {"what": what, "item": item, "at": time.time()}
 
 
 # how many words one phone may add to a single cloud
@@ -2239,13 +2252,33 @@ def act(code, kind, pid, data):
         # outright rather than just hiding it from one surface.
         elif kind == "removeQuestion":
             qid = data.get("id")
+            gone = [q for q in r["questions"] if q["id"] == qid]
             r["questions"] = [q for q in r["questions"] if q["id"] != qid]
             if r.get("featuredQuestion") == qid:
                 r["featuredQuestion"] = None
+            if gone:
+                _hold_undo(r, "question", gone[0])
+                result = {"undo": "question"}
         elif kind == "removeChallenge":
             cid = data.get("id")
+            gone = [c for c in r["challenges"] if c["id"] == cid]
             r["challenges"] = [c for c in r["challenges"] if c["id"] != cid]
             r["invited"] = [i for i in r["invited"] if i != cid]
+            if gone:
+                _hold_undo(r, "challenge", gone[0])
+                result = {"undo": "challenge"}
+
+        elif kind == "undoRemove":
+            # A mis-tap in front of a room should not be final. One step back,
+            # and only for a few seconds — this is an undo, not a bin.
+            held = r.get("_undo")
+            if held and time.time() - held["at"] <= UNDO_WINDOW:
+                if held["what"] == "question":
+                    r["questions"].append(held["item"])
+                    r["questions"].sort(key=lambda q: q["at"])
+                elif held["what"] == "challenge":
+                    r["challenges"].insert(0, held["item"])
+                r["_undo"] = None
         elif kind == "removeProfile":
             target = re_pid(data.get("target"))
             profile = r["profiles"].pop(target, None)

@@ -11,7 +11,7 @@
   --ink:#f5f3ef;          /* warm off-white display */
   --white:#ffffff;
   --muted:#8b8b90;
-  --dim:#57575d;
+  --dim:#7a7a82;      /* 4.65:1 on --bg. Below ~#78787d this stops being readable in a dark room — it carries real text, not just decoration */
   --faint:#2a2a2e;
   --card:#141417;
   --card-2:#1a1a1e;

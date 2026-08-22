@@ -191,6 +191,41 @@ def run(guest, crew, data_dir):
           sum(v["count"] for v in rs["vibes"]) == 3,
           "vibes=%s" % [v["count"] for v in rs["vibes"]])
 
+    # ---- readable in a dark room, and usable without sight ----
+    # Measured rather than eyeballed: --dim carried real text at 2.76:1, which
+    # is unreadable on a phone at arm's length in a venue.
+    _, app_css, _ = guest.get("/css/app.css")
+    import re as _c
+    tokens = dict(_c.findall(rb"--([\w-]+):\s*(#[0-9a-fA-F]{6})", app_css))
+
+    def _lum(h):
+        h = h.decode().lstrip("#")
+        vals = [int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+        f = lambda c: c / 12.92 if c <= .03928 else ((c + .055) / 1.055) ** 2.4
+        return .2126 * f(vals[0]) + .7152 * f(vals[1]) + .0722 * f(vals[2])
+
+    bg = tokens.get(b"bg", b"#0a0a0b")
+    for name in (b"ink", b"muted", b"dim"):
+        if name not in tokens:
+            continue
+        la, lb = _lum(tokens[name]), _lum(bg)
+        contrast = (max(la, lb) + .05) / (min(la, lb) + .05)
+        check("text colour --%s is readable (WCAG AA)" % name.decode(),
+              contrast >= 4.5, "%.2f:1, needs 4.5" % contrast)
+
+    _, aud_html, _ = guest.get("/" + ROOM)
+    fields = _c.findall(rb"<(?:input|textarea|select)[^>]*>", aud_html)
+    bare = [f for f in fields if b"aria-label" not in f and b"hidden" not in f]
+    check("every field a guest types into is labelled for a screen reader",
+          not bare, "%d unlabelled" % len(bare))
+
+    for sheet in ("audience", "projector", "moderator"):
+        _, sheet_css, _ = guest.get("/css/%s.css" % sheet)
+        tiny = [t for t in _c.findall(rb"font-size:([0-9.]+)px", sheet_css)
+                if float(t) < 10]
+        check("%s.css has no text below 10px" % sheet, not tiny,
+              "found: %s" % sorted({t.decode() for t in tiny}))
+
     # ---- the client must not read snapshot fields the server never sends ----
     # This is here because renaming three snapshot fields into one silently
     # disabled the offer sheet on every phone: the JS kept testing the old name,
@@ -208,6 +243,41 @@ def run(guest, crew, data_dir):
         unknown = [u.decode() for u in sorted(used) if u.decode() not in known]
         check("%s.js reads only fields the server sends" % name, not unknown,
               "unknown: %s" % ", ".join(unknown))
+
+    # ---- the control room says what the audience is actually looking at ----
+    _, mod_js, _ = guest.get("/js/moderator.js")
+    check("the mode label reflects a takeover, not just the moderator's intent",
+          b"ON THE WALL" in mod_js,
+          "saying DISCUSSION while the holding loop is up describes intent, not the room")
+    _, mod_html, _ = guest.get("/moderator") if False else crew.get("/moderator")
+    import re as _m
+    rows = _m.findall(rb'<div class="qa-row">(.*?)</div>\s*\n', mod_html, _m.S)
+    check("the wall controls and the show controls are separate rows",
+          len(rows) >= 2, "found %d rows" % len(rows))
+    check("both rows are labelled",
+          b">On the wall<" in mod_html and b">Run the show<" in mod_html)
+
+    # ---- undo: a mis-tap in front of a room must not be final ----
+    guest.act("ask", pid="p_undo", text="Can this be taken back?")
+    st = state(guest)
+    target = next(q["id"] for q in st["questions"] if "taken back" in q["text"])
+    status, res = crew.act("removeQuestion", id=target)
+    check("removing a question offers an undo", res.get("undo") == "question",
+          "got %s" % res)
+    gone = state(crew)
+    check("and it is gone in the meantime",
+          not any(q["id"] == target for q in gone["questions"]))
+    check("the crew is told an undo is available", gone.get("undoable") is True)
+    check("a guest is never told that", state(guest).get("undoable") is not True)
+    status, _ = guest.act("undoRemove")
+    check("and a guest cannot undo the crew's removal", status == 401,
+          "got %s" % status)
+    crew.act("undoRemove")
+    back = state(crew)
+    check("undo puts the question back",
+          any(q["id"] == target for q in back["questions"]))
+    check("and the offer goes away once used", back.get("undoable") is False)
+    crew.act("removeQuestion", id=target)
 
     # ---- removing a stale room, without destroying what happened in it ----
     crew.post("/api/rooms", {"code": "STALE", "eventId": "demo_event"})
