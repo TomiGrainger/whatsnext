@@ -264,6 +264,14 @@ def run(guest, crew, data_dir):
           len(rows) >= 2, "found %d rows" % len(rows))
     check("both rows are labelled",
           b">On the wall<" in mod_html and b">Run the show<" in mod_html)
+    _, mod_css, _ = guest.get("/css/moderator.css")
+    check("the dashboard panels wrap rather than squeeze off the edge",
+          b"repeat(auto-fit" in mod_css.split(b".panels{")[1][:120],
+          "a fixed column count squeezes the last panel off-screen at this type size")
+    tiny_labels = [t for t in _c.findall(rb"font-size:([0-9.]+)px", mod_css)
+                   if float(t) < 12]
+    check("nothing in the control room is under 12px any more",
+          not tiny_labels, "found: %s" % sorted({t.decode() for t in tiny_labels}))
 
     # ---- undo: a mis-tap in front of a room must not be final ----
     guest.act("ask", pid="p_undo", text="Can this be taken back?")
