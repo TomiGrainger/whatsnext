@@ -47,16 +47,18 @@
     codeInput.value = codeInput.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 8);
   });
   codeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") $("#join-btn").click(); });
-  $("#join-btn").addEventListener("click", () => {
-    const code = codeInput.value.trim() || "WN25";
-    Live.setRoom(code);          // (re)connect to the chosen room
+  function enterRoom(code) {
+    Live.setRoom(code || "WN25");
     joined = true;
     sessionStorage.setItem("upgrade_joined", "1");
     sessionStorage.setItem("upgrade_room", Live.room());
     Live.send("join");
     buildCheckIn();
     render(Live.get(), true);
-  });
+  }
+
+  $("#join-btn").addEventListener("click", () => enterRoom(codeInput.value.trim()));
+
 
   // ---- discussion: sentiment + fight + whats-next ----
   $$("#s-discussion .react[data-choice]").forEach((btn) => {
@@ -292,7 +294,31 @@
         host.appendChild(b);
       });
     }
+    // Someone who has been before shouldn't retype what hasn't changed: their
+    // phone still has last time's answers, so check-in becomes two taps.
     if (me.name) $("#ci-name").value = me.name;
+    if (me.occupation) {
+      const known = Array.from(sel.options).some((o) => o.value === me.occupation);
+      if (known) {
+        sel.value = me.occupation;
+      } else {
+        sel.value = "__other";
+        $("#ci-occ-other").hidden = false;
+        $("#ci-occ-other").value = me.occupation;
+      }
+    }
+    if (me.vibe) {
+      vibeChoice = me.vibe;
+      $$(".ci-vibe").forEach((x) => {
+        const on = x.dataset.vibe === me.vibe;
+        x.classList.toggle("on", on);
+        x.setAttribute("aria-pressed", String(on));
+      });
+    }
+    if (me.name && me.occupation && me.vibe) {
+      $("#ci-title").textContent = "STILL YOU?";
+      $("#ci-sub").textContent = "We remembered last time. Change anything that's moved on.";
+    }
     checkInReady();
   }
 
@@ -1235,6 +1261,11 @@
   });
 
   Live.onStatus((up) => { $("#net-chip").hidden = up; });
+
+  // Scanning the QR already said which room. Asking someone to confirm the room
+  // they just scanned is a screen for nothing, so it is skipped — the join
+  // screen is still there for anyone who typed the bare address.
+  if (!joined && Live.roomWasGiven()) enterRoom(Live.room());
 
   Live.onState(render);
   Live.connect("audience");

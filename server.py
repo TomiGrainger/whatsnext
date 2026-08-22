@@ -663,9 +663,11 @@ def join_url(code, host=None):
     """The URL a phone should open. Hosted, that's the public address; locally,
     this machine's address on the Wi-Fi (localhost would be useless on a phone)."""
     code = sanitize_code(code)
+    # a path, not a query string: "slash W N 2 5" can be said from a stage,
+    # "question mark room equals" cannot
     if host:
-        return "http://%s:%d/?room=%s" % (host, PORT, code)
-    return "%s/?room=%s" % (public_base(), code)
+        return "http://%s:%d/%s" % (host, PORT, code)
+    return "%s/%s" % (public_base(), code)
 
 
 def _cid():
@@ -2343,10 +2345,18 @@ STATIC_TYPES = {
 }
 PAGES = {"/": "audience.html", "/moderator": "moderator.html",
          "/projector": "projector.html", "/setup": "setup.html",
-         "/recap": "recap.html", "/crm": "crm.html"}
+         "/recap": "recap.html", "/crm": "crm.html", "/print": "print.html"}
+
+
+def _is_room_path(path):
+    """`/WN25` is a room; `/setup` is a page. Named pages are matched first, so
+    this only ever sees what is left over."""
+    code = path.lstrip("/")
+    # case-insensitive: anyone typing this off a poster will type it lowercase
+    return bool(code) and "/" not in code and len(code) <= 8 and code.isalnum()
 # The crew surfaces. The audience page and the projector stay open: the projector
 # is a passive display, often on a machine nobody can type on.
-PROTECTED_PAGES = ("/moderator", "/setup", "/crm")
+PROTECTED_PAGES = ("/moderator", "/setup", "/crm", "/print")
 
 UNSUB_PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
@@ -2599,6 +2609,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, body, "application/json", {"Cache-Control": "no-store"})
         if path in PAGES:
             return self.serve_static(PAGES[path])
+        # /WN25 — a room code on its own. Checked after the named pages, so a
+        # page never gets mistaken for a room.
+        if _is_room_path(path):
+            return self.serve_static("audience.html")
         if (path.startswith("/css/") or path.startswith("/js/")
                 or path.startswith("/assets/") or path.startswith("/media/")):
             return self.serve_static(path.lstrip("/"))
@@ -2625,7 +2639,10 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 target = join_url(sanitize_code(qs.get("room", [DEFAULT_ROOM])[0]))
             try:
-                svg = qr.render_svg(target, size_px=420)
+                # paper wants pure white behind it, not the app's off-white,
+                # which a laser printer renders as a grey square
+                light = "#ffffff" if qs.get("light", [""])[0] == "white" else "#f5f3ef"
+                svg = qr.render_svg(target, size_px=420, light=light)
             except ValueError as exc:
                 return self._send(500, str(exc))
             return self._send(200, svg, "image/svg+xml", {"Cache-Control": "no-store"})

@@ -207,6 +207,17 @@
     </div>
   </div>
 
+  <!-- Always there while the event runs: someone arriving twenty minutes late
+       used to have no way in at all, since the big QR only shows before the
+       start and after the close. -->
+  <div class="join-corner" id="join-corner" hidden>
+    <img class="qr" id="corner-qr" alt="Scan to join">
+    <div class="jc-txt">
+      <div class="jc-k">JOIN IN</div>
+      <div class="jc-u" id="corner-url"></div>
+    </div>
+  </div>
+
   <div class="pv-foot" id="pv-foot"></div>
   <!-- reactions from the floor drift up over everything -->
   <div class="burst-layer" id="burst-layer" aria-hidden="true"></div>

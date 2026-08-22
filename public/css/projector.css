@@ -379,3 +379,19 @@ body.reveal-flash .pv-slider .big{animation:revealglow .9s ease;}
 .wr-vibe .e{font-size:clamp(18px,1.7vw,30px);line-height:1;}
 .wr-vibe .n{font-family:var(--display);font-size:clamp(14px,1.3vw,24px);color:var(--ink);}
 @media(max-width:1100px){ .wr-cols{grid-template-columns:1fr;} }
+
+/* ---- the always-there join code ---- */
+/* Sits under the takeovers (they are 890+) so a screen still covers it, and
+   above the stage furniture so nothing hides it during a topic. */
+.join-corner{position:fixed;right:2.2vw;bottom:2.2vw;z-index:860;
+  display:flex;align-items:center;gap:14px;background:rgba(12,12,15,.86);
+  border:1px solid var(--line);border-radius:16px;padding:12px 16px 12px 12px;
+  backdrop-filter:blur(6px);}
+.join-corner[hidden]{display:none;}
+/* ~17cm on a 3m projection: scannable from a few metres without eating the
+   stage. Anyone further back uses a table card. */
+.join-corner .qr{width:clamp(88px,5.8vw,124px);height:clamp(88px,5.8vw,124px);background:#f5f3ef;padding:7px;border-radius:10px;
+  display:block;}
+.jc-k{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--red);
+  font-weight:700;}
+.jc-u{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:5px;}

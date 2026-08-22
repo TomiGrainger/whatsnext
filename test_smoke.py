@@ -376,6 +376,39 @@ def run(guest, crew, data_dir):
         status, _ = guest.act(kind, index=0)
         check("guests are refused: %s" % kind, status == 401, "got %s" % status)
 
+    # ---- getting in, with the least possible friction ----
+    st = state(guest)
+    check("the join URL is a sayable path, not a query string",
+          st["joinUrl"].rstrip("/").endswith("/" + ROOM), "got %s" % st["joinUrl"])
+    for path in ("/" + ROOM, "/" + ROOM.lower()):
+        status, body, _ = guest.get(path)
+        check("a bare room code serves the audience page: %s" % path,
+              status == 200 and b"WHAT'S" in body, "got %s" % status)
+    # A named page must never be mistaken for a room. Matched on the <title>,
+    # which is unique per page — an earlier version of this test matched on
+    # body text that the audience page also contains, so it passed happily
+    # while the routing was broken.
+    for path, title in (("/recap", b"The Debrief"),
+                        ("/projector", b"Room Display"),
+                        ("/print", b"Crew"),          # lock screen for a guest
+                        ("/setup", b"Crew"), ("/crm", b"Crew")):
+        status, body, _ = guest.get(path)
+        head = body.split(b"</title>")[0]
+        check("a named page still wins over a room code: %s" % path,
+              status == 200 and title in head, "title was %s" % head[-60:])
+    status, body, _ = guest.get("/print")
+    check("the print sheet shows a guest the lock screen, like the other crew pages",
+          status == 200 and b"CREW ONLY" in body and b"PRINT THE JOIN CODE" not in body,
+          "got %s" % status)
+    status, body, _ = crew.get("/print")
+    check("the crew can open the print sheet",
+          status == 200 and b"PRINT THE JOIN CODE" in body, "got %s" % status)
+    # the audience page must be the one that answers a room path, or the QR
+    # leads somewhere useless
+    status, body, _ = guest.get("/" + ROOM)
+    check("a scanned code lands on the audience page, not a redirect",
+          b"JOIN THE DEBATE" in body and b"s-checkin" in body)
+
     # ---- the projector's holding loop ----
     status, body, headers = guest.get("/media/holding.mp4")
     check("the holding video is served", status == 200 and len(body) > 1000,
@@ -668,6 +701,9 @@ def run(guest, crew, data_dir):
     status, body, headers = guest.get("/qr.svg?url=https://example.com/x")
     check("the join QR renders", status == 200 and body.startswith(b"<svg")
           and len(body) > 500, "status=%s len=%s" % (status, len(body)))
+    status, white, _ = guest.get("/qr.svg?light=white&url=https://example.com/x")
+    check("and on white for paper, so a printer doesn't render a grey square",
+          b'fill="#ffffff"' in white and b'fill="#f5f3ef"' in body)
 
     # ---- a room that is switched off stops taking part ----
     crew.post("/api/rooms/%s" % ROOM, {"closed": True})

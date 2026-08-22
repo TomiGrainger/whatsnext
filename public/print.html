@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Upgrade LIVE — Print the join code</title>
+<link rel="stylesheet" href="/css/print.css">
+</head>
+<body>
+
+<!-- Screen only: the controls disappear when this is printed -->
+<div class="bar noprint">
+  <div>
+    <div class="bar-k">PRINT THE JOIN CODE</div>
+    <p class="bar-d">Table cards for every table, and a poster for the door. Print on
+      plain white — the code needs contrast, not branding. Cut the cards along the
+      dotted lines and fold them down the middle to stand up.</p>
+  </div>
+  <div class="bar-tools">
+    <label class="fld">ROOM
+      <input id="room" maxlength="8" autocomplete="off" spellcheck="false">
+    </label>
+    <label class="fld">EVENT
+      <input id="title" maxlength="40" placeholder="The Big Debate">
+    </label>
+    <button id="print-btn" type="button">PRINT →</button>
+  </div>
+</div>
+
+<p class="warn noprint" id="warn" hidden></p>
+
+<!-- A5 door poster, one per page -->
+<section class="sheet poster">
+  <div class="p-brand" id="poster-brand">THE UPGRADE <em>LIVE</em></div>
+  <div class="p-event" id="poster-event"></div>
+  <h1 class="p-big">JOIN<br>THE ROOM</h1>
+  <img class="p-qr" id="poster-qr" alt="">
+  <div class="p-url" id="poster-url"></div>
+  <div class="p-code">ROOM <b id="poster-code"></b></div>
+  <div class="p-note">Point your camera at the code. No app, no sign-up.</div>
+</section>
+
+<!-- Four table tents to a page, folded down the middle -->
+<section class="sheet tents" id="tents"></section>
+
+<script src="/js/print.js"></script>
+</body>
+</html>

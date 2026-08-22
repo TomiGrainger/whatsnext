@@ -94,6 +94,17 @@ signs the crew out, and anyone with the code has the controls.
 
 ## On the night
 
+- **Getting in** — the shortest path we could make it. The QR carries
+  `/WN25` — a path, not a query string, so it can be read out from a stage:
+  "whatsnext dot fly dot dev slash W N 2 5". Scanning it skips the join screen
+  entirely, because asking someone to confirm the room they just scanned is a
+  screen for nothing; the join screen is still there for anyone typing the bare
+  address. A small QR sits in the corner of the projector for the whole event,
+  so someone arriving twenty minutes late has a way in — before this, the code
+  only existed before the start and after the close. `/print` (crew-only) lays
+  out a door poster and four table cards on white paper, so nobody has to see
+  the screen at all. And a phone that has been before fills in what it already
+  knows: check-in becomes "still you?" and two taps.
 - **Joining** — the projector shows a **SCAN TO JOIN** screen with a QR code
   whenever nobody is in the room yet, and again on the closed screen at the end.
   The code points at whatever address the room can actually reach: hosted, the
@@ -406,6 +417,7 @@ public/
   media/holding.mp4    the projector's holding-screen loop
   setup.html           event builder + room launcher
   crm.html             The Rooms — the crew's view of the archive
+  print.html           door poster + table cards for a room's join code
   audience.html        mobile surface — 8 interaction screens
   moderator.html       control room dashboard
   projector.html       room display

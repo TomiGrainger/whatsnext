@@ -7,9 +7,15 @@ window.Live = (function () {
   let es = null;
   let role = "audience";
 
-  // room code from ?room= (default WN25), sanitized to match the server
+  // The room comes from the path (/WN25 — what a QR carries and what you can
+  // say from a stage) or from ?room=, which still works for anything older.
   function sanitize(c) { return (c || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 8) || "WN25"; }
-  let roomCode = sanitize(new URLSearchParams(location.search).get("room"));
+  const fromPath = location.pathname.replace(/^\/+|\/+$/g, "");
+  const codeInUrl = /^[a-zA-Z0-9]{1,8}$/.test(fromPath)
+    ? fromPath : new URLSearchParams(location.search).get("room");
+  let roomCode = sanitize(codeInUrl);
+  // whether the room was named for them — the QR did it, so don't ask again
+  const roomWasGiven = Boolean(codeInUrl);
 
   // stable per-device participant id
   function pid() {
@@ -128,7 +134,8 @@ window.Live = (function () {
   function get() { return state; }
   function room() { return roomCode; }
 
-  return { connect, send, burst, onState, onStatus, onBurst, isOnline, get, pid, setRoom, room };
+  return { connect, send, burst, onState, onStatus, onBurst, isOnline, get, pid, setRoom, room,
+           roomWasGiven: () => roomWasGiven };
 })();
 
 // small helpers shared by pages

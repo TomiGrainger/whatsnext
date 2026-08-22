@@ -381,7 +381,7 @@ def encode(text):
     return best
 
 
-def render_svg(text, size_px=300, quiet=4):
+def render_svg(text, size_px=300, quiet=4, light="#f5f3ef"):
     """A crisp, scalable QR as a standalone SVG document."""
     m = encode(text)
     n = len(m)
@@ -403,6 +403,6 @@ def render_svg(text, size_px=300, quiet=4):
     return (
         '<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" '
         'shape-rendering="crispEdges" role="img" aria-label="Join QR code">'
-        '<rect width="%d" height="%d" fill="#f5f3ef"/><g fill="#0a0a0b">%s</g></svg>'
-        % (size_px, size_px, size_px, size_px, size_px, size_px, "".join(rects))
+        '<rect width="%d" height="%d" fill="%s"/><g fill="#0a0a0b">%s</g></svg>'
+        % (size_px, size_px, size_px, size_px, size_px, size_px, light, "".join(rects))
     )

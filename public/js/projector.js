@@ -76,6 +76,22 @@
       });
   }
 
+  // The small join code that stays put once the night is running. Hidden while
+  // a takeover is up (it would sit under it anyway) and while the big join
+  // screen or the closing screen is showing their own, larger one.
+  let cornerFor = null;
+  function paintJoinCorner(st) {
+    const bigOneShowing = !st.started || st.closed || st.exists === false;
+    const on = !bigOneShowing && !st.screen;
+    $("#join-corner").hidden = !on;
+    if (!on) return;
+    if (cornerFor !== st.joinUrl) {
+      cornerFor = st.joinUrl;
+      $("#corner-qr").src = "/qr.svg?url=" + encodeURIComponent(st.joinUrl || "");
+      $("#corner-url").textContent = (st.joinUrl || "").replace(/^https?:\/\//, "");
+    }
+  }
+
   // The room filling up, under the join code, while people arrive.
   function paintLobby(st) {
     const rs = st.roomStats;
@@ -252,6 +268,7 @@
     // should read before it is asked.
     $("#waiting-veil").hidden = st.closed || (st.started && st.inRoom > 0);
     paintLobby(st);
+    paintJoinCorner(st);
     $("#p-n").textContent = st.topicIndex + 1;
     $("#p-t").textContent = st.topicCount;
     showView(MODE_VIEW[st.mode] || "pv-discussion");

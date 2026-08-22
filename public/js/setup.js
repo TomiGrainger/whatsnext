@@ -436,6 +436,15 @@
       row.appendChild(a);
 
       // sign-ups collected in this room, downloadable as JSON
+      // table cards and a door poster for this room
+      const print = document.createElement("a");
+      print.className = "room-leads";
+      print.href = "/print?room=" + encodeURIComponent(r.code);
+      print.target = "_blank";
+      print.title = "Print table cards and a door poster for this room";
+      print.textContent = "\u2399 print";
+      row.appendChild(print);
+
       const recap = document.createElement("a");
       recap.className = "room-leads";
       recap.href = "/recap?room=" + encodeURIComponent(r.code);

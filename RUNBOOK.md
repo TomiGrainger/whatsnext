@@ -22,6 +22,9 @@ Then, in order:
 4. Open `/moderator` on your laptop. Confirm the room code matches.
 5. Join from your own phone on **mobile data, not the venue Wi-Fi** — that
    proves the public address works from outside the building.
+5b. Print the table cards and door poster from `/print?room=CODE`. Plain white
+   paper. They matter more than the projector: most people arrive late, looking
+   at a phone, facing away from the screen.
 6. Press **RESET** in setup — which also puts the room back into the lobby. This wipes your rehearsal and the demo's seeded
    numbers. It does **not** touch debrief sign-ups, offer leads, or the archive
    — the rehearsal is marked as a rehearsal and kept out of the reports.
