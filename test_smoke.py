@@ -213,6 +213,14 @@ def run(guest, crew, data_dir):
         check("text colour --%s is readable (WCAG AA)" % name.decode(),
               contrast >= 4.5, "%.2f:1, needs 4.5" % contrast)
 
+    # Structure, not just text: at 7% white on near-black, nothing had a visible
+    # edge and the whole interface floated in one shade of dark.
+    edges = dict(_c.findall(rb"--(line-?2?):\s*rgba\(255,255,255,\.(\d+)\)", app_css))
+    for token, floor in ((b"line", 12), (b"line-2", 20)):
+        got = int(edges.get(token, b"0"))
+        check("--%s is strong enough to see an edge" % token.decode(),
+              got >= floor, "at .%02d, wants at least .%d" % (got, floor))
+
     _, aud_html, _ = guest.get("/" + ROOM)
     fields = _c.findall(rb"<(?:input|textarea|select)[^>]*>", aud_html)
     bare = [f for f in fields if b"aria-label" not in f and b"hidden" not in f]

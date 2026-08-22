@@ -13,10 +13,10 @@
   --muted:#8b8b90;
   --dim:#7a7a82;      /* 4.65:1 on --bg. Below ~#78787d this stops being readable in a dark room — it carries real text, not just decoration */
   --faint:#2a2a2e;
-  --card:#141417;
-  --card-2:#1a1a1e;
-  --line:rgba(255,255,255,.07);
-  --line-2:rgba(255,255,255,.12);
+  --card:#1a1a20;
+  --card-2:#23232b;
+  --line:rgba(255,255,255,.16);   /* panel and button edges. At .07 nothing had a visible edge — the whole interface floated in one shade of near-black */
+  --line-2:rgba(255,255,255,.28);  /* things you type in or press: these need to look pressable */
   --glow:0 0 40px rgba(255,45,70,.45);
   --mono:'Space Mono','SFMono-Regular',ui-monospace,Menlo,monospace;
   --display:'Anton','Oswald','Arial Narrow',system-ui,sans-serif;
