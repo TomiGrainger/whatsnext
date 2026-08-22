@@ -23,7 +23,7 @@
   $("#reveal-btn").addEventListener("click", () => { Live.send("reveal"); UI.toast("Results revealed"); });
   $("#again-btn").addEventListener("click", () => { Live.send("askAgain"); UI.toast("Same poll, round two"); });
   // one exclusive set: there is one projector, so one screen at a time
-  [["stats-btn", "stats"], ["holding-btn", "holding"],
+  [["stats-btn", "stats"], ["holding-btn", "holding"], ["explainer-btn", "explainer"],
    ["offer-btn", "offer"], ["donate-btn", "donate"]].forEach(([id, which]) => {
     $("#" + id).addEventListener("click", () => Live.send("showScreen", { which }));
   });
@@ -246,6 +246,7 @@
     // one actually on the wall — they cannot disagree.
     const promos = st.promos || {};
     [["holding", "Holding Screen", "Hide Holding", true],
+     ["explainer", "How It Works", "Hide Explainer", true],
      ["stats", "State of the Room", "Hide the Room", (st.roomStats || {}).checkedIn > 0],
      ["offer", "Show Offer", "Hide Offer", Boolean(promos.offer)],
      ["donate", "Show Donate", "Hide Donate", Boolean(promos.donate)]]

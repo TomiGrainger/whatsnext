@@ -900,7 +900,7 @@ def _validate_interaction(raw, topic_no, index):
 # the same sheet on the phone — so they share one code path rather than two
 # copies that drift apart. Only ever one on screen at a time.
 # The screens one button each can put on the projector. Exactly one at a time.
-SCREENS = ("holding", "stats", "offer", "donate")
+SCREENS = ("holding", "explainer", "stats", "offer", "donate")
 
 
 def _screen_ready(r, which):
@@ -1194,7 +1194,7 @@ def load_state():
         if os.path.isfile(path):
             if _load_state_file(path, note):
                 return
-    open_room(DEFAULT_ROOM)  # the demo room is always there
+    open_room(DEFAULT_ROOM)  # nothing saved yet — start with the demo
 
 
 def _load_state_file(path, note):
@@ -1211,7 +1211,10 @@ def _load_state_file(path, note):
         ROOMS.clear()
         for code, room in loaded.items():
             ROOMS[sanitize_code(code)] = room
-    if DEFAULT_ROOM not in ROOMS:
+    # Only conjure the demo room back when there is nothing at all. Deleting it
+    # from a real deployment should stay deleted, rather than reappearing every
+    # restart to compete with tonight's room.
+    if not ROOMS:
         open_room(DEFAULT_ROOM)
     print("  Restored %d room(s)%s" % (len(ROOMS), note))
     return True
@@ -2256,8 +2259,11 @@ def act(code, kind, pid, data):
 
 
         elif kind == "startEvent":
+            # The night begins on the holding loop, not on topic one: there is
+            # always a minute of walking to the front and saying hello, and the
+            # first debate question should not be on the wall through it.
             r["started"] = True
-            r["screen"] = None
+            r["screen"] = "holding"
 
         elif kind == "removeWord":
             # pulls it off the projector and stops it coming straight back
@@ -2749,10 +2755,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         path = urlparse(self.path).path
-        if not path.startswith("/api/events/"):
+        if not path.startswith(("/api/events/", "/api/rooms/")):
             return self._send(404, "Not found")
         if not self.authed():
             return self._deny()
+        if path.startswith("/api/rooms/"):
+            return self.delete_room_route(path[len("/api/rooms/"):])
         event_id = path[len("/api/events/"):]
         with LOCK:
             if event_id not in EVENTS:
@@ -3030,6 +3038,24 @@ class Handler(BaseHTTPRequestHandler):
             closed = room["closed"]
         broadcast(code)
         return self._send(200, json.dumps({"ok": True, "code": code, "closed": closed}),
+                          "application/json", {"Cache-Control": "no-store"})
+
+    def delete_room_route(self, code):
+        """Remove a room from the list. The evening it held is not deleted with
+        it — the archive, the sign-ups and the offer leads all survive, because
+        tidying a stale room off a page is a different act from destroying what
+        happened in it."""
+        code = sanitize_code(code)
+        with LOCK:
+            if code not in ROOMS:
+                return self._send(404, json.dumps({"ok": False, "error": "Unknown room"}),
+                                  "application/json")
+            del ROOMS[code]
+            mark_dirty()
+            save_state()
+        crm.close_session(code)
+        broadcast(code)      # anything still parked on it drops to "not open"
+        return self._send(200, json.dumps({"ok": True, "code": code}),
                           "application/json", {"Cache-Control": "no-store"})
 
     def create_room(self, data):

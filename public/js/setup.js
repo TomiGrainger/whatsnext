@@ -489,6 +489,29 @@
       leads.textContent = "✉ " + (r.leads || 0);
       row.appendChild(leads);
 
+      // Removing a stale room from this list. Two taps, because it can't be
+      // undone — though what happened in the room survives it.
+      const gone = confirmingDelete === "room:" + r.code;
+      const drop = document.createElement("button");
+      drop.className = "room-toggle drop" + (gone ? " confirming" : "");
+      drop.type = "button";
+      drop.textContent = gone ? "CONFIRM DELETE" : "DELETE";
+      drop.title = gone
+        ? "Removes the room. Sign-ups, offer leads and the archive all stay."
+        : "Remove this room from the list";
+      drop.addEventListener("click", async () => {
+        if (!gone) { confirmingDelete = "room:" + r.code; loadRooms(); return; }
+        confirmingDelete = null;
+        const res = await del("/api/rooms/" + encodeURIComponent(r.code));
+        const msg = $("#launch-msg");
+        msg.className = res.ok ? "msg ok" : "msg err";
+        msg.textContent = res.ok
+          ? "Room " + r.code + " removed. Its sign-ups and results are still here."
+          : (res.error || "Couldn't remove that room.");
+        loadRooms();
+      });
+      row.appendChild(drop);
+
       // people who raised a hand for the offer — a separate list to the
       // debrief sign-ups, and downloadable the same way
       [["interest", "\uD83D\uDCBC", "tapped the offer"],

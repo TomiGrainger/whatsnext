@@ -383,7 +383,7 @@ body.reveal-flash .pv-slider .big{animation:revealglow .9s ease;}
 /* ---- the always-there join code ---- */
 /* Sits under the takeovers (they are 890+) so a screen still covers it, and
    above the stage furniture so nothing hides it during a topic. */
-.join-corner{position:fixed;right:2.2vw;bottom:2.2vw;z-index:860;
+.join-corner{position:fixed;right:2.2vw;bottom:2.2vw;z-index:960;
   display:flex;align-items:center;gap:14px;background:rgba(12,12,15,.86);
   border:1px solid var(--line);border-radius:16px;padding:12px 16px 12px 12px;
   backdrop-filter:blur(6px);}
@@ -395,3 +395,32 @@ body.reveal-flash .pv-slider .big{animation:revealglow .9s ease;}
 .jc-k{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--red);
   font-weight:700;}
 .jc-u{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:5px;}
+
+/* ---- how it works ---- */
+.how-veil{position:fixed;inset:0;z-index:894;background:#08080a;
+  padding:5vh 5vw;display:flex;flex-direction:column;}
+.how-veil[hidden]{display:none;}
+.how-rail{display:flex;gap:8px;margin-bottom:4vh;}
+.how-tick{flex:1;height:4px;border-radius:2px;background:#1c1c20;overflow:hidden;}
+.how-tick .fill{display:block;height:100%;width:0;background:var(--red);}
+.how-tick.done .fill{width:100%;}
+.how-tick.now .fill{animation:howfill var(--dwell) linear forwards;}
+@keyframes howfill{from{width:0}to{width:100%}}
+.how-stage{flex:1;display:grid;grid-template-columns:1fr auto;gap:5vw;
+  align-items:center;min-height:0;}
+.how-n{font-family:var(--mono);font-size:clamp(12px,1.2vw,18px);letter-spacing:.3em;
+  color:var(--red);font-weight:700;}
+.how-h{font-family:var(--display);text-transform:uppercase;color:var(--ink);
+  font-size:clamp(40px,6vw,110px);line-height:.92;margin:2vh 0 0;}
+.how-h b{color:var(--red);display:block;}
+.how-p{color:var(--muted);font-size:clamp(17px,1.9vw,32px);line-height:1.4;
+  margin:3vh 0 0;max-width:24ch;}
+.how-art{font-size:clamp(90px,13vw,230px);line-height:1;text-align:center;}
+.how-art img{width:clamp(150px,17vw,300px);height:auto;background:#f5f3ef;
+  padding:14px;border-radius:20px;display:block;}
+.how-foot{display:flex;justify-content:space-between;align-items:baseline;
+  border-top:1px solid var(--line);padding-top:2vh;font-family:var(--mono);
+  font-size:clamp(11px,1.1vw,16px);}
+.how-brand{color:var(--muted);letter-spacing:.2em;}
+.how-join{color:var(--red);letter-spacing:.12em;}
+@media(max-width:1100px){ .how-stage{grid-template-columns:1fr;} .how-art{display:none;} }

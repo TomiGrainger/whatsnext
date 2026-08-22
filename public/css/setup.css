@@ -209,3 +209,7 @@
 .mail-state[hidden]{display:none;}
 .mail-state.on{border-color:#1f5f3f;color:#8fd6b0;}
 .mail-state.off{border-color:#3a0e15;color:var(--muted);}
+
+.room-toggle.drop{border-color:var(--line);color:var(--dim);}
+.room-toggle.drop:hover{border-color:var(--red);color:var(--red);}
+.room-toggle.drop.confirming{border-color:var(--red);background:var(--red);color:#fff;}

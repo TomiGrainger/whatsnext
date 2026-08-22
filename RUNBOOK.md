@@ -98,8 +98,13 @@ its absence tells you nothing either way.
 
 ### Starting the night
 Everyone who checks in sits in the lobby — the room filling up — and the wall
-holds the join code. Press **START THE EVENT** when you're ready. If you forget
-and simply launch something, that starts it too.
+holds the join code. Press **START THE EVENT** when you're ready: the wall goes
+to the holding loop, with the join QR still on it, which is your minute to walk
+to the front. Take it down when you want the first topic. If you forget the
+button and simply launch something, that starts the event too.
+
+**HOW IT WORKS** is worth putting up once while people settle — seven slides
+explaining the app to a room that has never seen it.
 
 ### Putting a screen up
 **HOLDING**, **STATE OF THE ROOM**, **SHOW OFFER** and **SHOW DONATE** are one

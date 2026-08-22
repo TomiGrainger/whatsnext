@@ -191,6 +191,42 @@ def run(guest, crew, data_dir):
           sum(v["count"] for v in rs["vibes"]) == 3,
           "vibes=%s" % [v["count"] for v in rs["vibes"]])
 
+    # ---- the client must not read snapshot fields the server never sends ----
+    # This is here because renaming three snapshot fields into one silently
+    # disabled the offer sheet on every phone: the JS kept testing the old name,
+    # which was simply undefined, so the condition was permanently false. No
+    # error, no failing test, just a feature that quietly stopped happening.
+    snap = state(guest)
+    known = set(snap) | {"promo", "promos", "screen", "started", "runningOrder"}
+    import re as _re
+    for name in ("audience", "projector", "moderator"):
+        _, js, _ = guest.get("/js/%s.js" % name)
+        # comments are free to name a field they are explaining
+        code = _re.sub(rb"/\*.*?\*/", b"", js, flags=_re.S)
+        code = _re.sub(rb"(?m)//.*$", b"", code)
+        used = set(_re.findall(rb"\bst\.([A-Za-z_][A-Za-z0-9_]*)", code))
+        unknown = [u.decode() for u in sorted(used) if u.decode() not in known]
+        check("%s.js reads only fields the server sends" % name, not unknown,
+              "unknown: %s" % ", ".join(unknown))
+
+    # ---- removing a stale room, without destroying what happened in it ----
+    crew.post("/api/rooms", {"code": "STALE", "eventId": "demo_event"})
+    guest.post("/api/leads", {"room": "STALE", "email": "held@example.com"})
+    status, _, _ = guest.request("DELETE", "/api/rooms/STALE")
+    check("a guest cannot delete a room", status == 401, "got %s" % status)
+    status, body, _ = crew.request("DELETE", "/api/rooms/STALE")
+    check("the crew can delete a room", status == 200, "got %s" % status)
+    _, rooms_left = crew.json("/api/rooms")
+    check("and it leaves the list",
+          not any(r["code"] == "STALE" for r in rooms_left["rooms"]))
+    status, held = crew.json("/api/leads/STALE.json")
+    check("the sign-ups it held are not deleted with it",
+          status == 200 and any(l["email"] == "held@example.com" for l in held),
+          "got %s" % held)
+    status, _, _ = crew.request("DELETE", "/api/rooms/STALE")
+    check("deleting it again says so rather than pretending", status == 404,
+          "got %s" % status)
+
     # ---- the lobby ----
     # A room that hasn't been started keeps everyone in the lobby, and the wall
     # off the first debate question — nobody should read it before it is asked.
@@ -202,7 +238,10 @@ def run(guest, crew, data_dir):
     status, _ = guest.act("startEvent")
     check("a guest cannot start the event", status == 401, "got %s" % status)
     crew.act("startEvent")
-    check("the crew can start it", state(guest)["started"] is True)
+    st = state(guest)
+    check("the crew can start it", st["started"] is True)
+    check("and the night begins on the holding loop, not on topic one",
+          st["screen"] == "holding", "screen=%s" % st["screen"])
     # and if the crew forgets the button and simply drives the show, the room
     # must not be left sitting in the lobby
     crew.post("/api/rooms/%s" % ROOM, {"reset": True})
@@ -452,6 +491,8 @@ def run(guest, crew, data_dir):
     check("and take it down", state(guest)["screen"] is None)
 
     # ---- state of the room on the wall ----
+    crew.act("showScreen", which="explainer", on=True)
+    check("the crew can put the explainer up", state(guest)["screen"] == "explainer")
     crew.act("showScreen", which="stats", on=True)
     check("the crew can put the room's make-up on the wall",
           state(guest)["screen"] == "stats")
@@ -484,7 +525,7 @@ def run(guest, crew, data_dir):
     check("the crew can put the offer up", state(guest)["screen"] == "offer")
     # One projector, one screen. Every takeover shares the field, so no two can
     # ever both be up — including the holding loop and the room breakdown.
-    for which in ("donate", "holding", "stats", "offer"):
+    for which in ("donate", "holding", "explainer", "stats", "offer"):
         crew.act("showScreen", which=which, on=True)
         st = state(guest)
         check("putting up %s takes down whatever was there" % which,

@@ -76,13 +76,104 @@
       });
   }
 
+  // ---- how it works ----
+  // A room that has never used this needs telling once, and a person walking in
+  // reads a wall for about six seconds. So: short slides, big type, no voice-over
+  // and nothing to press. It runs itself and loops until taken down.
+  const HOW_DWELL = 7000;
+  const HOW_SLIDES = [
+    { art: "qr",  head: ["SCAN TO", "JOIN"],
+      body: "Point your camera at the code. No app, no sign-up, no account." },
+    { art: "\u270B", head: ["SAY WHERE", "YOU STAND"],
+      body: "Agree, disagree or unsure — and change your mind whenever you like. The wall moves with you." },
+    { art: "\u{1F4CA}", head: ["VOTE ON", "EVERYTHING"],
+      body: "Polls, word clouds, sliders, rankings. Everyone answers at once, and the room sees itself think." },
+    { art: "\u{1F64B}", head: ["ASK THE", "QUESTION"],
+      body: "Put a question up and upvote the ones you want answered. The best-backed ones reach the stage." },
+    { art: "\u{1F5E3}", head: ["TAKE THE", "MIC"],
+      body: "Disagree out loud. Join the challenge queue and the moderator can bring you in." },
+    { art: "\u{1F525}", head: ["REACT AS", "IT HAPPENS"],
+      body: "Hold an emoji and it floats up the wall. The room reacts without interrupting." },
+    { art: "\u2709\uFE0F", head: ["TAKE IT", "HOME"],
+      body: "Leave your email at the end and the full results land in your inbox." },
+  ];
+  let howTimer = null;
+  let howAt = 0;
+
+  function howSlide(st) {
+    const stage = $("#how-stage");
+    const slide = HOW_SLIDES[howAt % HOW_SLIDES.length];
+    stage.innerHTML = "";
+    const txt = document.createElement("div");
+    const n = document.createElement("div");
+    n.className = "how-n";
+    n.textContent = String(howAt % HOW_SLIDES.length + 1).padStart(2, "0")
+      + " / " + String(HOW_SLIDES.length).padStart(2, "0");
+    const h = document.createElement("h1");
+    h.className = "how-h";
+    h.append(document.createTextNode(slide.head[0]));
+    const b = document.createElement("b");
+    b.textContent = slide.head[1];
+    h.appendChild(b);
+    const p = document.createElement("p");
+    p.className = "how-p";
+    p.textContent = slide.body;
+    txt.append(n, h, p);
+
+    const art = document.createElement("div");
+    art.className = "how-art";
+    if (slide.art === "qr") {
+      const img = document.createElement("img");
+      img.src = "/qr.svg?url=" + encodeURIComponent(st.joinUrl || "");
+      img.alt = "";
+      art.appendChild(img);
+    } else {
+      art.textContent = slide.art;
+    }
+    stage.append(txt, art);
+
+    const rail = $("#how-rail");
+    rail.innerHTML = "";
+    HOW_SLIDES.forEach((_, i) => {
+      const t = document.createElement("div");
+      const at = howAt % HOW_SLIDES.length;
+      t.className = "how-tick" + (i < at ? " done" : i === at ? " now" : "");
+      t.style.setProperty("--dwell", HOW_DWELL + "ms");
+      t.appendChild(document.createElement("span")).className = "fill";
+      rail.appendChild(t);
+    });
+
+    $("#how-brand").textContent = (st.brand || "") + " LIVE";
+    $("#how-join").textContent = (st.joinUrl || "").replace(/^https?:\/\//, "");
+  }
+
+  function paintHow(st) {
+    const on = st.screen === "explainer" && !st.closed;
+    $("#how-veil").hidden = !on;
+    if (!on) {
+      clearInterval(howTimer);
+      howTimer = null;
+      return;
+    }
+    if (howTimer) return;          // already running; don't restart on every snapshot
+    howAt = 0;
+    howSlide(st);
+    howTimer = setInterval(() => {
+      howAt += 1;
+      howSlide(Live.get() || st);
+    }, HOW_DWELL);
+  }
+
   // The small join code that stays put once the night is running. Hidden while
   // a takeover is up (it would sit under it anyway) and while the big join
   // screen or the closing screen is showing their own, larger one.
   let cornerFor = null;
   function paintJoinCorner(st) {
+    // The holding loop is the longest anyone looks at one screen — before the
+    // doors, in the break — so the way in stays on it. Every other takeover
+    // hides it: they are asking for attention, not offering a door.
     const bigOneShowing = !st.started || st.closed || st.exists === false;
-    const on = !bigOneShowing && !st.screen;
+    const on = !bigOneShowing && (!st.screen || st.screen === "holding");
     $("#join-corner").hidden = !on;
     if (!on) return;
     if (cornerFor !== st.joinUrl) {
@@ -269,6 +360,7 @@
     $("#waiting-veil").hidden = st.closed || (st.started && st.inRoom > 0);
     paintLobby(st);
     paintJoinCorner(st);
+    paintHow(st);
     $("#p-n").textContent = st.topicIndex + 1;
     $("#p-t").textContent = st.topicCount;
     showView(MODE_VIEW[st.mode] || "pv-discussion");

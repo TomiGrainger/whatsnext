@@ -430,7 +430,11 @@
 
   function paintOffer(st) {
     const o = st.promo;                       // the one on screen, if any
-    const live = Boolean(o && st.promoLive && !st.closed);
+    // st.promo is only ever populated when a promo screen is actually up, so
+    // its presence is the whole condition. (This read st.promoLive, a field
+    // that stopped existing when the takeovers were unified — which silently
+    // disabled the sheet on every phone.)
+    const live = Boolean(o && !st.closed);
 
     if (o) {
       const img = offerImageUrl(o);

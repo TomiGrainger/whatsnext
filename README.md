@@ -44,7 +44,11 @@ event can't be deleted, since it is the fallback for room codes that were never
 set up.
 
 Running rooms are listed at the bottom of **Go live** with a **TURN OFF / TURN ON**
-switch and a **RESET**. A room that is off shows a "room closed" screen on the
+switch, a **RESET** and a **DELETE** (two taps). Deleting takes the room off the
+list and nothing else — the sign-ups, the offer leads and the archived evening
+all survive it, because tidying a stale room off a page is a different act from
+destroying what happened in it. The demo room only reappears on a restart when
+there are no rooms at all, so deleting it from a real deployment sticks. A room that is off shows a "room closed" screen on the
 phones and the projector and stops accepting votes, but keeps every tally — switch
 it back on and it resumes exactly where it was. **RESET** (two taps, it's
 destructive) wipes every vote, tally and challenge back to zero and returns to
@@ -171,14 +175,23 @@ signs the crew out, and anyone with the code has the controls.
   first debate question before it has been asked. Driving the show — launching
   anything, moving topic — starts the event too, so nobody is left in the lobby
   because a button was skipped. A RESET puts the room back there.
-- **One screen at a time** — **HOLDING**, **STATE OF THE ROOM**, **SHOW OFFER**
-  and **SHOW DONATE** are one exclusive set: there is one projector, so putting
+- **How it works** — a seven-slide loop explaining the app to a room that has
+  never used it: scan to join, say where you stand, vote, ask, take the mic,
+  react, take it home. Big type, no voice-over, nothing to press — it runs
+  itself and loops until taken down. A person walking in reads a wall for about
+  six seconds, so each slide gets seven.
+- **One screen at a time** — **HOLDING**, **HOW IT WORKS**, **STATE OF THE
+  ROOM**, **SHOW OFFER** and **SHOW DONATE** are one exclusive set: there is one projector, so putting
   one up takes down whatever was there, and pressing the armed one takes it
   down. The room holds *which* screen is up rather than a flag each, so the lit
   button is always the thing actually on the wall. Putting a question or a
   person on the big screen clears it too — otherwise it lands behind the
   takeover and appears to do nothing.
-- **The holding screen** — **HOLDING SCREEN** in the control room throws a
+- **The holding screen** — where the night starts: pressing **START THE EVENT**
+  puts it up, because there is always a minute of walking to the front and
+  saying hello before the first question belongs on the wall. It keeps the join
+  QR in the corner — it is the screen people look at longest, so it stays a way
+  in rather than just a logo. **HOLDING SCREEN** in the control room throws a
   full-screen video loop over the projector: before doors, during the break,
   while you fix something. Press again and the room comes straight back to
   whatever was on. It sits above every other screen, so it covers a poll, the
