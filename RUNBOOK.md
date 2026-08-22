@@ -17,7 +17,8 @@ python3 test_smoke.py          # ~0.3s, must say "0 failed"
 Then, in order:
 
 1. Open `/setup`, check the event is right and the offer says what you want.
-2. Open the room. Note the code.
+2. Open the room. Note the code — and check it is the one marked **TONIGHT**
+   in setup, which is where the bare address sends anyone who types it.
 3. Open `/projector` on the screen, press `F11` (Windows) or `⌃⌘F` (Mac).
 4. Open `/moderator` on your laptop. Confirm the room code matches.
 5. Join from your own phone on **mobile data, not the venue Wi-Fi** — that

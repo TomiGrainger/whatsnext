@@ -94,6 +94,13 @@ signs the crew out, and anyone with the code has the controls.
 
 ## On the night
 
+- **The bare address finds tonight's room.** `whatsnext.fly.dev` on its own
+  redirects to the most recently opened room that is still on — and the setup
+  page marks that room **TONIGHT**, so it is never a guess. It used to land
+  everyone in the built-in demo room, which is the worst possible failure: the
+  demo is always open and full of seeded numbers, so someone would believe they
+  had joined and vote into a room nobody was reading. An explicit `?room=` is
+  never redirected away — older links still mean what they said.
 - **Getting in** — the shortest path we could make it. The QR carries
   `/WN25` — a path, not a query string, so it can be read out from a stage:
   "whatsnext dot fly dot dev slash W N 2 5". Scanning it skips the join screen

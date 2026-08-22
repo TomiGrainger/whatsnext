@@ -433,6 +433,14 @@
       a.innerHTML = "<b></b> · <span></span>";
       a.querySelector("b").textContent = r.code;
       a.querySelector("span").textContent = r.eventName + (r.closed ? " · off" : "");
+      // which room the bare address sends people to, so it is never a guess
+      if (data.tonight === r.code) {
+        const flag = document.createElement("span");
+        flag.className = "room-tonight";
+        flag.title = "Anyone opening the address without a code lands here";
+        flag.textContent = "TONIGHT";
+        row.appendChild(flag);
+      }
       row.appendChild(a);
 
       // sign-ups collected in this room, downloadable as JSON

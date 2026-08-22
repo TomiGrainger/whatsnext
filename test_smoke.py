@@ -120,7 +120,9 @@ def state(client, room=ROOM):
 
 def run(guest, crew, data_dir):
     # ---- the surfaces are all reachable ----
-    for path, label in (("/", "audience"), ("/projector", "projector"),
+    # "/" answers with a redirect to tonight's room, so the audience page is
+    # checked at the address a phone actually lands on
+    for path, label in (("/" + ROOM, "audience"), ("/projector", "projector"),
                         ("/recap", "recap"), ("/setup", "setup"),
                         ("/moderator", "moderator")):
         status, body, _ = guest.get(path)
@@ -409,6 +411,30 @@ def run(guest, crew, data_dir):
     check("a scanned code lands on the audience page, not a redirect",
           b"JOIN THE DEBATE" in body and b"s-checkin" in body)
 
+    # The bare address must find tonight's room. Sending it to a hardcoded demo
+    # room is the worst case of all: the demo is always open and seeded, so
+    # someone would believe they had joined and vote where nobody is reading.
+    status, _, headers = guest.get("/")
+    check("the bare address goes to a room, not a guess",
+          status in (301, 302, 303) and headers.get("Location", "").lstrip("/") == ROOM,
+          "%s -> %s" % (status, headers.get("Location")))
+
+    crew.post("/api/rooms", {"code": "LATER", "eventId": "demo_event"})
+    status, _, headers = guest.get("/")
+    check("and follows the room opened most recently",
+          headers.get("Location", "").lstrip("/") == "LATER",
+          "went to %s" % headers.get("Location"))
+    crew.post("/api/rooms/LATER", {"closed": True})
+    status, _, headers = guest.get("/")
+    check("switching that room off hands it back",
+          headers.get("Location", "").lstrip("/") == ROOM,
+          "went to %s" % headers.get("Location"))
+
+    # an explicit ?room= is a promise; the redirect must not break older links
+    status, body, headers = guest.get("/?room=" + ROOM)
+    check("an explicit ?room= is never redirected away",
+          status == 200 and "Location" not in headers, "got %s" % status)
+
     # ---- the projector's holding loop ----
     status, body, headers = guest.get("/media/holding.mp4")
     check("the holding video is served", status == 200 and len(body) > 1000,
@@ -631,7 +657,8 @@ def run(guest, crew, data_dir):
     # sorted by attendance: an address can exist with no nights (given at a
     # sign-up whose phone never checked in), which is fine but not the case
     # this is testing
-    who = folk["people"][0]
+    who = next((p for p in folk["people"] if p["email"] == "crm@example.com"),
+               folk["people"][0])
     check("a contact records which events they came to",
           who["nights"] >= 1 and who["email"] == "crm@example.com", "got %s" % who)
     check("and what they do, kept on the contact",

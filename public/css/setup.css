@@ -200,3 +200,6 @@
 .page-link{display:inline-block;margin-top:10px;font-family:var(--mono);font-size:11px;
   letter-spacing:.12em;color:var(--red);text-decoration:none;}
 .page-link:hover{text-decoration:underline;}
+
+.room-tonight{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--red);
+  border:1px solid var(--red);border-radius:999px;padding:3px 8px;white-space:nowrap;}

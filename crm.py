@@ -502,6 +502,10 @@ def purge_older_than(days):
 # ---------------------------------------------------------------------------
 
 def query(sql, args=()):
+    """Every read settles the queue first. These are crew-only pages asked a
+    handful of times, and a CRM that can't see a sign-up made a second ago is
+    the kind of thing you stop trusting and never start again."""
+    flush()
     with _LOCK:
         if _DB is None:
             return []

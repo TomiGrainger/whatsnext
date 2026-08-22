@@ -1199,9 +1199,16 @@
     });
   }
 
-  // if this tab already joined a room, reconnect to it after a reload
+  // If this tab already joined a room, reconnect to it after a reload — but a
+  // room named in the URL wins. Scanning a new code on a phone that was at last
+  // month's event must land in this month's room.
   const savedRoom = sessionStorage.getItem("upgrade_room");
-  if (joined && savedRoom) Live.setRoom(savedRoom);
+  if (joined && savedRoom && !Live.roomWasGiven()) Live.setRoom(savedRoom);
+  if (joined && savedRoom && Live.roomWasGiven() && savedRoom !== Live.room()) {
+    sessionStorage.setItem("upgrade_room", Live.room());
+    sessionStorage.removeItem("upgrade_checkedin");
+    checkedIn = false;          // a different room means checking in again
+  }
   if (joined && !checkedIn) buildCheckIn();
 
   // back to the join screen to retype a code

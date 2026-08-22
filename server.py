@@ -1153,6 +1153,8 @@ def open_room(code, event_id=None, seed=None):
             if seed is None:
                 seed = code == DEFAULT_ROOM
             room = new_room(code, event_id or DEFAULT_EVENT_ID, seed=seed)
+            # when it was opened, so the bare address can find tonight's room
+            room["openedAt"] = time.time()
             ROOMS[code] = room
             mark_dirty()
         return room
@@ -1533,6 +1535,22 @@ def missing_snapshot(code):
         "emoji": payloads["emoji"], "slider": payloads["slider"],
         "ranking": payloads["ranking"],
     }
+
+
+def current_room():
+    """Tonight's room: the most recently opened one that is still on.
+
+    Typing the bare address is the likeliest arrival after the QR, and
+    sending those people to a hardcoded demo room is worse than sending them
+    nowhere — the demo is always open and full of mockup numbers, so they
+    would believe they had joined and vote into a room nobody is reading."""
+    with LOCK:
+        live = [(r.get("openedAt", 0), c) for c, r in ROOMS.items()
+                if not r.get("closed")]
+    if not live:
+        return None
+    live.sort(reverse=True)
+    return live[0][1]
 
 
 def room_promo(r, kind):
@@ -2546,7 +2564,8 @@ class Handler(BaseHTTPRequestHandler):
                         "donations": sum(1 for r in read_interest(c)
                                          if r.get("promo") == "donate"),
                     })
-            return self._send(200, json.dumps({"rooms": rooms, "mailConfigured": mail_configured()}),
+            return self._send(200, json.dumps({"rooms": rooms, "tonight": current_room(),
+                                               "mailConfigured": mail_configured()}),
                               "application/json", {"Cache-Control": "no-store"})
         if path == "/unsubscribe":
             qs = parse_qs(parsed.query)
@@ -2607,6 +2626,17 @@ class Handler(BaseHTTPRequestHandler):
             if body is None:
                 return self._send(404, json.dumps({"ok": False, "error": "Unknown event"}), "application/json")
             return self._send(200, body, "application/json", {"Cache-Control": "no-store"})
+        if path == "/":
+            # Send them where the event actually is, and put the code in the
+            # address bar so they can see which room they are in. An explicit
+            # ?room= is left alone — older links and QRs still mean what they
+            # said, and being redirected off a room you named would be worse
+            # than any convenience this buys.
+            asked_for = parse_qs(parsed.query).get("room", [""])[0]
+            tonight = current_room()
+            if tonight and not asked_for:
+                return self._redirect("/" + tonight)
+            return self.serve_static("audience.html")
         if path in PAGES:
             return self.serve_static(PAGES[path])
         # /WN25 — a room code on its own. Checked after the named pages, so a
