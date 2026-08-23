@@ -1,0 +1,23 @@
+/* A page people read on a phone, in a venue, having just been asked for their
+   email. Long measure, generous size, nothing clever. */
+.s-privacy{padding:38px clamp(18px,5vw,40px) 80px;}
+.pv-wrap{max-width:64ch;margin:0 auto;}
+.pv-eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.28em;color:var(--red);
+  font-weight:700;}
+.pv-title{font-family:var(--display);text-transform:uppercase;
+  font-size:clamp(32px,8vw,52px);line-height:.95;color:var(--ink);margin:10px 0 0;}
+.pv-title b{color:var(--red);display:block;}
+.pv-lede{color:var(--ink);font-size:17px;line-height:1.6;margin:20px 0 0;}
+.pv-head{border-bottom:1px solid var(--line);padding-bottom:28px;margin-bottom:8px;}
+.s-privacy section{padding:26px 0;border-bottom:1px solid var(--line);}
+.s-privacy h2{font-family:var(--display);text-transform:uppercase;font-size:24px;
+  color:var(--ink);margin:0 0 4px;}
+.s-privacy h3{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;
+  color:var(--red);font-weight:700;margin:22px 0 6px;text-transform:uppercase;}
+.s-privacy p{color:var(--muted);font-size:15.5px;line-height:1.65;margin:10px 0 0;}
+.s-privacy strong{color:var(--ink);}
+.pv-call{border-left:2px solid var(--red);padding-left:16px;}
+.pv-mono{font-family:var(--mono);font-size:14px;color:var(--ink);word-break:break-all;}
+.pv-foot{padding-top:26px;}
+.pv-contact{color:var(--muted);font-size:15px;}
+.pv-updated{color:var(--dim);font-size:13px;margin-top:8px;}

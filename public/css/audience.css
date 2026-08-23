@@ -460,3 +460,7 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
    debrief list as well as the offer's */
 .offer-also{color:var(--dim);font-size:11.5px;line-height:1.5;text-align:center;
   margin:10px 0 0;}
+
+/* the privacy link sits inside the small print it belongs to */
+.ci-privacy a,.cv-note a,.offer-also a{color:var(--muted);text-decoration:underline;}
+.ci-privacy a:hover,.cv-note a:hover,.offer-also a:hover{color:var(--red);}

@@ -191,6 +191,24 @@ def run(guest, crew, data_dir):
           sum(v["count"] for v in rs["vibes"]) == 3,
           "vibes=%s" % [v["count"] for v in rs["vibes"]])
 
+    # ---- the privacy notice, and a link to it wherever we ask for something ----
+    status, priv, _ = guest.get("/privacy")
+    check("the privacy notice is public", status == 200 and b"PRIVACY" in priv)
+    for needs in (b"London", b"Australian Privacy Principle 8", b"Spam Act 2003",
+                  b"Information Commissioner"):
+        check("the notice covers: %s" % needs.decode(), needs in priv)
+    _, aud, _ = guest.get("/" + ROOM)
+    check("every place we ask for details links to it",
+          aud.count(b'href="/privacy"') >= 3,
+          "found %d links" % aud.count(b'href="/privacy"'))
+    status, meta = guest.json("/api/privacy-meta")
+    check("the notice reads its contact address from the mail settings",
+          status == 200 and "contact" in meta and "updated" in meta, "got %s" % meta)
+    # with no mail configured there is no address to name, and the page must
+    # still say something true rather than an empty gap
+    check("and falls back to something true when mail isn't set up",
+          b"the address on the email you received" in priv)
+
     # ---- readable in a dark room, and usable without sight ----
     # Measured rather than eyeballed: --dim carried real text at 2.76:1, which
     # is unreadable on a phone at arm's length in a venue.

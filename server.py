@@ -444,12 +444,14 @@ def _debrief_message(to_addr, name, event_name, brand, recap_url, promos=None):
     %s
     <p style="font-size:12px;color:#6e6e78;margin:26px 0 0;border-top:1px solid #26262b;padding-top:16px;">
       You're getting this because you asked for the debrief at %s.
-      <br><a href="%s" style="color:#8b8b90;">Unsubscribe or delete your details</a>.
+      <br><a href="%s" style="color:#8b8b90;">Unsubscribe or delete your details</a>
+      &middot; <a href="%s/privacy" style="color:#8b8b90;">Privacy</a>.
     </p>
   </div>
 </body></html>""" % (html_escape(event_name), html_escape(hello), html_escape(recap_url),
                      html_escape(recap_url), _promos_html(promos),
-                     html_escape(event_name), html_escape(unsub)), subtype="html")
+                     html_escape(event_name), html_escape(unsub),
+                     html_escape(public_base())), subtype="html")
     return msg
 
 
@@ -2409,7 +2411,8 @@ STATIC_TYPES = {
 }
 PAGES = {"/": "audience.html", "/moderator": "moderator.html",
          "/projector": "projector.html", "/setup": "setup.html",
-         "/recap": "recap.html", "/crm": "crm.html", "/print": "print.html"}
+         "/recap": "recap.html", "/crm": "crm.html", "/print": "print.html",
+         "/privacy": "privacy.html"}
 
 
 def _is_room_path(path):
@@ -2676,6 +2679,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self._deny()
             return self._send(200, json.dumps(crm.summary()), "application/json",
                               {"Cache-Control": "no-store"})
+        if path == "/api/privacy-meta":
+            # so the notice always names the address that actually sends the mail
+            return self._send(200, json.dumps({
+                "contact": MAIL_REPLY_TO or MAIL_FROM or "",
+                "updated": time.strftime("%B %Y"),
+            }), "application/json", {"Cache-Control": "no-cache"})
         if path == "/api/onboarding":
             payload = {"occupations": occupations(), "vibes": VIBES}
             return self._send(200, json.dumps(payload), "application/json",

@@ -421,6 +421,21 @@ The crew page over the archive, behind the same passcode as everything else.
   `responses.csv` (anonymous answers, safe to hand to an analyst). Plain CSV, so
   it imports into HubSpot or Mailchimp if you ever move.
 
+## Privacy
+
+`/privacy` is a plain-English notice written for Australian law — the Privacy
+Act 1988 and the Australian Privacy Principles, plus the Spam Act 2003 for the
+emails, which applies regardless of business size. It is linked from every place
+the app asks for something: the check-in screen, the debrief sign-up and the
+offer sheet, and from the footer of every email.
+
+Two things in it are there because the architecture demanded them. **APP 8**
+requires telling people before their information goes overseas, and this app's
+data lives in London. And the notice has to be honest that deleting a person
+removes their contact record but not their answers — because there is no path
+from an address to an answer to follow. `/api/privacy-meta` feeds it the address
+that actually sends the mail, so the page can't drift out of step with reality.
+
 ## Readable in a dark room
 
 The palette is checked rather than eyeballed: every text colour is measured
@@ -473,6 +488,7 @@ public/
   media/holding.mp4    the projector's holding-screen loop
   setup.html           event builder + room launcher
   crm.html             The Rooms — the crew's view of the archive
+  privacy.html         the privacy notice, linked wherever we ask for something
   print.html           door poster + table cards for a room's join code
   audience.html        mobile surface — 8 interaction screens
   moderator.html       control room dashboard
