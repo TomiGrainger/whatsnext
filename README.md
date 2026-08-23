@@ -234,6 +234,14 @@ signs the crew out, and anyone with the code has the controls.
   downloadable there. They are kept apart from the debrief list and survive a
   room RESET, so rehearsing never destroys real leads. Editing either reaches
   rooms that are already open, so a typo can be fixed mid-event.
+- **Challenges reach the wall in two steps.** The moment someone posts one, the
+  projector flashes *who* — their initials and name, "WANTS THE MIC", for four
+  seconds. The room sees itself pushing back as it happens. The *words* only go
+  up when you press **PUT UP** on that challenge in the control room, because a
+  challenge is up to 180 characters of free text and putting it on a
+  three-metre screen unread is the riskiest thing this app could do. Featuring a
+  question takes a challenge down and vice versa: one thing on the wall at a
+  time, and removing a challenge pulls it off the screen with it.
 - **Questions from the floor** — guests ask and upvote from the discussion
   screen; the moderator's ranked panel can throw one over the projector (`PUT UP`)
   or grey it off once covered (`DONE`). Separate from the challenge queue: a

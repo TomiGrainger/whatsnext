@@ -244,3 +244,10 @@ body.s-moderator{background:#060607;min-height:100vh;}
 
 /* the room is looking at something other than the show — say so loudly */
 .mode-now.takeover{background:var(--red);color:#fff;border-color:var(--red);}
+
+/* put a challenge's words on the wall — deliberate, and obvious when it is up */
+.ch-up{font-family:var(--mono);font-size:12px;letter-spacing:.1em;font-weight:700;
+  background:transparent;border:1px solid var(--line-2);color:var(--muted);
+  border-radius:7px;padding:4px 9px;margin-left:8px;cursor:pointer;white-space:nowrap;}
+.ch-up:hover{border-color:var(--red);color:var(--red);}
+.ch-up.on{background:var(--red);border-color:var(--red);color:#fff;}

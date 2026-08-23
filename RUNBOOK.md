@@ -123,6 +123,12 @@ The control room lists every word on the wall while a cloud is live. Tap it. It
 goes immediately and cannot be re-submitted. (Profanity is filtered on the way
 in and each phone only gets three words, but no filter catches everything.)
 
+### Someone has challenged and you want the room to read it
+The wall already flashed their name when they posted. **PUT UP** on that
+challenge in the control room shows the words; pressing it again takes them
+down. Only one thing sits on the wall at a time, so this replaces a featured
+question and vice versa.
+
 ### A question or challenge needs to go
 Every question and challenge has **REMOVE** — and an **UNDO** appears for twelve
 seconds afterwards if you hit the wrong one.

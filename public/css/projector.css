@@ -525,3 +525,22 @@ body.reveal-flash .pv-slider .big{animation:revealglow .9s ease;}
 .d-mail .ln.s{width:55%;}
 .d-mail .btn{height:clamp(26px,2.4vw,36px);border-radius:8px;background:var(--red);
   margin-top:6px;}
+
+/* ---- someone pushed back ---- */
+/* Above the stage but below any takeover: a four-second flash of who, never
+   what. The words are the crew's call. */
+.ch-pulse{position:fixed;left:50%;bottom:8vh;transform:translateX(-50%);z-index:875;
+  display:flex;align-items:center;gap:20px;background:rgba(20,9,12,.95);
+  border:1px solid var(--red);border-radius:20px;padding:18px 30px 18px 20px;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);animation:cpin .4s ease-out;}
+.ch-pulse[hidden]{display:none;}
+@keyframes cpin{from{opacity:0;transform:translate(-50%,26px) scale(.96)}
+  to{opacity:1;transform:translate(-50%,0) scale(1)}}
+.cp-face{width:clamp(52px,4.4vw,74px);aspect-ratio:1;border-radius:50%;
+  background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-weight:700;font-size:clamp(16px,1.5vw,24px);
+  background-size:cover;background-position:center;}
+.cp-k{font-family:var(--mono);font-size:clamp(11px,1.05vw,15px);letter-spacing:.3em;
+  color:var(--red);font-weight:700;}
+.cp-name{font-family:var(--display);text-transform:uppercase;color:var(--ink);
+  font-size:clamp(26px,2.6vw,46px);line-height:1;margin-top:6px;}

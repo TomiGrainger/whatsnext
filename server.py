@@ -797,6 +797,7 @@ def new_room(code, event_id=DEFAULT_EVENT_ID, seed=False):
         # challenge queue (a challenge asks for the mic, a question asks for an answer)
         "questions": [],
         "featuredQuestion": None,
+        "featuredChallenge": None,
         # pid -> {name, occupation, fact, avatar}
         "profiles": {},
         "featuredProfile": None,
@@ -1123,6 +1124,7 @@ def reset_room(room):
     room["invited"] = []
     room["questions"] = []
     room["featuredQuestion"] = None
+    room["featuredChallenge"] = None
     room["profiles"] = {}
     room["featuredProfile"] = None
     room["connections"] = []
@@ -1533,7 +1535,7 @@ def missing_snapshot(code):
         "sentimentHistory": [],
         "whatsNext": {"votes": 0, "threshold": 10, "remaining": 10, "unlocked": False},
         "challenges": [], "invited": [],
-        "questions": [], "featuredQuestion": None,
+        "questions": [], "featuredQuestion": None, "featuredChallenge": None,
         "profiles": {}, "featuredProfile": None, "featuredProfilePid": None,
         "directory": [],
         "poll": payloads["poll"], "wordcloud": payloads["wordcloud"],
@@ -1665,6 +1667,10 @@ def snapshot(code, crew=False):
                           for q in sorted(r.get("questions", []),
                                           key=lambda q: (-q["votes"], -q["at"]))],
             "featuredQuestion": r.get("featuredQuestion"),
+            # a challenge only reaches the wall when the crew has read it and
+            # decided to put it there — 180 characters of unread free text is
+            # the last thing that should appear on a three-metre screen
+            "featuredChallenge": r.get("featuredChallenge"),
             # Who's in the room, for the audience directory: only people who
             # opted in, and never their contact details — those move one-to-one
             # through an accepted connection (see /api/me).
@@ -2266,6 +2272,8 @@ def act(code, kind, pid, data):
             gone = [c for c in r["challenges"] if c["id"] == cid]
             r["challenges"] = [c for c in r["challenges"] if c["id"] != cid]
             r["invited"] = [i for i in r["invited"] if i != cid]
+            if r.get("featuredChallenge") == cid:
+                r["featuredChallenge"] = None
             if gone:
                 _hold_undo(r, "challenge", gone[0])
                 result = {"undo": "challenge"}
@@ -2328,9 +2336,16 @@ def act(code, kind, pid, data):
                 r["featuredProfile"] = None if r.get("featuredProfile") == target else target
         elif kind == "featureQuestion":
             r["screen"] = None
+            r["featuredChallenge"] = None
             qid = data.get("id")
             # tapping the live one again takes it off the big screen
             r["featuredQuestion"] = None if r.get("featuredQuestion") == qid else qid
+        elif kind == "featureChallenge":
+            r["screen"] = None
+            r["featuredQuestion"] = None      # one thing on the wall at a time
+            cid = data.get("id")
+            r["featuredChallenge"] = None if r.get("featuredChallenge") == cid else cid
+
         elif kind == "answerQuestion":
             qid = data.get("id")
             for q in r["questions"]:

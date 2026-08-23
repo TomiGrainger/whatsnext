@@ -356,6 +356,41 @@
   }
 
   // A question the moderator has put up sits over whatever else is showing.
+  // A challenge landing is a moment worth seeing: the room pushing back, live.
+  // Only ever the person, though — 180 characters nobody has read do not belong
+  // on a wall in front of a hundred people.
+  let knownChallenges = null;
+  let pulseTimer = null;
+
+  function paintChallengePulse(st) {
+    const list = st.challenges || [];
+    const ids = new Set(list.map((c) => c.id));
+    if (knownChallenges === null) {     // first snapshot: catch up, don't flash
+      knownChallenges = ids;
+      return;
+    }
+    const fresh = list.find((c) => !knownChallenges.has(c.id));
+    knownChallenges = ids;
+    if (!fresh || st.closed) return;
+
+    // initials, like the queue in the control room — a challenge record has no
+    // photo on it, and inventing one here would go stale the moment they change it
+    $("#cp-face").textContent = fresh.initials || "?";
+    $("#cp-name").textContent = fresh.name || "Someone";
+    const pulse = $("#ch-pulse");
+    pulse.hidden = false;
+    clearTimeout(pulseTimer);
+    pulseTimer = setTimeout(() => { pulse.hidden = true; }, 4200);
+  }
+
+  function paintFeaturedChallenge(st) {
+    const c = (st.challenges || []).find((x) => x.id === st.featuredChallenge);
+    $("#ch-veil").hidden = !c;
+    if (!c) return;
+    $("#cv-text").textContent = c.text;
+    $("#cv-name").textContent = c.name;
+  }
+
   function paintFeaturedQuestion(st) {
     const q = (st.questions || []).find((x) => x.id === st.featuredQuestion);
     $("#q-veil").hidden = !q;
@@ -421,6 +456,8 @@
     }
     paintJoin(st);
     paintFeaturedQuestion(st);
+    paintFeaturedChallenge(st);
+    paintChallengePulse(st);
     paintFeaturedProfile(st);
     paintOffer(st);
     $("#closed-veil").hidden = !st.closed;

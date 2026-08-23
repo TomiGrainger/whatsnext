@@ -448,6 +448,18 @@
         '</span><span class="t">' + UI.ago(c.at) + '</span></div>' +
         '<div class="tx">' + escapeHtml(c.text) + '</div>';
 
+      // Putting the words on the wall is a deliberate act: the projector shows
+      // that someone pushed back the moment they do, but never what they wrote
+      // until it has been read here.
+      const up = document.createElement("button");
+      const onWall = st.featuredChallenge === c.id;
+      up.className = "ch-up" + (onWall ? " on" : "");
+      up.textContent = onWall ? "ON THE WALL" : "PUT UP";
+      up.title = onWall
+        ? "Take these words off the projector"
+        : "Show these words on the projector";
+      up.addEventListener("click", () => Live.send("featureChallenge", { id: c.id }));
+
       const drop = document.createElement("button");
       drop.className = "ch-drop";
       drop.textContent = "✕";
@@ -456,7 +468,7 @@
         Live.send("removeChallenge", { id: c.id });
         UI.toast("Challenge removed");
       });
-      body.querySelector(".nm").appendChild(drop);
+      body.querySelector(".nm").append(up, drop);
 
       if (profile) body.appendChild(profileCard(st, c.pid, profile));
 

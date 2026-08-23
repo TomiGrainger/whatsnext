@@ -291,6 +291,39 @@ def run(guest, crew, data_dir):
     check("nothing in the control room is under 12px any more",
           not tiny_labels, "found: %s" % sorted({t.decode() for t in tiny_labels}))
 
+    # ---- a challenge reaches the wall only when the crew puts it there ----
+    # The pulse announces that somebody pushed back; the words are 180
+    # characters nobody has read, so they wait for a decision.
+    guest.act("challenge", pid="p_push", name="Pusher", text="I think that's wrong.")
+    st = state(crew)
+    cid = next(c["id"] for c in st["challenges"] if c["name"] == "Pusher")
+    check("a new challenge is not on the wall by itself",
+          st.get("featuredChallenge") is None, "got %s" % st.get("featuredChallenge"))
+    status, _ = guest.act("featureChallenge", id=cid)
+    check("a guest cannot put words on the projector", status == 401, "got %s" % status)
+
+    crew.act("showScreen", which="holding", on=True)
+    crew.act("featureChallenge", id=cid)
+    st = state(guest)
+    check("the crew can put a challenge up", st["featuredChallenge"] == cid)
+    check("and it clears whatever takeover was covering the wall",
+          st["screen"] is None, "screen=%s" % st["screen"])
+
+    # one thing on the wall at a time, whichever kind it is
+    guest.act("ask", pid="p_push", text="And what about the other side?")
+    other = next(q["id"] for q in state(guest)["questions"]
+                 if "other side" in q["text"])
+    crew.act("featureQuestion", id=other)
+    check("featuring a question takes the challenge down — one thing at a time",
+          state(guest)["featuredChallenge"] is None)
+    crew.act("featureQuestion", id=other)
+
+    crew.act("featureChallenge", id=cid)
+    crew.act("removeChallenge", id=cid)
+    check("removing a challenge takes it off the wall too",
+          state(guest)["featuredChallenge"] is None)
+    crew.act("undoRemove")
+
     # ---- undo: a mis-tap in front of a room must not be final ----
     guest.act("ask", pid="p_undo", text="Can this be taken back?")
     st = state(guest)
