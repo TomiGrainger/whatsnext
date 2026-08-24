@@ -686,6 +686,16 @@ def run(guest, crew, data_dir):
           promos["donate"].get("opensLink") is True
           and not promos["offer"].get("opensLink"))
 
+    # The image is shown as it is, not forced into a shape. A square was the
+    # better fit on the projector — where the column is as tall as it is wide —
+    # but the phone was cropping 44% off one.
+    _, aud_css, _ = guest.get("/css/audience.css")
+    hero = aud_css.split(b".offer-hero{")[1][:180]
+    check("the phone doesn't force the offer image into an aspect ratio",
+          b"aspect-ratio" not in hero, "hero rule: %s" % hero[:90])
+    check("and doesn't crop it", b"object-fit:contain" in hero,
+          "hero rule: %s" % hero[:90])
+
     crew.act("showScreen", which="offer", on=True)
     check("the crew can put the offer up", state(guest)["screen"] == "offer")
     # One projector, one screen. Every takeover shares the field, so no two can

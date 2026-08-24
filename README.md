@@ -226,6 +226,12 @@ signs the crew out, and anyone with the code has the controls.
   nothing to type. Tapping **I'D LIKE TO GIVE** records the same thing *and*
   opens the link, because giving is an action that happens somewhere else.
 
+  **Artwork: square works best.** The projector column is as tall as it is wide,
+  so a 16:9 image fills barely half of it while a square fills 93%. The phone
+  shows whatever shape you give it — it used to force 16:9 and crop 44% off a
+  square, which is exactly backwards. 1200×1200 is the size to make; JPEG, PNG,
+  GIF or WebP, under 5MB, and never SVG.
+
   An address given to either one **also joins that room's debrief list**, and
   the sheet says so before they tap. Someone who hands you their email at your
   event expects the results of the night they attended; leaving them on a list
