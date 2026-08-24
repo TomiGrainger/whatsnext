@@ -181,7 +181,7 @@ signs the crew out, and anyone with the code has the controls.
   because a button was skipped. A RESET puts the room back there.
 - **How it works** — a two-and-a-half minute animated explainer for a room that
   has never used any of this: scan to join, say where you stand, vote, ask, take
-  the mic, react, take it home. Each of the seven gets **20 seconds** and its own
+  the mic, react, take it home. Each of the seven gets **10 seconds** and its own
   working demo — a phone being scanned, poll bars filling, questions being
   upvoted, someone brought onto the mic, reactions drifting up the wall — built
   from the app's own vocabulary, so the room recognises the real thing when it

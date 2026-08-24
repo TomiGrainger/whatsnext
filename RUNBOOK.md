@@ -105,7 +105,7 @@ to the front. Take it down when you want the first topic. If you forget the
 button and simply launch something, that starts the event too.
 
 **HOW IT WORKS** is worth putting up once while people settle — seven animated
-slides, 20 seconds each, about two and a half minutes for the full loop. Put it
+slides, 10 seconds each, a little over a minute for the full loop. Put it
 up as the room fills and take it down when you're ready to start.
 
 ### Putting a screen up
