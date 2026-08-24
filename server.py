@@ -2716,6 +2716,15 @@ class Handler(BaseHTTPRequestHandler):
             if body is None:
                 return self._send(404, json.dumps({"ok": False, "error": "Unknown event"}), "application/json")
             return self._send(200, body, "application/json", {"Cache-Control": "no-store"})
+        # The crew surfaces follow tonight's room too, so a bookmark keeps
+        # working when the room code changes — and so nothing depends on the
+        # demo room still existing.
+        if path in ("/moderator", "/projector", "/print", "/recap"):
+            if not parse_qs(parsed.query).get("room"):
+                tonight = current_room()
+                if tonight:
+                    return self._redirect("%s?room=%s" % (path, tonight))
+
         if path == "/":
             # Send them where the event actually is, and put the code in the
             # address bar so they can see which room they are in. An explicit

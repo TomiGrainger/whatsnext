@@ -122,12 +122,15 @@ def run(guest, crew, data_dir):
     # ---- the surfaces are all reachable ----
     # "/" answers with a redirect to tonight's room, so the audience page is
     # checked at the address a phone actually lands on
-    for path, label in (("/" + ROOM, "audience"), ("/projector", "projector"),
-                        ("/recap", "recap"), ("/setup", "setup"),
-                        ("/moderator", "moderator")):
+    # the room-taking surfaces are asked for by name; bare ones redirect, which
+    # is checked separately below
+    for path, label in (("/" + ROOM, "audience"),
+                        ("/projector?room=" + ROOM, "projector"),
+                        ("/recap?room=" + ROOM, "recap"), ("/setup", "setup"),
+                        ("/moderator?room=" + ROOM, "moderator")):
         status, body, _ = guest.get(path)
         check("page serves: %s" % label, status == 200, "got %s" % status)
-    status, body, _ = guest.get("/moderator")
+    status, body, _ = guest.get("/moderator?room=" + ROOM)
     check("crew pages show the lock screen to a guest", b"CREW ONLY" in body)
 
     # ---- crew sign-in ----
@@ -275,7 +278,7 @@ def run(guest, crew, data_dir):
     check("the mode label reflects a takeover, not just the moderator's intent",
           b"ON THE WALL" in mod_js,
           "saying DISCUSSION while the holding loop is up describes intent, not the room")
-    _, mod_html, _ = guest.get("/moderator") if False else crew.get("/moderator")
+    _, mod_html, _ = crew.get("/moderator?room=" + ROOM)
     import re as _m
     rows = _m.findall(rb'<div class="qa-row">(.*?)</div>\s*\n', mod_html, _m.S)
     check("the wall controls and the show controls are separate rows",
@@ -566,19 +569,19 @@ def run(guest, crew, data_dir):
     # which is unique per page — an earlier version of this test matched on
     # body text that the audience page also contains, so it passed happily
     # while the routing was broken.
-    for path, title in (("/recap", b"The Debrief"),
-                        ("/projector", b"Room Display"),
-                        ("/print", b"Crew"),          # lock screen for a guest
+    for path, title in (("/recap?room=" + ROOM, b"The Debrief"),
+                        ("/projector?room=" + ROOM, b"Room Display"),
+                        ("/print?room=" + ROOM, b"Crew"),   # lock screen for a guest
                         ("/setup", b"Crew"), ("/crm", b"Crew")):
         status, body, _ = guest.get(path)
         head = body.split(b"</title>")[0]
         check("a named page still wins over a room code: %s" % path,
               status == 200 and title in head, "title was %s" % head[-60:])
-    status, body, _ = guest.get("/print")
+    status, body, _ = guest.get("/print?room=" + ROOM)
     check("the print sheet shows a guest the lock screen, like the other crew pages",
           status == 200 and b"CREW ONLY" in body and b"PRINT THE JOIN CODE" not in body,
           "got %s" % status)
-    status, body, _ = crew.get("/print")
+    status, body, _ = crew.get("/print?room=" + ROOM)
     check("the crew can open the print sheet",
           status == 200 and b"PRINT THE JOIN CODE" in body, "got %s" % status)
     # the audience page must be the one that answers a room path, or the QR
@@ -605,6 +608,22 @@ def run(guest, crew, data_dir):
     check("switching that room off hands it back",
           headers.get("Location", "").lstrip("/") == ROOM,
           "went to %s" % headers.get("Location"))
+
+    # Every surface follows tonight's room, so nothing depends on the demo room
+    # still existing and a bookmark survives the code changing.
+    for surface in ("/projector", "/recap"):
+        status, _, headers = guest.get(surface)
+        check("%s finds tonight's room on its own" % surface,
+              headers.get("Location", "").endswith("room=" + ROOM),
+              "went to %s" % headers.get("Location"))
+    for surface in ("/moderator", "/print"):
+        status, _, headers = crew.get(surface)
+        check("%s finds tonight's room on its own" % surface,
+              headers.get("Location", "").endswith("room=" + ROOM),
+              "went to %s" % headers.get("Location"))
+    status, _, headers = crew.get("/moderator?room=" + ROOM)
+    check("and a named room is never redirected away",
+          status == 200 and "Location" not in headers, "got %s" % status)
 
     # an explicit ?room= is a promise; the redirect must not break older links
     status, body, headers = guest.get("/?room=" + ROOM)

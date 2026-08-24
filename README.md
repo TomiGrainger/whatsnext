@@ -98,6 +98,10 @@ signs the crew out, and anyone with the code has the controls.
 
 ## On the night
 
+- **Nothing is pinned to the demo room.** `/moderator`, `/projector`, `/print`
+  and `/recap` all resolve to tonight's room when no `?room=` is given, exactly
+  as the bare address does — so a bookmark survives the code changing, and
+  deleting the demo room breaks nothing. Naming a room explicitly always wins.
 - **The bare address finds tonight's room.** `whatsnext.fly.dev` on its own
   redirects to the most recently opened room that is still on — and the setup
   page marks that room **TONIGHT**, so it is never a guess. It used to land
