@@ -212,6 +212,25 @@ def run(guest, crew, data_dir):
     check("and falls back to something true when mail isn't set up",
           b"the address on the email you received" in priv)
 
+    # ---- picking a reaction ----
+    # A room needs somewhere to put boredom and disgust, not just applause, and
+    # typing an emoji on a laptop is why every event ended up with the same four.
+    _, setup_js, _ = crew.get("/js/setup.js")
+    check("setup offers a palette of reactions rather than a text box",
+          b"EMOJI_PALETTE" in setup_js and b"emojiPicker" in setup_js)
+    for feeling in ("\U0001F4A9", "\U0001F44E", "\U0001F971", "\U0001F644"):
+        check("the palette includes %s" % feeling,
+              feeling.encode("utf-8") in setup_js)
+
+    # ---- the control room fits the screen it is driven on ----
+    _, mod_css2, _ = guest.get("/css/moderator.css")
+    check("the control room is sized to the viewport, not the content",
+          b"height:100dvh" in mod_css2,
+          "without this the page scrolls and buttons hide below the fold")
+    check("and the reading panes scroll inside themselves",
+          b"overflow-y:auto" in mod_css2.split(b"\n.panel{")[1][:200],
+          "a panel that cannot scroll just hides what is past its edge")
+
     # ---- readable in a dark room, and usable without sight ----
     # Measured rather than eyeballed: --dim carried real text at 2.76:1, which
     # is unreadable on a phone at arm's length in a venue.
@@ -286,9 +305,9 @@ def run(guest, crew, data_dir):
     check("both rows are labelled",
           b">On the wall<" in mod_html and b">Run the show<" in mod_html)
     _, mod_css, _ = guest.get("/css/moderator.css")
-    check("the dashboard panels wrap rather than squeeze off the edge",
-          b"repeat(auto-fit" in mod_css.split(b".panels{")[1][:120],
-          "a fixed column count squeezes the last panel off-screen at this type size")
+    check("the panels share one row by weight, so the wordy ones get the width",
+          b"repeat(12,1fr)" in mod_css.split(b".panels{")[1][:140],
+          "equal columns gave every pane 167px, too narrow to read a sentence in")
     tiny_labels = [t for t in _c.findall(rb"font-size:([0-9.]+)px", mod_css)
                    if float(t) < 12]
     check("nothing in the control room is under 12px any more",
@@ -656,8 +675,8 @@ def run(guest, crew, data_dir):
         check("the explainer has a demo for: %s" % demo.decode(),
               b'demo: "' + demo + b'"' in proj_js)
     check("each slide is given time to be watched, not just read",
-          b"HOW_DWELL = 20000" in proj_js,
-          "dwell is not 20s — a shortened one may have been left in from testing")
+          b"HOW_DWELL = 10000" in proj_js,
+          "dwell is not 10s — a shortened one may have been left in from testing")
     crew.act("showScreen", which="stats", on=True)
     check("the crew can put the room's make-up on the wall",
           state(guest)["screen"] == "stats")
@@ -695,6 +714,18 @@ def run(guest, crew, data_dir):
           b"aspect-ratio" not in hero, "hero rule: %s" % hero[:90])
     check("and doesn't crop it", b"object-fit:contain" in hero,
           "hero rule: %s" % hero[:90])
+
+    # The ask is one button that travels; the offer is two, because reading more
+    # and leaving an address are different intentions.
+    _, aud_html2, _ = guest.get("/" + ROOM)
+    check("the offer sheet's link is a button, not a footnote",
+          b'<a class="btn" id="offer-link"' in aud_html2,
+          "the link is still styled as small print")
+    _, aud_js, _ = guest.get("/js/audience.js")
+    check("the ask hides the email button, leaving only the link",
+          b'emailBtn.hidden = Boolean(o.opensLink)' in aud_js)
+    check("and a tap on the ask's link is still recorded",
+          b"noteInterest" in aud_js)
 
     crew.act("showScreen", which="offer", on=True)
     check("the crew can put the offer up", state(guest)["screen"] == "offer")

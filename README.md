@@ -220,8 +220,14 @@ signs the crew out, and anyone with the code has the controls.
   own on the closing screen, in the debrief email and on the recap page, so they
   keep working after the room goes dark.
 
-  The one place they differ: tapping **I'M INTERESTED** records interest *in the
-  app* rather than sending anyone to a landing page mid-event — where an address
+  **The offer shows two buttons, the ask shows one.** Reading more and leaving
+  an address are different intentions, so the offer gives you both — *See the
+  details* and *I'M INTERESTED* — rather than a button and a footnote link.
+  The ask is a single button that goes where the giving happens, because there
+  is nothing to leave behind.
+
+  Tapping **I'M INTERESTED** records interest *in the app* rather than sending
+  anyone to a landing page mid-event — where an address
   is already known, from a profile or the debrief sign-up, it is one tap and
   nothing to type. Tapping **I'D LIKE TO GIVE** records the same thing *and*
   opens the link, because giving is an action that happens somewhere else.
@@ -347,6 +353,12 @@ live for everyone at once.
   events you create start from zero.
 
 ## The moderator drives the show
+
+The whole control room fits the screen. It never scrolls: the panels take what
+height is left and scroll inside themselves, so the buttons you press mid-
+sentence are always where you left them. The five panes share one row by weight
+— the two that are numbers stay narrow, the two full of people's words get the
+width, because equal columns gave every pane 167px.
 
 Two rows of buttons, split on purpose. **On the wall** — holding, how it works,
 state of the room, offer, ask — is what the audience is looking at. **Run the

@@ -9,6 +9,16 @@
   const KINDS = ["poll", "wordcloud", "slider", "emoji", "ranking"];
   const DEFAULT_OPTIONS = { poll: ["", ""], emoji: ["🔥", "👏", "🤔", "❤️"], ranking: ["", ""] };
 
+  // A room needs somewhere to put disagreement, boredom and disgust, not only
+  // approval — an event that offers five ways to applaud learns nothing.
+  const EMOJI_PALETTE = [
+    ["Approval", ["👏", "🔥", "❤️", "💯", "🙌", "😍", "🤩", "👍", "🏆", "⭐"]],
+    ["Thinking", ["🤔", "👀", "💡", "🧠", "❓", "😯", "🤯", "📌", "⚖️", "🔍"]],
+    ["Doubt", ["🙃", "😬", "😐", "🤨", "🙄", "😴", "🥱", "😑", "🤷", "⏳"]],
+    ["Disagreement", ["👎", "💩", "🚫", "🤬", "😤", "🧢", "🐂", "❌", "🥴", "😵‍💫"]],
+    ["Feeling", ["😂", "😭", "😱", "🥺", "😳", "🫠", "😅", "🤝", "🎉", "☕"]],
+  ];
+
   let topics = [];          // the event being built or edited
   let editingId = null;     // null = creating, otherwise the event being edited
   let selectedEvent = null; // highlighted in the launch list
@@ -111,8 +121,11 @@
       it.options.forEach((val, oi) => {
         const row = document.createElement("div");
         row.className = "opt-row";
-        row.appendChild(field(val, it.kind === "emoji" ? "🙂" : "Option " + (oi + 1),
-          (v) => (it.options[oi] = v)));
+        if (it.kind === "emoji") {
+          row.appendChild(emojiPicker(val, (v) => { it.options[oi] = v; renderTopics(); }));
+        } else {
+          row.appendChild(field(val, "Option " + (oi + 1), (v) => (it.options[oi] = v)));
+        }
         if (it.options.length > 1) {
           row.appendChild(tool("×", "Remove", () => { it.options.splice(oi, 1); renderTopics(); }, "del"));
         }
@@ -202,6 +215,48 @@
       linkLabel: $("#" + kind + "-linklabel").value,
       image: promoImage[kind],
     };
+  }
+
+  // Tap the square, pick from the palette. Typing an emoji on a laptop means
+  // finding the picker, which is why every event ended up with the same four.
+  function emojiPicker(value, onPick) {
+    const wrap = document.createElement("div");
+    wrap.className = "em-pick";
+
+    const btn = document.createElement("button");
+    btn.className = "em-current";
+    btn.type = "button";
+    btn.textContent = value || "+";
+    btn.title = "Choose a reaction";
+
+    const pop = document.createElement("div");
+    pop.className = "em-pop";
+    pop.hidden = true;
+    EMOJI_PALETTE.forEach(([group, list]) => {
+      const lab = document.createElement("div");
+      lab.className = "em-group";
+      lab.textContent = group;
+      pop.appendChild(lab);
+      const grid = document.createElement("div");
+      grid.className = "em-grid";
+      list.forEach((e) => {
+        const cell = document.createElement("button");
+        cell.type = "button";
+        cell.className = "em-cell" + (e === value ? " on" : "");
+        cell.textContent = e;
+        cell.addEventListener("click", () => { pop.hidden = true; onPick(e); });
+        grid.appendChild(cell);
+      });
+      pop.appendChild(grid);
+    });
+
+    btn.addEventListener("click", () => {
+      // one open at a time, or the page fills with palettes
+      document.querySelectorAll(".em-pop").forEach((o) => { if (o !== pop) o.hidden = true; });
+      pop.hidden = !pop.hidden;
+    });
+    wrap.append(btn, pop);
+    return wrap;
   }
 
   function paintPromoImage(kind) {

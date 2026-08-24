@@ -213,3 +213,21 @@
 .room-toggle.drop{border-color:var(--line);color:var(--dim);}
 .room-toggle.drop:hover{border-color:var(--red);color:var(--red);}
 .room-toggle.drop.confirming{border-color:var(--red);background:var(--red);color:#fff;}
+
+/* ---- picking a reaction ---- */
+.em-pick{position:relative;flex:1;}
+.em-current{width:100%;background:#121216;border:1px solid var(--line-2);border-radius:11px;
+  padding:10px;font-size:24px;line-height:1.2;cursor:pointer;color:var(--ink);}
+.em-current:hover{border-color:var(--red);}
+.em-pop{position:absolute;z-index:40;top:calc(100% + 6px);left:0;width:min(320px,80vw);
+  background:#15151a;border:1px solid var(--line-2);border-radius:14px;padding:12px;
+  box-shadow:0 20px 50px rgba(0,0,0,.6);}
+.em-pop[hidden]{display:none;}
+.em-group{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--red);
+  font-weight:700;margin:8px 0 6px;}
+.em-group:first-child{margin-top:0;}
+.em-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;}
+.em-cell{background:transparent;border:1px solid transparent;border-radius:8px;
+  font-size:19px;line-height:1;padding:5px 0;cursor:pointer;}
+.em-cell:hover{border-color:var(--red);background:var(--red-dim);}
+.em-cell.on{border-color:var(--red);background:var(--red);}

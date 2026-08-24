@@ -443,13 +443,26 @@
       $("#offer-headline").textContent = o.headline;
       $("#offer-body").textContent = o.body || "";
       $("#offer-body").hidden = !o.body;
-      $("#offer-cta").textContent = o.cta;
-      [["#offer-link", o.link], ["#offer-link-2", o.link]].forEach(([sel, href]) => {
-        const a = $(sel);
-        a.textContent = o.link ? o.linkLabel : "";
-        a.href = href || "#";
-        a.hidden = !href;
-      });
+      // The ask is one button that goes where the giving happens. The offer is
+      // two: read more, or leave an address — different intentions, and asking
+      // someone to choose between a button and a footnote link buried one.
+      const linkBtn = $("#offer-link");
+      linkBtn.textContent = o.link ? (o.linkLabel || "See the details") : "";
+      linkBtn.href = o.link || "#";
+      linkBtn.hidden = !o.link;
+      linkBtn.className = o.opensLink ? "btn" : "btn ghost";
+
+      // the offer's primary is leaving an address; reading more is the quieter
+      // of the two, so the weights say which one you actually want
+      const emailBtn = $("#offer-cta");
+      emailBtn.textContent = o.cta;
+      emailBtn.className = "btn";
+      emailBtn.hidden = Boolean(o.opensLink);
+
+      const done = $("#offer-link-2");
+      done.textContent = o.link ? (o.linkLabel || "See the details") : "";
+      done.href = o.link || "#";
+      done.hidden = !o.link;
     }
     paintInterested();
     paintClosingPromos(st);
@@ -492,21 +505,26 @@
         b.textContent = p.body;
         box.appendChild(b);
       }
-      const btn = document.createElement("button");
-      btn.className = "btn";
       const done = interested[p.kind];
-      btn.disabled = done;
-      btn.textContent = done ? "\u2713 THANK YOU" : p.cta;
-      btn.addEventListener("click", () => { openOffer(p); raiseHand("#offer-email", p); });
-      box.appendChild(btn);
+      // the closing screen mirrors the sheet: the ask is a link, the offer is
+      // a link plus a way to leave an address
       if (p.link) {
         const a = document.createElement("a");
-        a.className = "offer-link";
+        a.className = p.opensLink ? "btn" : "btn ghost";
         a.href = p.link;
         a.target = "_blank";
         a.rel = "noopener noreferrer";
         a.textContent = p.linkLabel || "See the details";
+        if (p.opensLink) a.addEventListener("click", () => noteInterest(p));
         box.appendChild(a);
+      }
+      if (!p.opensLink) {
+        const btn = document.createElement("button");
+        btn.className = "btn";
+        btn.disabled = done;
+        btn.textContent = done ? "\u2713 YOU'RE ON THE LIST" : p.cta;
+        btn.addEventListener("click", () => { openOffer(p); raiseHand("#offer-email", p); });
+        box.appendChild(btn);
       }
       host.appendChild(box);
     });
@@ -533,6 +551,17 @@
   }
   $("#offer-x").addEventListener("click", closeOffer);
   $("#offer-scrim").addEventListener("click", closeOffer);
+
+  // Record a tap without asking for anything: the link is already taking them
+  // somewhere, so a form would be in the way.
+  async function noteInterest(o) {
+    if (interested[o.kind]) return;
+    interested[o.kind] = true;
+    const known = (me && me.email) || knownLeadEmail || "";
+    await Live.send("interested", { email: known, name: (me && me.name) || "" });
+    paintInterested();
+    paintClosingPromos(Live.get() || {});
+  }
 
   async function raiseHand(emailField, promo) {
     const o = promo || (Live.get() || {}).promo;
@@ -563,6 +592,12 @@
   }
 
   $("#offer-cta").addEventListener("click", () => raiseHand("#offer-email"));
+  // the link button records too — it is the only thing the ask offers, so a
+  // tap on it is the whole signal
+  $("#offer-link").addEventListener("click", () => {
+    const o = (Live.get() || {}).promo;
+    if (o && o.opensLink) noteInterest(o);
+  });
 
   // ---- who's in the room ----
   // The snapshot carries the directory but never contact details; those live

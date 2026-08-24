@@ -309,9 +309,14 @@ body.reveal-flash .pv-slider .big{animation:revealglow .9s ease;}
 .ov-qr img{width:130px;height:130px;background:#f5f3ef;padding:10px;border-radius:14px;}
 .ov-qr span{font-family:var(--mono);font-size:clamp(12px,1.2vw,17px);color:var(--muted);word-break:break-all;}
 /* text-only offer: no empty column where the artwork would have been */
-.offer-veil.no-hero .ov-grid{grid-template-columns:1fr;max-width:1100px;justify-items:center;
-  text-align:center;}
-.offer-veil.no-hero .ov-body{max-width:34ch;}
+/* Without artwork everything is centred, so it has to share one measure —
+   four stacked blocks at four different widths reads as a mistake. */
+.offer-veil.no-hero .ov-grid{grid-template-columns:1fr;max-width:960px;text-align:center;}
+.offer-veil.no-hero .ov-txt{width:100%;}
+.offer-veil.no-hero .ov-head,
+.offer-veil.no-hero .ov-body,
+.offer-veil.no-hero .ov-cta{max-width:none;width:100%;}
+.offer-veil.no-hero .ov-cta{display:block;}
 .offer-veil.no-hero .ov-qr{justify-content:center;}
 @media(max-width:1100px){ .ov-grid{grid-template-columns:1fr;gap:3vh;} .ov-hero{max-height:34vh;} }
 

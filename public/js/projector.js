@@ -80,7 +80,7 @@
   // A room that has never used this needs telling once, and a person walking in
   // reads a wall for about six seconds. So: short slides, big type, no voice-over
   // and nothing to press. It runs itself and loops until taken down.
-  const HOW_DWELL = 20000;        // long enough to read, watch, and understand
+  const HOW_DWELL = 10000;        // long enough to read the words and watch the demo
 
   const mk = (tag, cls, text) => {
     const n = document.createElement(tag);

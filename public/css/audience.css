@@ -387,6 +387,7 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
 .cv-offer-head{font-family:var(--sans);font-weight:800;font-size:18px;color:var(--ink);margin-bottom:6px;}
 .cv-offer-body{color:var(--muted);font-size:14px;line-height:1.5;margin-bottom:14px;}
 .cv-offer .btn{width:100%;margin:0;}
+.cv-offer .btn + .btn{margin-top:9px;}
 .cv-offer .btn:disabled{opacity:.6;}
 .cv-offer .offer-link{display:block;text-align:center;margin-top:10px;}
 /* the offer and the ask stack on the closing screen; only the first needs a rule */
@@ -468,3 +469,9 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
 /* the privacy link sits inside the small print it belongs to */
 .ci-privacy a,.cv-note a,.offer-also a{color:var(--muted);text-decoration:underline;}
 .ci-privacy a:hover,.cv-note a:hover,.offer-also a:hover{color:var(--red);}
+
+/* the two ways to say yes, stacked and clearly different weights */
+/* the link is a button here, so it should not also look like a link */
+#offer-ask a.btn,.cv-offer a.btn{text-decoration:none;}
+#offer-ask .btn{width:100%;}
+#offer-ask .btn + .btn{margin-top:9px;}

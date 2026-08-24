@@ -1,11 +1,16 @@
 /* Moderator Control Room — designs/moderator-dashboard */
 body.s-moderator{background:#060607;min-height:100vh;}
-.mod-wrap{max-width:1500px;margin:0 auto;padding:30px 40px 40px;}
+/* The control room fits the screen. You drive it while talking, and hunting for
+   a button below the fold is how the wrong thing ends up on the wall — so the
+   page never scrolls and the panels scroll inside themselves instead. */
+.mod-wrap{max-width:1500px;margin:0 auto;padding:20px 32px 22px;
+  height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
 .mod-head .eyebrow{display:flex;align-items:center;gap:10px;}
 .mod-head .eyebrow u{text-underline-offset:5px;text-decoration-thickness:2px;}
 .mod-title{font-family:var(--sans);font-weight:800;font-size:40px;color:#fff;letter-spacing:-.02em;margin:6px 0 20px;}
 
-.mod-shell{display:grid;grid-template-columns:250px 1fr;gap:0;border:1px solid var(--line);border-radius:22px;overflow:hidden;background:#0b0b0d;min-height:76vh;}
+.mod-shell{display:grid;grid-template-columns:250px 1fr;gap:0;border:1px solid var(--line);
+  border-radius:22px;overflow:hidden;background:#0b0b0d;flex:1;min-height:0;}
 
 /* sidebar */
 .side{border-right:1px solid var(--line);padding:26px 20px;display:flex;flex-direction:column;}
@@ -25,7 +30,8 @@ body.s-moderator{background:#060607;min-height:100vh;}
 .me .rl{font-size:14.2px;color:var(--muted);}
 
 /* main */
-.main{padding:26px 30px 30px;display:flex;flex-direction:column;min-width:0;}
+.main{padding:20px 26px 22px;display:flex;flex-direction:column;min-width:0;min-height:0;
+  overflow:hidden;}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
 .mode-now{background:var(--red);color:#fff;font-family:var(--mono);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:16.5px;padding:15px 22px;border-radius:12px;}
 .tb-right{display:flex;align-items:center;gap:22px;}
@@ -49,10 +55,10 @@ body.s-moderator{background:#060607;min-height:100vh;}
   padding:9px 13px;border-radius:10px;background:var(--card);border:1px solid var(--line);color:var(--muted);
 }
 .nav-btn:hover:not(:disabled){color:var(--ink);border-color:var(--line-2);}
-.topic-q{font-family:var(--sans);font-weight:800;font-size:38px;letter-spacing:-.02em;color:#fff;margin:0 0 18px;}
+.topic-q{font-family:var(--sans);font-weight:800;font-size:34px;letter-spacing:-.02em;color:#fff;margin:0 0 12px;}
 
 /* the topic's own interactions, mirroring how it was set up */
-.run-row{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 26px;}
+.run-row{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 14px;}
 .run-btn{
   display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
   border-radius:12px;padding:12px 15px;color:var(--ink);text-align:left;transition:border-color .15s;
@@ -68,9 +74,22 @@ body.s-moderator{background:#060607;min-height:100vh;}
 /* Wrap rather than squeeze. Four across was already tight and the larger
    type pushed it over — a panel half off the right edge is worse than a
    second row you can see all of. */
-.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));
-  gap:20px;align-content:start;flex:1;min-height:0;}
-.panel{background:#0e0e11;border:1px solid var(--line);border-radius:18px;padding:24px;display:flex;flex-direction:column;min-height:0;}
+/* One row, always. Wrapping to two halves the height each pane gets, and a
+   42px-tall panel shows nothing — better narrow and readable than short and
+   useless. Each scrolls inside itself. */
+/* Twelve columns, shared out by what each pane actually needs: the two that
+   are numbers stay narrow, the two full of people's words get the width. Equal
+   fifths gave every pane 167px, which is too narrow to read a sentence in. */
+.panels{display:grid;grid-template-columns:repeat(12,1fr);
+  gap:14px;flex:1;min-height:0;overflow:hidden;}
+.panels > .panel{grid-column:span 2;}
+.panels > .qpanel,.panels > .ch{grid-column:span 3;}
+@media(max-width:1150px){
+  .panels{grid-auto-flow:row;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    overflow-y:auto;}
+}
+.panel{background:#0e0e11;border:1px solid var(--line);border-radius:18px;padding:18px;
+  display:flex;flex-direction:column;min-height:0;overflow-y:auto;}
 .panel .ptitle{font-family:var(--mono);letter-spacing:.18em;font-size:14.2px;color:var(--muted);text-transform:uppercase;}
 
 /* sentiment */
@@ -111,17 +130,23 @@ body.s-moderator{background:#060607;min-height:100vh;}
 
 /* quick actions */
 .qa-lab{font-family:var(--mono);letter-spacing:.2em;font-size:14.2px;color:var(--muted);margin:26px 0 12px;text-transform:uppercase;}
-.qa-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(134px,1fr));gap:14px;}
-.qa-row + .qa-lab{margin-top:22px;}
+.qa-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(134px,1fr));gap:10px;
+  flex:0 0 auto;}
+.qa-row + .qa-lab{margin-top:10px;}
 /* the reveal is the moment — make it findable without looking */
 .qa.reveal.armed{border-color:var(--red);background:var(--red-dim);animation:revealready 1.6s ease-in-out infinite;}
 .qa.reveal.armed .ql{color:var(--red);font-weight:700;}
 @keyframes revealready{0%,100%{box-shadow:0 0 0 0 rgba(255,45,70,.35);}50%{box-shadow:0 0 0 6px rgba(255,45,70,0);}}
 /* bigger than a mouse strictly needs: this gets driven on a laptop, in the
    dark, mid-sentence */
-.qa{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;transition:transform .08s,filter .15s;}
+/* Icon beside the label, not above it. Stacked, eleven of these ate 289px of
+   a 721px column and left the panels 99px — which fits on one screen and shows
+   nothing. */
+.qa{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:11px 12px;display:flex;align-items:center;justify-content:center;gap:9px;
+  transition:transform .08s,filter .15s;min-width:0;}
 .qa:hover{filter:brightness(1.2);} .qa:active{transform:scale(.97);}
-.qa .qi{font-size:22px;}
+.qa .qi{font-size:16px;flex:0 0 auto;}
 .qa .ql{font-family:var(--mono);font-weight:700;letter-spacing:.08em;font-size:14.2px;text-transform:uppercase;color:var(--ink);}
 .qa.primary{background:var(--red);} .qa.primary .ql{color:#fff;}
 
@@ -195,8 +220,7 @@ body.s-moderator{background:#060607;min-height:100vh;}
 /* ---- state of the room ---- */
 /* the room breakdown and the word list want width for their labels, so they
    share a row of their own under the four live panels */
-#stats-panel,#wc-panel{grid-column:span 2;}
-@media(max-width:1100px){ #stats-panel,#wc-panel{grid-column:auto;} }
+@media(max-width:1150px){ .panels > .panel{grid-column:auto;} }
 .sr-note{color:var(--muted);font-size:15.3px;margin:0;}
 .sr-block{margin-top:16px;}
 .sr-block[hidden]{display:none;}
