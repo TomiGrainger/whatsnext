@@ -217,6 +217,8 @@ body.s-moderator{background:#060607;min-height:100vh;}
 /* the holding loop is live on the wall — unmistakable from across a room */
 .qa.holding.armed{border-color:var(--red);background:var(--red);}
 .qa.holding.armed .ql{color:#fff;font-weight:700;}
+.qa.joinq.armed{border-color:var(--red);background:var(--red);}
+.qa.joinq.armed .ql{color:#fff;font-weight:700;}
 
 /* ---- word cloud moderation ---- */
 .wcmod[hidden]{display:none;}

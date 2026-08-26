@@ -212,6 +212,44 @@ def run(guest, crew, data_dir):
     check("and falls back to something true when mail isn't set up",
           b"the address on the email you received" in priv)
 
+    # ---- the bundled events are loadable, not just well-formed JSON ----
+    # A typo here is only found when you open the room in front of an audience.
+    import server as _srv
+    for _name in os.listdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "events")):
+        if not _name.endswith(".json"):
+            continue
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "events", _name)) as _fh:
+            _cfg = json.load(_fh)
+        try:
+            _srv.validate_event(_cfg)
+            _ok, _why = True, ""
+        except Exception as exc:                       # noqa: BLE001 - report it
+            _ok, _why = False, str(exc)
+        check("bundled event %s is valid (%s)" % (_name, _why or "ok"), _ok)
+
+    # ---- the join code can go back on the wall at any point ----
+    # People arrive late. The scan-to-join panel used to exist only before the
+    # doors opened, so the only way back to it was ending the event.
+    crew.post("/api/action", {"type": "showScreen", "which": "join", "room": ROOM})
+    _, st_join = guest.json("/api/state?room=%s" % ROOM)
+    check("the crew can raise the join code mid-event", st_join.get("screen") == "join")
+    crew.post("/api/action", {"type": "showScreen", "which": "holding", "room": ROOM})
+    _, st_swap = guest.json("/api/state?room=%s" % ROOM)
+    check("raising another screen takes the join code down",
+          st_swap.get("screen") == "holding")
+    crew.post("/api/action", {"type": "showScreen", "which": "join", "room": ROOM})
+    crew.post("/api/action", {"type": "showScreen", "which": "join", "room": ROOM})
+    _, st_off = guest.json("/api/state?room=%s" % ROOM)
+    check("pressing it again takes it down", st_off.get("screen") is None)
+    status, _, _ = guest.post("/api/action",
+                              {"type": "showScreen", "which": "join", "room": ROOM})
+    check("a guest cannot put the join code up", status == 401)
+    _, proj_js, _ = crew.get("/js/projector.js")
+    check("the projector shows the join panel when it is asked for",
+          b'st.screen !== "join"' in proj_js)
+    _, mod_html, _ = crew.get("/moderator?room=" + ROOM)
+    check("the control room has a join button", b'id="join-btn"' in mod_html)
+
     # ---- the three addresses are on the setup page, not just after a click ----
     # They used to be written only by the OPEN ROOM handler, so a reload lost
     # them while the room was still live — and there was no way to reach any

@@ -464,7 +464,8 @@
     // Before the crew starts, the wall stays on the join code and the room
     // filling up behind it — never on the first debate question, which nobody
     // should read before it is asked.
-    $("#waiting-veil").hidden = st.closed || (st.started && st.inRoom > 0);
+    $("#waiting-veil").hidden = st.closed
+      || (st.screen !== "join" && st.started && st.inRoom > 0);
     paintLobby(st);
     paintJoinCorner(st);
     paintHow(st);

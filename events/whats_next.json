@@ -1,0 +1,634 @@
+{
+  "brand": "THE UPGRADE",
+  "eventName": "WHAT'S NEXT",
+  "topics": [
+    {
+      "id": "t1",
+      "question": "Convenience is making us weaker.",
+      "settings": {
+        "whatsNextThreshold": 10
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "slider",
+          "question": "How much has convenience cost you?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "not at all",
+          "rightLabel": "a great deal",
+          "resultLabel": "say it cost them a lot"
+        },
+        {
+          "id": "i2",
+          "kind": "wordcloud",
+          "question": "One word for what convenience has taken.",
+          "settings": {
+            "duration": 90
+          }
+        },
+        {
+          "id": "i3",
+          "kind": "poll",
+          "question": "What has it weakened most?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "Patience"
+            },
+            {
+              "id": "o2",
+              "label": "Physical health"
+            },
+            {
+              "id": "o3",
+              "label": "Attention"
+            },
+            {
+              "id": "o4",
+              "label": "Resilience"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t2",
+      "question": "Freedom is more important than money.",
+      "settings": {
+        "whatsNextThreshold": 10
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "poll",
+          "question": "Which would you take right now?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "More freedom, less money"
+            },
+            {
+              "id": "o2",
+              "label": "More money, less freedom"
+            },
+            {
+              "id": "o3",
+              "label": "I already have both"
+            },
+            {
+              "id": "o4",
+              "label": "I have neither"
+            }
+          ]
+        },
+        {
+          "id": "i2",
+          "kind": "ranking",
+          "question": "Rank these by how free they make you feel.",
+          "settings": {
+            "duration": 75
+          },
+          "items": [
+            {
+              "id": "o1",
+              "label": "Time"
+            },
+            {
+              "id": "o2",
+              "label": "Money"
+            },
+            {
+              "id": "o3",
+              "label": "Health"
+            },
+            {
+              "id": "o4",
+              "label": "Where you live"
+            },
+            {
+              "id": "o5",
+              "label": "Who you answer to"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t3",
+      "question": "Success is making us miserable.",
+      "settings": {
+        "whatsNextThreshold": 10
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "slider",
+          "question": "How happy has chasing success made you?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "miserable",
+          "rightLabel": "genuinely happy",
+          "resultLabel": "say it made them miserable"
+        },
+        {
+          "id": "i2",
+          "kind": "wordcloud",
+          "question": "One word for what success actually delivered.",
+          "settings": {
+            "duration": 90
+          }
+        }
+      ]
+    },
+    {
+      "id": "t4",
+      "question": "We've made achievement more important than fulfilment.",
+      "settings": {
+        "whatsNextThreshold": 10
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "poll",
+          "question": "Which were you raised to chase?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "Achievement"
+            },
+            {
+              "id": "o2",
+              "label": "Fulfilment"
+            },
+            {
+              "id": "o3",
+              "label": "Money"
+            },
+            {
+              "id": "o4",
+              "label": "Nobody ever said"
+            }
+          ]
+        },
+        {
+          "id": "i2",
+          "kind": "emoji",
+          "question": "How does that sit with you?",
+          "settings": {
+            "duration": 30
+          },
+          "options": [
+            {
+              "id": "o1",
+              "char": "🔥"
+            },
+            {
+              "id": "o2",
+              "char": "👏"
+            },
+            {
+              "id": "o3",
+              "char": "🤔"
+            },
+            {
+              "id": "o4",
+              "char": "❤️"
+            },
+            {
+              "id": "o5",
+              "char": "👀"
+            },
+            {
+              "id": "o6",
+              "char": "🥱"
+            },
+            {
+              "id": "o7",
+              "char": "👎"
+            },
+            {
+              "id": "o8",
+              "char": "💩"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t5",
+      "question": "We should optimise our lives for time, not money.",
+      "settings": {
+        "whatsNextThreshold": 10
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "slider",
+          "question": "What do you actually optimise for today?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "money",
+          "rightLabel": "time",
+          "resultLabel": "already optimise for time"
+        },
+        {
+          "id": "i2",
+          "kind": "ranking",
+          "question": "Rank what you would buy back first.",
+          "settings": {
+            "duration": 75
+          },
+          "items": [
+            {
+              "id": "o1",
+              "label": "Hours in the day"
+            },
+            {
+              "id": "o2",
+              "label": "A shorter commute"
+            },
+            {
+              "id": "o3",
+              "label": "A year off"
+            },
+            {
+              "id": "o4",
+              "label": "Retiring earlier"
+            },
+            {
+              "id": "o5",
+              "label": "Never checking email again"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t6",
+      "question": "We're spending too much of our lives chasing things we don't actually want.",
+      "settings": {
+        "whatsNextThreshold": 10
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "wordcloud",
+          "question": "One thing you chased and did not want.",
+          "settings": {
+            "duration": 90
+          }
+        },
+        {
+          "id": "i2",
+          "kind": "poll",
+          "question": "Who set the goal you are chasing?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "Me"
+            },
+            {
+              "id": "o2",
+              "label": "My parents"
+            },
+            {
+              "id": "o3",
+              "label": "My employer"
+            },
+            {
+              "id": "o4",
+              "label": "Everyone else / the algorithm"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t7",
+      "question": "We're becoming more available, but less connected.",
+      "settings": {
+        "whatsNextThreshold": 10
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "slider",
+          "question": "How connected do you feel to the people who matter?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "not at all",
+          "rightLabel": "deeply",
+          "resultLabel": "feel genuinely connected"
+        },
+        {
+          "id": "i2",
+          "kind": "wordcloud",
+          "question": "One word for how being always-available feels.",
+          "settings": {
+            "duration": 90
+          }
+        }
+      ]
+    },
+    {
+      "id": "t8",
+      "question": "Equality is impossible to achieve.",
+      "settings": {
+        "whatsNextThreshold": 10
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "poll",
+          "question": "Where does the biggest gap sit?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "Wealth"
+            },
+            {
+              "id": "o2",
+              "label": "Opportunity"
+            },
+            {
+              "id": "o3",
+              "label": "Health"
+            },
+            {
+              "id": "o4",
+              "label": "Whose voice is heard"
+            }
+          ]
+        },
+        {
+          "id": "i2",
+          "kind": "slider",
+          "question": "Will we get closer to equality in your lifetime?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "no chance",
+          "rightLabel": "certainly",
+          "resultLabel": "think we will get closer"
+        }
+      ]
+    },
+    {
+      "id": "t9",
+      "question": "We're no longer in control of the systems we've created.",
+      "settings": {
+        "whatsNextThreshold": 10
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "poll",
+          "question": "Which system is furthest out of our hands?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "The algorithms"
+            },
+            {
+              "id": "o2",
+              "label": "The markets"
+            },
+            {
+              "id": "o3",
+              "label": "The politics"
+            },
+            {
+              "id": "o4",
+              "label": "The climate"
+            }
+          ]
+        },
+        {
+          "id": "i2",
+          "kind": "wordcloud",
+          "question": "One word for who is actually in control.",
+          "settings": {
+            "duration": 90
+          }
+        }
+      ]
+    },
+    {
+      "id": "t10",
+      "question": "Progress will destroy humanity.",
+      "settings": {
+        "whatsNextThreshold": 10
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "slider",
+          "question": "How worried are you, honestly?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "not worried",
+          "rightLabel": "terrified",
+          "resultLabel": "are seriously worried"
+        },
+        {
+          "id": "i2",
+          "kind": "poll",
+          "question": "If it goes wrong, what does it?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "AI"
+            },
+            {
+              "id": "o2",
+              "label": "Climate"
+            },
+            {
+              "id": "o3",
+              "label": "Weapons"
+            },
+            {
+              "id": "o4",
+              "label": "Losing the will to care"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t11",
+      "question": "We should stop trying to live longer.",
+      "settings": {
+        "whatsNextThreshold": 10
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "poll",
+          "question": "Would you take an extra 20 years?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "Yes, without question"
+            },
+            {
+              "id": "o2",
+              "label": "Only if I stayed well"
+            },
+            {
+              "id": "o3",
+              "label": "No thank you"
+            },
+            {
+              "id": "o4",
+              "label": "Ask me at 80"
+            }
+          ]
+        },
+        {
+          "id": "i2",
+          "kind": "emoji",
+          "question": "How does the thought land?",
+          "settings": {
+            "duration": 30
+          },
+          "options": [
+            {
+              "id": "o1",
+              "char": "🔥"
+            },
+            {
+              "id": "o2",
+              "char": "👏"
+            },
+            {
+              "id": "o3",
+              "char": "🤔"
+            },
+            {
+              "id": "o4",
+              "char": "❤️"
+            },
+            {
+              "id": "o5",
+              "char": "👀"
+            },
+            {
+              "id": "o6",
+              "char": "🥱"
+            },
+            {
+              "id": "o7",
+              "char": "👎"
+            },
+            {
+              "id": "o8",
+              "char": "💩"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t12",
+      "question": "We're becoming better at extending life, but worse at living it.",
+      "settings": {
+        "whatsNextThreshold": 10
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "slider",
+          "question": "Are you living, or just continuing?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "just continuing",
+          "rightLabel": "properly living",
+          "resultLabel": "say they are properly living"
+        },
+        {
+          "id": "i2",
+          "kind": "ranking",
+          "question": "Rank what would make the years count.",
+          "settings": {
+            "duration": 75
+          },
+          "items": [
+            {
+              "id": "o1",
+              "label": "The people around you"
+            },
+            {
+              "id": "o2",
+              "label": "Your health"
+            },
+            {
+              "id": "o3",
+              "label": "Work that means something"
+            },
+            {
+              "id": "o4",
+              "label": "Time that is yours"
+            },
+            {
+              "id": "o5",
+              "label": "Seeing more of the world"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "offer": {
+    "headline": "The Upgrade 90",
+    "body": "90 days to level up your life.",
+    "cta": "I'm Interested",
+    "eyebrow": "TONIGHT ONLY",
+    "opensLink": false,
+    "link": "https://www.tomigrainger.com/upgrade",
+    "linkLabel": "See the details",
+    "image": ""
+  },
+  "donate": {
+    "headline": "Donate to Wear It Purple",
+    "body": "All donations go to Wear It Purple Day 2026",
+    "cta": "I'd like to donate",
+    "eyebrow": "SUPPORT THIS",
+    "opensLink": true,
+    "link": "https://donate.stripe.com/bJe14mclL9u9a8mdOPeQM06",
+    "linkLabel": "Give here",
+    "image": ""
+  },
+  "id": "whats_next"
+}

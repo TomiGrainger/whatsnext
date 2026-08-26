@@ -23,7 +23,8 @@
   $("#reveal-btn").addEventListener("click", () => { Live.send("reveal"); UI.toast("Results revealed"); });
   $("#again-btn").addEventListener("click", () => { Live.send("askAgain"); UI.toast("Same poll, round two"); });
   // one exclusive set: there is one projector, so one screen at a time
-  [["stats-btn", "stats"], ["holding-btn", "holding"], ["explainer-btn", "explainer"],
+  [["join-btn", "join"],
+   ["stats-btn", "stats"], ["holding-btn", "holding"], ["explainer-btn", "explainer"],
    ["offer-btn", "offer"], ["donate-btn", "donate"]].forEach(([id, which]) => {
     $("#" + id).addEventListener("click", () => Live.send("showScreen", { which }));
   });
@@ -218,7 +219,7 @@
     // intent rather than the audience's experience — and that is the gap where
     // you talk over a screen nobody can see past.
     const SCREEN_LABEL = {
-      holding: "HOLDING SCREEN", explainer: "HOW IT WORKS",
+      join: "JOIN CODE", holding: "HOLDING SCREEN", explainer: "HOW IT WORKS",
       stats: "STATE OF THE ROOM", offer: "THE OFFER", donate: "THE ASK",
     };
     const onWall = SCREEN_LABEL[st.screen];
@@ -268,7 +269,8 @@
     const promos = st.promos || {};
     // Each says why it can't be pressed in its own words — a derived string
     // produced "No State of the Room Set", which explains nothing.
-    [["holding", "Holding Screen", "Hide Holding", true, ""],
+    [["join", "Join Code", "Hide Join Code", true, ""],
+     ["holding", "Holding Screen", "Hide Holding", true, ""],
      ["explainer", "How It Works", "Hide Explainer", true, ""],
      ["stats", "State of the Room", "Hide the Room",
       (st.roomStats || {}).checkedIn > 0, "Nobody Checked In Yet"],

@@ -903,7 +903,10 @@ def _validate_interaction(raw, topic_no, index):
 # the same sheet on the phone — so they share one code path rather than two
 # copies that drift apart. Only ever one on screen at a time.
 # The screens one button each can put on the projector. Exactly one at a time.
-SCREENS = ("holding", "explainer", "stats", "offer", "donate")
+# "join" puts the scan-to-join code back on the wall at any point in the
+# night. It is the same panel the room sees before the doors open — people
+# arrive late, and the only way back to it used to be closing the event.
+SCREENS = ("join", "holding", "explainer", "stats", "offer", "donate")
 
 
 def _screen_ready(r, which):

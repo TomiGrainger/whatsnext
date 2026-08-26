@@ -108,9 +108,15 @@ button and simply launch something, that starts the event too.
 slides, 10 seconds each, a little over a minute for the full loop. Put it
 up as the room fills and take it down when you're ready to start.
 
+### Someone has just walked in and needs the code
+**JOIN CODE** puts the scan-to-join panel back on the wall at any point in the
+night — the same one the room saw before the doors opened. Press it again to
+take it down. Before this existed, the only way back to the code mid-event was
+to end the event.
+
 ### Putting a screen up
-**HOLDING**, **STATE OF THE ROOM**, **SHOW OFFER** and **SHOW DONATE** are one
-exclusive set: one projector, one screen. Pressing another swaps it; pressing
+**JOIN CODE**, **HOLDING**, **STATE OF THE ROOM**, **SHOW OFFER** and
+**SHOW DONATE** are one exclusive set: one projector, one screen. Pressing another swaps it; pressing
 the lit one takes it down. A button reading "No Offer Set" means that event
 hasn't been given one in setup.
 
