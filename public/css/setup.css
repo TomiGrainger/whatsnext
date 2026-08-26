@@ -231,3 +231,8 @@
   font-size:19px;line-height:1;padding:5px 0;cursor:pointer;}
 .em-cell:hover{border-color:var(--red);background:var(--red-dim);}
 .em-cell.on{border-color:var(--red);background:var(--red);}
+
+/* the per-room surface links: the big screen and a guest's phone, for any room
+   on the page rather than only the one you just opened */
+.room-surface{color:var(--muted);}
+.room-surface:hover{color:var(--ink);border-color:var(--line-2);}

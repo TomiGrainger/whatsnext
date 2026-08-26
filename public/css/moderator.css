@@ -1,20 +1,28 @@
 /* Moderator Control Room — designs/moderator-dashboard */
 body.s-moderator{background:#060607;min-height:100vh;}
 /* The control room fits the screen. You drive it while talking, and hunting for
-   a button below the fold is how the wrong thing ends up on the wall — so the
-   page never scrolls and the panels scroll inside themselves instead. */
-.mod-wrap{max-width:1500px;margin:0 auto;padding:20px 32px 22px;
+   a button below the fold is how the wrong thing ends up on the wall.
+   Fitting is not the same as squashing: the first attempt at this stopped the
+   page scrolling but left the panels 66px tall holding 296px of questions.
+   So every piece of furniture below scales with the viewport height, and the
+   panels — the only part that is actually content — take what is left, with a
+   floor they cannot be crushed below. --v is that shared vertical unit. */
+.mod-wrap{--v:clamp(5px,1.45vh,14px);
+  max-width:1500px;margin:0 auto;padding:calc(var(--v)*1.1) 32px calc(var(--v)*1.2);
   height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
 .mod-head .eyebrow{display:flex;align-items:center;gap:10px;}
 .mod-head .eyebrow u{text-underline-offset:5px;text-decoration-thickness:2px;}
-.mod-title{font-family:var(--sans);font-weight:800;font-size:40px;color:#fff;letter-spacing:-.02em;margin:6px 0 20px;}
+.mod-title{font-family:var(--sans);font-weight:800;font-size:clamp(24px,3.4vh,40px);
+  color:#fff;letter-spacing:-.02em;margin:calc(var(--v)*.3) 0 var(--v);}
 
 .mod-shell{display:grid;grid-template-columns:250px 1fr;gap:0;border:1px solid var(--line);
   border-radius:22px;overflow:hidden;background:#0b0b0d;flex:1;min-height:0;}
 
 /* sidebar */
-.side{border-right:1px solid var(--line);padding:26px 20px;display:flex;flex-direction:column;}
-.side .brand{font-family:var(--sans);font-weight:800;font-size:20.1px;line-height:1.15;margin-bottom:30px;}
+.side{border-right:1px solid var(--line);padding:calc(var(--v)*1.6) 20px;
+  display:flex;flex-direction:column;overflow-y:auto;min-height:0;}
+.side .brand{font-family:var(--sans);font-weight:800;font-size:20.1px;line-height:1.15;
+  margin-bottom:calc(var(--v)*1.8);}
 .side .brand em{display:block;color:var(--red);font-style:italic;}
 .room-code{font-family:var(--mono);letter-spacing:.16em;font-size:14.2px;color:var(--muted);margin:-18px 0 26px;text-transform:uppercase;}
 .room-code b{color:var(--red);font-weight:700;letter-spacing:.24em;}
@@ -30,10 +38,12 @@ body.s-moderator{background:#060607;min-height:100vh;}
 .me .rl{font-size:14.2px;color:var(--muted);}
 
 /* main */
-.main{padding:20px 26px 22px;display:flex;flex-direction:column;min-width:0;min-height:0;
-  overflow:hidden;}
+.main{padding:calc(var(--v)*1.2) 26px calc(var(--v)*1.3);display:flex;flex-direction:column;
+  min-width:0;min-height:0;overflow-y:auto;overflow-x:hidden;}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
-.mode-now{background:var(--red);color:#fff;font-family:var(--mono);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:16.5px;padding:15px 22px;border-radius:12px;}
+.mode-now{background:var(--red);color:#fff;font-family:var(--mono);font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;font-size:16.5px;
+  padding:calc(var(--v)*.78) 22px;border-radius:12px;}
 .tb-right{display:flex;align-items:center;gap:22px;}
 .tb-btn:disabled,.nav-btn:disabled,.qa:disabled{opacity:.35;cursor:not-allowed;filter:none;}
 .stat-ico{display:flex;align-items:center;gap:10px;}
@@ -48,20 +58,22 @@ body.s-moderator{background:#060607;min-height:100vh;}
   margin-top:18px;background:var(--red-dim);border:1px solid var(--red);border-radius:12px;
   padding:12px 16px;color:var(--red);font-size:16.5px;
 }
-.topic-nav{display:flex;align-items:center;gap:14px;margin:30px 0 6px;}
+.topic-nav{display:flex;align-items:center;gap:14px;margin:calc(var(--v)*.7) 0 calc(var(--v)*.3);}
 .topic-eyebrow{font-family:var(--mono);color:var(--red);letter-spacing:.24em;font-size:15.3px;}
 .nav-btn{
   font-family:var(--mono);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:14.3px;
   padding:9px 13px;border-radius:10px;background:var(--card);border:1px solid var(--line);color:var(--muted);
 }
 .nav-btn:hover:not(:disabled){color:var(--ink);border-color:var(--line-2);}
-.topic-q{font-family:var(--sans);font-weight:800;font-size:34px;letter-spacing:-.02em;color:#fff;margin:0 0 12px;}
+.topic-q{font-family:var(--sans);font-weight:800;font-size:clamp(20px,2.9vh,34px);
+  line-height:1.15;letter-spacing:-.02em;color:#fff;margin:0 0 calc(var(--v)*.8);}
 
 /* the topic's own interactions, mirroring how it was set up */
-.run-row{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 14px;}
+.run-row{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 calc(var(--v)*.7);flex:0 0 auto;}
 .run-btn{
   display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
-  border-radius:12px;padding:12px 15px;color:var(--ink);text-align:left;transition:border-color .15s;
+  border-radius:12px;padding:calc(var(--v)*.62) 15px;color:var(--ink);text-align:left;
+  transition:border-color .15s;
 }
 .run-btn:hover{border-color:var(--line-2);}
 .run-btn.live{border-color:var(--red);background:var(--red-dim);box-shadow:0 0 0 1px var(--red) inset;}
@@ -81,15 +93,16 @@ body.s-moderator{background:#060607;min-height:100vh;}
    are numbers stay narrow, the two full of people's words get the width. Equal
    fifths gave every pane 167px, which is too narrow to read a sentence in. */
 .panels{display:grid;grid-template-columns:repeat(12,1fr);
-  gap:14px;flex:1;min-height:0;overflow:hidden;}
+  gap:14px;flex:1 1 auto;min-height:min(244px,29vh);overflow:hidden;}
 .panels > .panel{grid-column:span 2;}
 .panels > .qpanel,.panels > .ch{grid-column:span 3;}
 @media(max-width:1150px){
   .panels{grid-auto-flow:row;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
     overflow-y:auto;}
 }
-.panel{background:#0e0e11;border:1px solid var(--line);border-radius:18px;padding:18px;
-  display:flex;flex-direction:column;min-height:0;overflow-y:auto;}
+.panel{background:#0e0e11;border:1px solid var(--line);border-radius:18px;
+  padding:calc(var(--v)*1.1) 14px;display:flex;flex-direction:column;
+  min-height:0;overflow-y:auto;}
 .panel .ptitle{font-family:var(--mono);letter-spacing:.18em;font-size:14.2px;color:var(--muted);text-transform:uppercase;}
 
 /* sentiment */
@@ -129,10 +142,11 @@ body.s-moderator{background:#060607;min-height:100vh;}
 .invite-btn{width:100%;background:var(--red);color:#fff;font-family:var(--mono);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:15.3px;padding:16px;border-radius:12px;}
 
 /* quick actions */
-.qa-lab{font-family:var(--mono);letter-spacing:.2em;font-size:14.2px;color:var(--muted);margin:26px 0 12px;text-transform:uppercase;}
+.qa-lab{font-family:var(--mono);letter-spacing:.2em;font-size:13px;color:var(--muted);
+  margin:calc(var(--v)*.55) 0 calc(var(--v)*.3);text-transform:uppercase;flex:0 0 auto;}
 .qa-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(134px,1fr));gap:10px;
   flex:0 0 auto;}
-.qa-row + .qa-lab{margin-top:10px;}
+.qa-row + .qa-lab{margin-top:calc(var(--v)*.45);}
 /* the reveal is the moment — make it findable without looking */
 .qa.reveal.armed{border-color:var(--red);background:var(--red-dim);animation:revealready 1.6s ease-in-out infinite;}
 .qa.reveal.armed .ql{color:var(--red);font-weight:700;}
@@ -143,11 +157,12 @@ body.s-moderator{background:#060607;min-height:100vh;}
    a 721px column and left the panels 99px — which fits on one screen and shows
    nothing. */
 .qa{background:var(--card);border:1px solid var(--line);border-radius:12px;
-  padding:11px 12px;display:flex;align-items:center;justify-content:center;gap:9px;
-  transition:transform .08s,filter .15s;min-width:0;}
+  padding:clamp(7px,1.05vh,11px) 12px;display:flex;align-items:center;
+  justify-content:center;gap:9px;transition:transform .08s,filter .15s;min-width:0;}
 .qa:hover{filter:brightness(1.2);} .qa:active{transform:scale(.97);}
 .qa .qi{font-size:16px;flex:0 0 auto;}
-.qa .ql{font-family:var(--mono);font-weight:700;letter-spacing:.08em;font-size:14.2px;text-transform:uppercase;color:var(--ink);}
+.qa .ql{font-family:var(--mono);font-weight:700;letter-spacing:.08em;
+  font-size:clamp(12.5px,1.5vh,14.2px);text-transform:uppercase;color:var(--ink);}
 .qa.primary{background:var(--red);} .qa.primary .ql{color:#fff;}
 
 @media(max-width:1080px){
@@ -247,13 +262,14 @@ body.s-moderator{background:#060607;min-height:100vh;}
 /* ---- the start bar: there until the night begins, then never again ---- */
 .start-bar{display:flex;align-items:center;justify-content:space-between;gap:20px;
   flex-wrap:wrap;background:linear-gradient(180deg,#16090c,#0e0e11);
-  border:1px solid var(--red);border-radius:16px;padding:18px 22px;margin:18px 0 4px;}
+  border:1px solid var(--red);border-radius:16px;
+  padding:calc(var(--v)*.8) 22px;margin:calc(var(--v)*.7) 0 calc(var(--v)*.25);flex:0 0 auto;}
 .start-bar[hidden]{display:none;}
 .sb-k{font-family:var(--mono);font-size:14.3px;letter-spacing:.2em;color:var(--red);font-weight:700;}
 .sb-d{color:var(--muted);font-size:15.9px;margin-top:5px;}
 .sb-btn{background:var(--red);color:#fff;border:none;border-radius:12px;
   font-family:var(--mono);font-size:14.2px;letter-spacing:.14em;font-weight:700;
-  padding:15px 26px;cursor:pointer;}
+  padding:calc(var(--v)*.95) 26px;cursor:pointer;}
 .sb-btn:hover{background:var(--red-2);}
 
 /* ---- undo: a mis-tap in front of a room shouldn't be final ---- */
@@ -275,3 +291,8 @@ body.s-moderator{background:#060607;min-height:100vh;}
   border-radius:7px;padding:4px 9px;margin-left:8px;cursor:pointer;white-space:nowrap;}
 .ch-up:hover{border-color:var(--red);color:var(--red);}
 .ch-up.on{background:var(--red);border-color:var(--red);color:#fff;}
+
+/* On a screen too short to hold a topic, eleven quick actions and five panels
+   at a legible size, the control column scrolls inside itself — the page still
+   does not. Shrinking the buttons further is a worse trade: this gets driven
+   on a laptop, in the dark, mid-sentence. */

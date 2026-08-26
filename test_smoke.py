@@ -212,6 +212,29 @@ def run(guest, crew, data_dir):
     check("and falls back to something true when mail isn't set up",
           b"the address on the email you received" in priv)
 
+    # ---- the three addresses are on the setup page, not just after a click ----
+    # They used to be written only by the OPEN ROOM handler, so a reload lost
+    # them while the room was still live — and there was no way to reach any
+    # other room's projector or phone view at all.
+    _, setup_js2, _ = crew.get("/js/setup.js")
+    check("the surface links are drawn by a reusable function",
+          b"showSurfaceLinks" in setup_js2)
+    check("...and are restored when the room list loads, not only on OPEN ROOM",
+          setup_js2.count(b"showSurfaceLinks(") >= 3)
+    check("every open room row carries its own projector and phone links",
+          b"room-surface" in setup_js2 and b"/projector" in setup_js2)
+
+    # ---- the control room is sized, not squashed ----
+    # Stopping the page scrolling is easy and worthless on its own: the first
+    # attempt left the panels 66px tall holding 296px of questions.
+    _, mod_css, _ = crew.get("/css/moderator.css")
+    check("the panels have a floor they cannot be crushed below",
+          b"min-height:min(244px,29vh)" in mod_css)
+    check("the control column scrolls rather than hiding a button",
+          b"overflow-y:auto;overflow-x:hidden;" in mod_css)
+    check("the vertical rhythm scales with the viewport",
+          b"--v:clamp(" in mod_css)
+
     # ---- picking a reaction ----
     # A room needs somewhere to put boredom and disgust, not just applause, and
     # typing an emoji on a laptop is why every event ended up with the same four.

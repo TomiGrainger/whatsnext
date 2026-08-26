@@ -484,6 +484,12 @@
       ? "\u2713 Mail is set up — the debrief can send itself."
       : "Mail isn't set up, so the debrief can't send. Sign-ups are still saved "
         + "and downloadable; see DEPLOY.md to switch sending on.";
+    // keep the three surface links pointed at whichever room is tonight's, so
+    // they are on the page whenever there is a room to open
+    const open = data.rooms.filter((r) => !r.closed);
+    const lead = open.find((r) => r.code === data.tonight) || open[0];
+    showSurfaceLinks(lead ? lead.code : null);
+
     const host = $("#rooms-open");
     if (!data.rooms.length) { host.innerHTML = ""; return; }
     host.innerHTML = '<div class="rl">Rooms</div>';
@@ -495,6 +501,7 @@
       a.className = "room-chip";
       a.href = "/moderator?room=" + encodeURIComponent(r.code);
       a.target = "_blank";
+      a.title = "Control room for " + r.code;
       a.innerHTML = "<b></b> · <span></span>";
       a.querySelector("b").textContent = r.code;
       a.querySelector("span").textContent = r.eventName + (r.closed ? " · off" : "");
@@ -507,6 +514,22 @@
         row.appendChild(flag);
       }
       row.appendChild(a);
+
+      // the three surfaces for THIS room — the chip alone went to the control
+      // room and nothing said so, and there was no way at all to reach another
+      // room's projector or phone view
+      if (!r.closed) {
+        [["\u25A3 screen", "/projector"], ["\u25C9 phones", "/"]].forEach(([label, base]) => {
+          const sl = document.createElement("a");
+          sl.className = "room-leads room-surface";
+          sl.href = base + "?room=" + encodeURIComponent(r.code);
+          sl.target = "_blank";
+          sl.title = (base === "/projector" ? "Big screen" : "What a guest sees")
+                     + " for room " + r.code;
+          sl.textContent = label;
+          row.appendChild(sl);
+        });
+      }
 
       // sign-ups collected in this room, downloadable as JSON
       // exactly what the debrief email looks like for this room
@@ -680,17 +703,26 @@
     const res = await post("/api/rooms", { code, eventId: selectedEvent });
     if (!res.ok) { msg.classList.add("err"); msg.textContent = res.error; return; }
 
-    const q = "?room=" + encodeURIComponent(res.code);
-    $("#links-code").textContent = res.code;
-    $("#link-audience").href = "/" + q;
-    $("#link-moderator").href = "/moderator" + q;
-    $("#link-projector").href = "/projector" + q;
-    $("#launch-links").hidden = false;
+    showSurfaceLinks(res.code);
     msg.classList.add("ok");
     msg.textContent = "Room " + res.code + " is live.";
     codeInput.value = "";
     loadRooms();
   });
+
+  // The three addresses you actually open on the night. These used to appear
+  // only in the moment you pressed OPEN ROOM, so a reload — or coming back to
+  // this page an hour later — lost them, even though the room was still live.
+  // They now follow whichever room the bare address sends people to.
+  function showSurfaceLinks(code) {
+    if (!code) { $("#launch-links").hidden = true; return; }
+    const q = "?room=" + encodeURIComponent(code);
+    $("#links-code").textContent = code;
+    $("#link-audience").href = "/" + q;
+    $("#link-moderator").href = "/moderator" + q;
+    $("#link-projector").href = "/projector" + q;
+    $("#launch-links").hidden = false;
+  }
 
   // ---------------- helpers ----------------
   // the passcode session can expire under us (server restart) — send the crew
