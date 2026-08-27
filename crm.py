@@ -308,6 +308,20 @@ def session_for(room_code, event_id="", event_name=""):
         return sid
 
 
+def latest_session_id(room_code):
+    """The most recent session for this room, open or closed.
+
+    Used for the two things that happen *after* a night ends: the closing
+    survey, and the debrief. Asking session_for() at that point would start a
+    fresh session — closing the room closed the last one — and the survey would
+    end up in a session of its own, describing an evening it did not contain.
+    Discarded sessions are not filtered out here on purpose: if the last thing
+    this room did was a rehearsal, the survey belongs to that rehearsal too."""
+    rows = query("SELECT id FROM sessions WHERE room_code=? "
+                 "ORDER BY id DESC LIMIT 1", (room_code,))
+    return rows[0]["id"] if rows else None
+
+
 def close_session(room_code):
     """The room was switched off. The session stays open in the record until
     then, so an evening that pauses for a break is still one session."""
@@ -703,7 +717,57 @@ def session_report(session_id):
         "SELECT value AS text FROM responses "
         "WHERE session_id = ? AND kind = 'question' ORDER BY at", (session_id,))
     out["answers"] = answers_by_occupation(session_id)
+    out["survey"] = session_survey(session_id)
     return out
+
+
+def session_survey(session_id):
+    """The closing survey, summarised. Each person's *last* answer only — the
+    form can be sent twice from one phone, and a night that scored 4 then 9
+    should read as a 9, not as two people."""
+    def latest(kind):
+        return query("""
+            SELECT value, value_num FROM responses r
+            WHERE r.session_id = ? AND r.kind = ?
+              AND r.id = (SELECT r2.id FROM responses r2
+                           WHERE r2.attendee_id = r.attendee_id AND r2.kind = r.kind
+                           ORDER BY r2.at DESC, r2.id DESC LIMIT 1)
+            ORDER BY r.at DESC""", (session_id, kind))
+
+    ratings = [r["value_num"] for r in latest("survey_rating")
+               if r["value_num"] is not None]
+    enjoyed = {}
+    for row in latest("survey_enjoyed"):
+        if row["value"]:
+            enjoyed[row["value"]] = enjoyed.get(row["value"], 0) + 1
+
+    spread = {n: 0 for n in range(1, 11)}
+    for v in ratings:
+        n = int(round(v))
+        if 1 <= n <= 10:
+            spread[n] += 1
+
+    return {
+        "responses": len(ratings),
+        "average": round(sum(ratings) / len(ratings), 1) if ratings else None,
+        # the average hides a room that split; the middle value does not
+        "median": _median(ratings),
+        "promoters": sum(1 for v in ratings if v >= 9),
+        "detractors": sum(1 for v in ratings if v <= 6),
+        "spread": [{"score": n, "count": spread[n]} for n in range(1, 11)],
+        "enjoyed": sorted(({"label": k, "count": v} for k, v in enjoyed.items()),
+                          key=lambda d: (-d["count"], d["label"])),
+        # every suggestion, newest first — the whole point is to read them
+        "suggestions": [r["value"] for r in latest("survey_next") if r["value"]],
+    }
+
+
+def _median(vals):
+    if not vals:
+        return None
+    xs = sorted(vals)
+    mid = len(xs) // 2
+    return xs[mid] if len(xs) % 2 else round((xs[mid - 1] + xs[mid]) / 2, 1)
 
 
 # Groups smaller than this are folded into "Other" in a cross-tab. In a room of

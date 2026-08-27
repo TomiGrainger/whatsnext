@@ -278,6 +278,77 @@ def run(guest, crew, data_dir):
           junk_arch.get("responses", 0) == after_arch.get("responses", 0))
     crew.request("POST", "/api/rooms/" + ROOM, {"closed": False})
 
+    # ---- HEAD ----
+    # BaseHTTPRequestHandler answers 501 to any verb it has no handler for, so
+    # every uptime monitor and link checker read a healthy app as down.
+    def raw_head(path):
+        """Straight down a socket: urllib throws a HEAD body away, so a server
+        that wrongly sent one would still look correct through it."""
+        host, port = guest.base.split("//", 1)[1].split(":")
+        sock = socket.create_connection((host, int(port)), timeout=5)
+        try:
+            sock.sendall(("HEAD %s HTTP/1.1\r\nHost: %s\r\n"
+                          "Connection: close\r\n\r\n" % (path, host)).encode())
+            chunks = []
+            while True:
+                got = sock.recv(4096)
+                if not got:
+                    break
+                chunks.append(got)
+        finally:
+            sock.close()
+        blob = b"".join(chunks)
+        head, _, after = blob.partition(b"\r\n\r\n")
+        return head.decode("latin-1"), after
+
+    for path in ("/" + ROOM, "/privacy", "/css/app.css"):
+        head, after = raw_head(path)
+        check("HEAD %s is answered, not refused" % path, " 200 " in head.split("\r\n")[0])
+        check("HEAD %s sends no body at all" % path, after == b"",
+              "%d stray bytes" % len(after))
+        check("HEAD %s still declares the length" % path,
+              "content-length:" in head.lower()
+              and "content-length: 0" not in head.lower())
+    # and it must not open an event stream it will never read
+    started = time.time()
+    status, _, _ = guest.request("HEAD", "/events?room=" + ROOM)
+    check("HEAD on the stream returns instead of holding the connection",
+          status == 200 and time.time() - started < 3)
+
+    # ---- the survey belongs to the night it describes ----
+    # Closing the room closes the archive session, so asking for a handle after
+    # the close opened a *new* one: the answers ended up alone in a session
+    # containing none of the evening they were about.
+    _, sess_before = crew.json("/api/crm/overview")
+    n_sessions = len(sess_before.get("sessions", []))
+    crew.request("POST", "/api/rooms/" + ROOM, {"closed": True})
+    SECRET = "PLEASE-DO-NOT-MAIL-THIS-BACK"
+    guest.post("/api/action", {"type": "survey", "room": ROOM, "pid": "smoke-sess",
+                               "rating": 9, "enjoyed": "Panelists", "next": SECRET})
+    time.sleep(1.4)
+    _, sess_after = crew.json("/api/crm/overview")
+    check("a survey after the close starts no new session",
+          len(sess_after.get("sessions", [])) == n_sessions)
+
+    # and the report can actually see it
+    sid = (sess_after.get("sessions") or [{}])[0].get("id")
+    _, rep = crew.json("/api/crm/session?id=%s" % sid)
+    sv = (rep or {}).get("survey") or {}
+    check("the report summarises the survey", sv.get("responses", 0) >= 1)
+    check("...with an average score", sv.get("average") is not None)
+    check("...what they enjoyed", bool(sv.get("enjoyed")))
+    check("...and what they want next", bool(sv.get("suggestions")))
+
+    # ---- the debrief carries highlights, and only aggregate ones ----
+    _, preview, _ = crew.get("/api/debrief-preview/" + ROOM)
+    check("the debrief leads with what came out of the night",
+          b"came out of the night" in preview)
+    # the survey's free text is for the crew. Mailing it back to the room would
+    # quote one guest's words to everyone who was there.
+    check("nobody's written suggestion is mailed to the room",
+          SECRET.encode() not in preview)
+    crew.request("POST", "/api/rooms/" + ROOM, {"closed": False})
+
     # ---- the join code can go back on the wall at any point ----
     # People arrive late. The scan-to-join panel used to exist only before the
     # doors opened, so the only way back to it was ending the event.

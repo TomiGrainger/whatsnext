@@ -392,7 +392,32 @@ def _smtp_connect():
     return smtp
 
 
-def _debrief_message(to_addr, name, event_name, brand, recap_url, promos=None):
+def _highlights_text(highlights):
+    if not highlights:
+        return ""
+    out = "\nA few things that came out of it:\n\n"
+    for label, line in highlights:
+        out += "  %s: %s\n" % (label, line)
+    return out
+
+
+def _highlights_html(highlights):
+    if not highlights:
+        return ""
+    rows = "".join(
+        '<tr><td style="padding:0 0 12px;">'
+        '<div style="font-size:11px;letter-spacing:.16em;color:#FF2D46;font-weight:700;'
+        'text-transform:uppercase;">%s</div>'
+        '<div style="font-size:15px;line-height:1.5;color:#f5f3ef;margin-top:3px;">%s</div>'
+        "</td></tr>" % (html_escape(label), html_escape(line))
+        for label, line in highlights)
+    return ('<table role="presentation" cellpadding="0" cellspacing="0" border="0" '
+            'style="width:100%%;margin:6px 0 24px;border-top:1px solid #26262b;'
+            'padding-top:18px;">%s</table>' % rows)
+
+
+def _debrief_message(to_addr, name, event_name, brand, recap_url, promos=None,
+                     highlights=None):
     msg = EmailMessage()
     msg["Subject"] = "%s — the debrief" % event_name
     msg["From"] = formataddr((brand, MAIL_FROM))
@@ -406,12 +431,13 @@ def _debrief_message(to_addr, name, event_name, brand, recap_url, promos=None):
     hello = "Hi %s," % name if name else "Hi,"
     text = (
         "%s\n\n"
-        "Thanks for being part of %s.\n\n"
-        "Here's the debrief — every topic, how the room voted, what changed after\n"
+        "Thanks for being part of %s.\n"
+        "%s\n"
+        "The full debrief — every topic, how the room voted, what changed after\n"
         "the discussion, and the questions you put up:\n\n"
         "%s\n\n"
         "— %s\n"
-    ) % (hello, event_name, recap_url, brand)
+    ) % (hello, event_name, _highlights_text(highlights), recap_url, brand)
     text += "\n\nDon't want these? %s\n" % unsub
     for promo in (promos or {}).values():
         if not promo.get("headline"):
@@ -432,10 +458,10 @@ def _debrief_message(to_addr, name, event_name, brand, recap_url, promos=None):
     <div style="font-size:13px;letter-spacing:.24em;color:#FF2D46;font-weight:700;">THE DEBRIEF</div>
     <h1 style="font-size:30px;line-height:1.15;margin:14px 0 18px;color:#f5f3ef;">%s</h1>
     <p style="font-size:16px;line-height:1.6;color:#a9a9b2;margin:0 0 14px;">%s</p>
-    <p style="font-size:16px;line-height:1.6;color:#a9a9b2;margin:0 0 24px;">
-      Thanks for being part of it. Here's everything the room said and decided —
-      how it voted, what changed after the discussion, and the questions you put up.
+    <p style="font-size:16px;line-height:1.6;color:#a9a9b2;margin:0 0 18px;">
+      Thanks for being part of it. A few things that came out of the night:
     </p>
+    %s
     <a href="%s" style="display:inline-block;background:#FF2D46;color:#fff;text-decoration:none;
       font-weight:700;letter-spacing:.08em;padding:15px 24px;border-radius:12px;">SEE THE RESULTS &rarr;</a>
     <p style="font-size:13px;line-height:1.6;color:#6e6e78;margin:26px 0 0;">
@@ -448,7 +474,8 @@ def _debrief_message(to_addr, name, event_name, brand, recap_url, promos=None):
       &middot; <a href="%s/privacy" style="color:#8b8b90;">Privacy</a>.
     </p>
   </div>
-</body></html>""" % (html_escape(event_name), html_escape(hello), html_escape(recap_url),
+</body></html>""" % (html_escape(event_name), html_escape(hello),
+                     _highlights_html(highlights), html_escape(recap_url),
                      html_escape(recap_url), _promos_html(promos),
                      html_escape(event_name), html_escape(unsub),
                      html_escape(public_base())), subtype="html")
@@ -489,6 +516,57 @@ def _promo_html(offer):
             '%s%s</div>' % (hero, html_escape(offer["headline"]), body, cta))
 
 
+def debrief_highlights(code):
+    """Three or four lines about the night for the email — aggregate only.
+
+    Deliberately not the whole report: the recap page is one link away, and an
+    email that reprints it gets skimmed. Nothing here is anyone's own words —
+    the survey's written suggestions are for the crew, not for the room."""
+    code = sanitize_code(code)
+    recap = recap_payload(code)
+    if not recap.get("exists"):
+        return []
+
+    out = []
+    voted = [t for t in recap["topics"] if t["sentiment"]["any"]]
+    if voted:
+        # the one the room agreed on, and the one that split it — the two facts
+        # anyone who was there actually wants confirmed
+        agreed = max(voted, key=lambda t: t["sentiment"]["agreePct"])
+        if agreed["sentiment"]["agreePct"] >= 50:
+            out.append(("Most agreed", "%d%% agreed \u2014 \u201c%s\u201d"
+                        % (agreed["sentiment"]["agreePct"], agreed["question"])))
+        # closest to an even split between agree and disagree
+        split = min(voted, key=lambda t: abs(t["sentiment"]["agreePct"]
+                                             - t["sentiment"]["disagreePct"]))
+        if split is not agreed:
+            sp = split["sentiment"]
+            out.append(("Split the room", "%d%% / %d%% \u2014 \u201c%s\u201d"
+                        % (sp["agreePct"], sp["disagreePct"], split["question"])))
+
+    if recap.get("questions"):
+        out.append(("Most-backed question",
+                    "\u201c%s\u201d" % recap["questions"][0]["text"]))
+
+    # how the room rated the night, if enough of them said
+    try:
+        sid = crm.latest_session_id(code)
+        sv = crm.session_survey(sid) if sid else None
+    except Exception:
+        sv = None
+    if sv and sv.get("responses", 0) >= MIN_SURVEY_SHOWN and sv.get("average") is not None:
+        line = "%s/10 from %d people" % (sv["average"], sv["responses"])
+        if sv.get("enjoyed"):
+            line += " \u00b7 enjoyed most: %s" % sv["enjoyed"][0]["label"].lower()
+        out.append(("The room rated the night", line))
+    return out
+
+
+# One or two ratings is a person, not a room — and it would be quoted back to
+# them in their own debrief. Below this the line is simply left out.
+MIN_SURVEY_SHOWN = 3
+
+
 def send_debrief(code):
     """Send the recap link to everyone who signed up in this room. Returns a
     summary; already-sent addresses are skipped so pressing the button twice
@@ -500,6 +578,7 @@ def send_debrief(code):
         brand = room.get("brand", "THE UPGRADE") if room else "THE UPGRADE"
         promos = room_promos(room) if room else {}
     recap_url = "%s/recap?room=%s" % (public_base(), code)
+    highlights = debrief_highlights(code)
 
     with LEAD_LOCK:
         leads = read_leads(code)
@@ -518,7 +597,8 @@ def send_debrief(code):
         for lead in pending:
             try:
                 smtp.send_message(_debrief_message(
-                    lead["email"], lead.get("name", ""), event_name, brand, recap_url, promos))
+                    lead["email"], lead.get("name", ""), event_name, brand, recap_url,
+                    promos, highlights))
                 lead["sentAt"] = time.time()
                 crm.mark_sent(lead["email"])
                 sent += 1
@@ -2004,7 +2084,16 @@ def act(code, kind, pid, data):
         # Everything a person does is copied to the archive as it happens, so a
         # RESET clears the room without clearing the record. Queued, never
         # written on this thread.
-        session = archive_session(r) if kind in AUDIENCE_ACTIONS else None
+        # An answer that arrives after the room shut belongs to the night that
+        # just ended. Asking for a handle would open a *new* session — closing
+        # the room closed the old one — and the survey would sit alone in a
+        # session containing nothing it describes.
+        if kind not in AUDIENCE_ACTIONS:
+            session = None
+        elif r.get("closed"):
+            session = crm.latest_session_id(r["code"])
+        else:
+            session = archive_session(r)
 
         def keep(what, value="", value_num=None):
             crm.record(session, pid, what, topic_index=r["topicIndex"],
@@ -2601,7 +2690,19 @@ class Handler(BaseHTTPRequestHandler):
             for k, val in extra.items():
                 self.send_header(k, val)
         self.end_headers()
-        self.wfile.write(body)
+        # a HEAD gets the identical headers, including Content-Length, and no body
+        if not getattr(self, "_head_only", False):
+            self.wfile.write(body)
+
+    def do_HEAD(self):
+        """Uptime monitors and link checkers ask with HEAD. BaseHTTPRequestHandler
+        answers 501 to anything it has no do_* for, so every one of them read a
+        perfectly healthy app as down. Run the real GET and drop the body."""
+        self._head_only = True
+        try:
+            self.do_GET()
+        finally:
+            self._head_only = False
 
     def do_GET(self):
         # the first proxied request teaches the app its own public address
@@ -2722,7 +2823,8 @@ class Handler(BaseHTTPRequestHandler):
             msg = _debrief_message(
                 MAIL_FROM or "you@example.com", "Sam",
                 room.get("eventName", "The event"), room.get("brand", "THE UPGRADE"),
-                "%s/recap?room=%s" % (public_base(), code), room_promos(room))
+                "%s/recap?room=%s" % (public_base(), code), room_promos(room),
+                debrief_highlights(code))
             html = [p for p in msg.walk() if p.get_content_type() == "text/html"]
             body = html[0].get_content() if html else msg.get_content()
             return self._send(200, body, "text/html; charset=utf-8",
@@ -3280,6 +3382,14 @@ class Handler(BaseHTTPRequestHandler):
         # the crew view is decided by the passcode cookie, never by the
         # client-supplied role — otherwise ?role=moderator would leak results
         crew = self.authed()
+        # A HEAD here must not open a stream: it would hold the connection (and a
+        # subscriber slot) open forever waiting for a body nobody will read.
+        if getattr(self, "_head_only", False):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache, no-transform")
+            self.end_headers()
+            return
         sid, q = add_subscriber(role, code, crew=crew)
         try:
             self.send_response(200)

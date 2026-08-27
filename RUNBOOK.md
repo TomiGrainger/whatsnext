@@ -150,8 +150,14 @@ shows the same thanks, a box for an email, and three quick questions: a 1–10
 rating, what they enjoyed most, and one thing they'd like next time.
 
 The three answers are **anonymous** and are never joined to the address given
-on the same screen. They land in the archive alongside everything else from the
-night; read them in `/crm`.
+on the same screen. Open the night in `/crm` → **Events** and the report leads
+with **HOW THE NIGHT LANDED**: the average out of ten, the spread of scores (an
+average of 7 can be everyone-at-7 or a room torn in half, and those are
+different nights), what they enjoyed most, and every written suggestion.
+
+The debrief email carries a short version of the same thing — what the room
+agreed on, what split it, the most-backed question, and the score. Written
+suggestions are **not** in it: those are one guest's words and stay with you.
 
 ### Someone wants their data deleted, there and then
 Their phone: profile → **Delete my details** (two taps). During the event this

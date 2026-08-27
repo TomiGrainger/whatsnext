@@ -153,3 +153,26 @@ td.num b{color:var(--red);}
 .p-private{margin-top:26px;border:1px solid var(--line);border-left:2px solid var(--red);
   border-radius:10px;padding:14px 16px;color:var(--muted);font-size:13px;line-height:1.6;}
 .p-private b{color:var(--ink);}
+
+/* ---- how the night landed ---- */
+.sv-score{display:flex;align-items:baseline;gap:9px;}
+.sv-score b{font-family:var(--display);font-size:46px;line-height:1;color:var(--red);}
+.sv-score span{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--muted);}
+.sv-sub{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--dim);
+  margin-top:6px;}
+
+/* the shape of the scores: an average of 7 can be everyone-at-7 or a room torn
+   in half, and those are different nights */
+.sv-hist{display:flex;align-items:flex-end;gap:5px;margin-top:16px;height:92px;}
+.sv-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;min-width:0;}
+.sv-n{font-family:var(--mono);font-size:10px;color:var(--red);text-align:center;height:12px;}
+.sv-bar{height:52px;display:flex;align-items:flex-end;background:#121216;
+  border:1px solid var(--line);border-radius:5px;overflow:hidden;}
+.sv-barfill{width:100%;background:var(--red-dim);border-top:2px solid var(--red);min-height:0;}
+.sv-col:not(.has) .sv-barfill{border-top-color:var(--line);}
+.sv-x{font-family:var(--mono);font-size:10px;color:var(--dim);text-align:center;}
+
+.sv-pd{display:flex;gap:16px;margin-top:14px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.1em;flex-wrap:wrap;}
+.sv-pd .up{color:#39d98a;}
+.sv-pd .dn{color:var(--red);}

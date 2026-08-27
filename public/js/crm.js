@@ -270,6 +270,67 @@
       body.appendChild(bars);
     }
 
+    // How the night actually landed, straight after the headline numbers —
+    // it is the first thing anyone asks and it used to be nowhere on this page.
+    const sv = s.survey || {};
+    if (sv.responses) {
+      body.appendChild(el("div", "p-h2", "HOW THE NIGHT LANDED"));
+      const card = el("div", "p-night");
+
+      const score = el("div", "sv-score");
+      score.append(el("b", null, sv.average === null ? "—" : String(sv.average)),
+                   el("span", null, "/10 average"));
+      const sub = el("div", "sv-sub",
+        sv.responses + (sv.responses === 1 ? " answer" : " answers")
+        + (sv.median !== null ? " · middle score " + sv.median : ""));
+      card.append(score, sub);
+
+      // the average alone hides a room that split, so show the shape too
+      const top = Math.max(...sv.spread.map((r) => r.count), 1);
+      const hist = el("div", "sv-hist");
+      sv.spread.forEach((r) => {
+        const col = el("div", "sv-col" + (r.count ? " has" : ""));
+        const bar = el("div", "sv-barfill");
+        bar.style.height = Math.round((r.count / top) * 100) + "%";
+        col.append(el("div", "sv-n", r.count ? String(r.count) : ""),
+                   el("div", "sv-bar", null), el("div", "sv-x", String(r.score)));
+        col.querySelector(".sv-bar").appendChild(bar);
+        hist.appendChild(col);
+      });
+      card.appendChild(hist);
+
+      if (sv.promoters || sv.detractors) {
+        const pd = el("div", "sv-pd");
+        pd.append(el("span", "up", sv.promoters + " gave it 9 or 10"),
+                  el("span", "dn", sv.detractors + " gave it 6 or less"));
+        card.appendChild(pd);
+      }
+      body.appendChild(card);
+
+      if (sv.enjoyed.length) {
+        body.appendChild(el("div", "p-h2", "WHAT THEY ENJOYED MOST"));
+        const topE = Math.max(...sv.enjoyed.map((e) => e.count), 1);
+        const bars = el("div", "p-bars");
+        sv.enjoyed.forEach((e) => {
+          const row = el("div", "p-bar");
+          const fill = el("div", "fill");
+          fill.style.width = Math.round((e.count / topE) * 100) + "%";
+          row.append(fill, el("span", "t", e.label), el("span", "n", String(e.count)));
+          bars.appendChild(row);
+        });
+        body.appendChild(bars);
+      }
+
+      if (sv.suggestions.length) {
+        body.appendChild(el("div", "p-h2", "WHAT THEY WANT NEXT TIME"));
+        sv.suggestions.forEach((t) => {
+          const c = el("div", "p-night");
+          c.appendChild(el("div", "ev", t));
+          body.appendChild(c);
+        });
+      }
+    }
+
     if (s.topics.length) {
       body.appendChild(el("div", "p-h2", "HOW THE ROOM SPLIT"));
       s.topics.forEach((t) => {
