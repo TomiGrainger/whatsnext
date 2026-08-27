@@ -1215,6 +1215,10 @@ def reset_room(room):
     # a reset is "back to before the doors opened", so the lobby comes back too
     room["started"] = False
     room["screen"] = None
+    # ...and before the doors opened the room was open. Wiping a room you had
+    # ended used to leave it shut: the tallies were gone, the lobby was back,
+    # and every phone still sat on the closing screen with no way in.
+    room["closed"] = False
     _activate_topic(room, 0)
     # the room is wiped, the record is not: the session is marked as a
     # rehearsal and a fresh one begins with the next thing that happens
@@ -3238,10 +3242,16 @@ class Handler(BaseHTTPRequestHandler):
             if data.get("reset"):
                 reset_room(room)
             if "closed" in data:
+                was_closed = room.get("closed", False)
                 room["closed"] = bool(data.get("closed"))
                 # switching the room off ends the evening in the record too
                 if room["closed"]:
                     crm.close_session(code)
+                elif was_closed:
+                    # switched back on: an END pressed by mistake, or a break.
+                    # Carry on with the same session if it only just closed, so
+                    # the night does not end up recorded as two half-evenings.
+                    crm.resume_session(code)
             mark_dirty()
             closed = room["closed"]
         broadcast(code)

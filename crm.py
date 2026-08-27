@@ -322,6 +322,33 @@ def latest_session_id(room_code):
     return rows[0]["id"] if rows else None
 
 
+# Ending a night and starting it again within this window is treated as the
+# same evening: an accidental END, or a deliberate break. Longer than this and
+# the same room code is a genuinely new night, which must not merge into the
+# last one — a venue reusing "DEBATE" every month would otherwise report one
+# enormous session.
+RESUME_WINDOW = 6 * 3600
+
+
+def resume_session(room_code, within=RESUME_WINDOW):
+    """The room was switched back on. If the last session closed recently, carry
+    on with it rather than starting a second one for the same evening."""
+    with _LOCK:
+        if _DB is None:
+            return None
+        row = _DB.execute(
+            "SELECT id, closed_at FROM sessions WHERE room_code=? AND discarded=0 "
+            "ORDER BY id DESC LIMIT 1", (room_code,)).fetchone()
+        if not row or row["closed_at"] is None:
+            return None                       # nothing to resume, or still open
+        if time.time() - row["closed_at"] > within:
+            return None                       # a different night entirely
+        _DB.execute("UPDATE sessions SET closed_at=NULL WHERE id=?", (row["id"],))
+        _DB.commit()
+        _SESSIONS[room_code] = row["id"]
+        return row["id"]
+
+
 def close_session(room_code):
     """The room was switched off. The session stays open in the record until
     then, so an evening that pauses for a break is still one session."""

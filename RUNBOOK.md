@@ -140,6 +140,22 @@ question and vice versa.
 Every question and challenge has **REMOVE** — and an **UNDO** appears for twelve
 seconds afterwards if you hit the wrong one.
 
+### Running the same room again — a rehearsal, or a second sitting
+**RESET** on the room's row in `/setup` (it asks twice). It clears every vote,
+word, question, challenge and check-in, puts the room back in the lobby, and —
+since a reset means "back to before the doors opened" — switches the room back
+on if you had ended it. Phones reconnect on their own; nobody needs to rescan.
+
+What it does **not** clear: debrief sign-ups, offer leads, and the archive. The
+evening you wiped is marked as a rehearsal and left out of the reports, so a
+practice run never pollutes the real night's numbers.
+
+### If you end the night by accident
+Switch the room back on from `/setup`. Within six hours that carries on with the
+same evening in the record rather than starting a second one, so an accidental
+END — or a deliberate break between halves — still reports as one night. Leave
+it longer and the same room code is treated as a genuinely new evening.
+
 ### Ending the night
 **END THE EVENT** in the control room, bottom right. It asks twice — one tap
 arms it, a second within six seconds does it — because it is the only button

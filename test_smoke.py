@@ -278,6 +278,38 @@ def run(guest, crew, data_dir):
           junk_arch.get("responses", 0) == after_arch.get("responses", 0))
     crew.request("POST", "/api/rooms/" + ROOM, {"closed": False})
 
+    # ---- starting the same room over ----
+    # RESET means "back to before the doors opened", and before the doors opened
+    # the room was open. Wiping a room you had ended used to leave it shut, with
+    # every phone stranded on the closing screen.
+    crew.request("POST", "/api/rooms/" + ROOM, {"closed": True})
+    _, shut = guest.json("/api/state?room=" + ROOM)
+    check("ending a night closes the room", shut.get("closed") is True)
+    crew.post("/api/rooms/" + ROOM, {"reset": True})
+    _, fresh = guest.json("/api/state?room=" + ROOM)
+    check("a reset reopens the room", fresh.get("closed") is False)
+    check("...puts it back in the lobby", fresh.get("started") is False)
+    check("...clears the wall", fresh.get("screen") in (None, ""))
+    check("...and every vote with it", fresh["sentiment"]["agree"] == 0)
+
+    # an END pressed by mistake, or a break, must not split one night in two
+    # count only once the fresh session actually exists, otherwise the first
+    # vote after a reset moves the number for a perfectly good reason
+    guest.post("/api/action", {"type": "sentiment", "room": ROOM,
+                               "pid": "resume-a", "choice": "agree"})
+    time.sleep(1.2)
+    _, ov_before = crew.json("/api/crm/overview")
+    n_before = len(ov_before.get("sessions", []))
+    crew.request("POST", "/api/rooms/" + ROOM, {"closed": True})
+    crew.request("POST", "/api/rooms/" + ROOM, {"closed": False})
+    guest.post("/api/action", {"type": "sentiment", "room": ROOM,
+                               "pid": "resume-b", "choice": "disagree"})
+    time.sleep(1.4)
+    _, ov_after = crew.json("/api/crm/overview")
+    check("switching a room back on resumes the same night",
+          len(ov_after.get("sessions", [])) == n_before,
+          "%d sessions became %d" % (n_before, len(ov_after.get("sessions", []))))
+
     # ---- HEAD ----
     # BaseHTTPRequestHandler answers 501 to any verb it has no handler for, so
     # every uptime monitor and link checker read a healthy app as down.
