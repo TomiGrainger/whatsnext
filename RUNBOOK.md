@@ -140,6 +140,19 @@ question and vice versa.
 Every question and challenge has **REMOVE** — and an **UNDO** appears for twelve
 seconds afterwards if you hit the wrong one.
 
+### Ending the night
+**END THE EVENT** in the control room, bottom right. It asks twice — one tap
+arms it, a second within six seconds does it — because it is the only button
+on that page you cannot undo by pressing again.
+
+The wall goes to **THANKS FOR TAKING PART** with the debrief QR. Every phone
+shows the same thanks, a box for an email, and three quick questions: a 1–10
+rating, what they enjoyed most, and one thing they'd like next time.
+
+The three answers are **anonymous** and are never joined to the address given
+on the same screen. They land in the archive alongside everything else from the
+night; read them in `/crm`.
+
 ### Someone wants their data deleted, there and then
 Their phone: profile → **Delete my details** (two taps). During the event this
 also removes their answers from the archive — the phone still knows its own

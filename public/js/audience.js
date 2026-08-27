@@ -446,11 +446,20 @@
       // The ask is one button that goes where the giving happens. The offer is
       // two: read more, or leave an address — different intentions, and asking
       // someone to choose between a button and a footnote link buried one.
+      // The ask is one button and nothing else: it carries its own words
+      // ("I'd like to donate"), not the offer's quieter "See the details", and
+      // it is the biggest thing on the sheet because it is the only thing to do.
       const linkBtn = $("#offer-link");
-      linkBtn.textContent = o.link ? (o.linkLabel || "See the details") : "";
+      linkBtn.textContent = o.link
+        ? (o.opensLink ? o.cta : (o.linkLabel || "See the details")) : "";
       linkBtn.href = o.link || "#";
       linkBtn.hidden = !o.link;
-      linkBtn.className = o.opensLink ? "btn" : "btn ghost";
+      linkBtn.className = o.opensLink ? "btn big" : "btn ghost";
+
+      // Nothing on the ask is about an email list, so none of the list's
+      // furniture belongs on it — no address field, no unsubscribe note.
+      if (o.opensLink) $("#offer-email-wrap").hidden = true;
+      $("#offer-also").hidden = Boolean(o.opensLink);
 
       // the offer's primary is leaving an address; reading more is the quieter
       // of the two, so the weights say which one you actually want
@@ -510,11 +519,11 @@
       // a link plus a way to leave an address
       if (p.link) {
         const a = document.createElement("a");
-        a.className = p.opensLink ? "btn" : "btn ghost";
+        a.className = p.opensLink ? "btn big" : "btn ghost";
         a.href = p.link;
         a.target = "_blank";
         a.rel = "noopener noreferrer";
-        a.textContent = p.linkLabel || "See the details";
+        a.textContent = p.opensLink ? p.cta : (p.linkLabel || "See the details");
         if (p.opensLink) a.addEventListener("click", () => noteInterest(p));
         box.appendChild(a);
       }
@@ -536,7 +545,9 @@
 
   function paintInterested() {
     const o = (Live.get() || {}).promo;
-    const done = Boolean(o && interested[o.kind]);
+    // Giving does not put anyone on a list, so the ask never swaps itself for
+    // "YOU'RE ON THE LIST" — it said that to donors, which was simply untrue.
+    const done = Boolean(o && !o.opensLink && interested[o.kind]);
     $("#offer-ask").hidden = done;
     $("#offer-done").hidden = !done;
   }
@@ -1096,6 +1107,7 @@
     $("#nosuch-veil").hidden = !missing;
     $("#nosuch-code").textContent = st.code;
     $("#closed-veil").hidden = missing || !st.closed;
+    if (st.closed) buildSurvey(st);
     $("#recap-link").href = "/recap?room=" + encodeURIComponent(st.code);
     if (missing) return;
     paintLobby(st);
@@ -1267,6 +1279,52 @@
     $("#lead-form").hidden = true;
     $("#lead-done").hidden = false;
   }
+
+  // ---- the closing survey ----
+  // The questions and the dropdown's options come from the server so there is
+  // one copy of each; the phone never hardcodes a question it might outlive.
+  let surveyBuilt = false;
+  function buildSurvey(st) {
+    const sv = st && st.survey;
+    if (!sv || surveyBuilt) return;
+    surveyBuilt = true;
+    $("#sv-rating-q").textContent = sv.questions.rating;
+    $("#sv-enjoyed-q").textContent = sv.questions.enjoyed;
+    $("#sv-next-q").textContent = sv.questions.next;
+    const sel = $("#sv-enjoyed");
+    sv.enjoyed.forEach((label) => {
+      const opt = document.createElement("option");
+      opt.value = label;
+      opt.textContent = label;
+      sel.appendChild(opt);
+    });
+  }
+
+  const ratingOut = $("#sv-rating-out");
+  $("#sv-rating").addEventListener("input", (e) => {
+    ratingOut.textContent = e.target.value;
+  });
+
+  $("#survey-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = $("#sv-submit");
+    btn.disabled = true;
+    btn.textContent = "SENDING…";
+    const ok = await Live.send("survey", {
+      rating: Number($("#sv-rating").value),
+      enjoyed: $("#sv-enjoyed").value,
+      next: $("#sv-next").value.trim(),
+    });
+    if (ok === false) {
+      btn.disabled = false;
+      btn.textContent = "SEND IT →";
+      $("#sv-note").textContent = "That didn't send — try again?";
+      $("#sv-note").classList.add("err");
+      return;
+    }
+    $("#survey-form").hidden = true;
+    $("#survey-done").hidden = false;
+  });
 
   $("#lead-form").addEventListener("submit", async (e) => {
     e.preventDefault();

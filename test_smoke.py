@@ -227,6 +227,57 @@ def run(guest, crew, data_dir):
             _ok, _why = False, str(exc)
         check("bundled event %s is valid (%s)" % (_name, _why or "ok"), _ok)
 
+    # ---- giving is not joining a list ----
+    # Tapping the ask used to swap the sheet for "YOU'RE ON THE LIST", which was
+    # simply untrue: nobody who donates has joined anything.
+    _, aud_js, _ = crew.get("/js/audience.js")
+    check("the ask never claims someone joined a list",
+          b"!o.opensLink && interested[o.kind]" in aud_js)
+    check("the ask is one big button carrying its own words",
+          b'o.opensLink ? "btn big" : "btn ghost"' in aud_js)
+    check("no email furniture on the ask",
+          b'$("#offer-also").hidden = Boolean(o.opensLink);' in aud_js)
+    _, app_css, _ = crew.get("/css/app.css")
+    check("the big button style exists", b".btn.big{" in app_css)
+
+    # ---- ending the night, and the survey that follows ----
+    _, mod_html2, _ = crew.get("/moderator?room=" + ROOM)
+    check("the control room has its own end button",
+          b'id="endnight-btn"' in mod_html2)
+    check("...which did not steal the topbar's id",
+          mod_html2.count(b'id="end-btn"') == 1)
+
+    _, st_sv = guest.json("/api/state?room=%s" % ROOM)
+    survey = st_sv.get("survey") or {}
+    check("the phone is told the survey questions", len(survey.get("questions", {})) == 3)
+    check("...and the four things it could have enjoyed",
+          survey.get("enjoyed") == ["Discussion", "Interactivity",
+                                    "Panelists", "Meeting new people"])
+
+    # the survey only ever happens after the room closes, so a closed room has
+    # to keep accepting it — it used to answer 200 and throw the answer away
+    crew.request("POST", "/api/rooms/" + ROOM, {"closed": True})
+    time.sleep(1.2)
+    _, before_arch = crew.json("/api/archive")
+    before_n = before_arch.get("responses", 0)
+    status, _, _ = guest.post("/api/action", {
+        "type": "survey", "room": ROOM, "pid": "smoke-survey",
+        "rating": 7, "enjoyed": "Discussion", "next": "More of this"})
+    check("a closed room still accepts the survey", status == 200)
+    time.sleep(1.4)
+    _, after_arch = crew.json("/api/archive")
+    check("all three answers are actually written down",
+          after_arch.get("responses", 0) - before_n == 3)
+
+    # a rating outside 1-10 and an option nobody offered are dropped, not stored
+    guest.post("/api/action", {"type": "survey", "room": ROOM, "pid": "smoke-junk",
+                               "rating": 99, "enjoyed": "Free wine", "next": ""})
+    time.sleep(1.4)
+    _, junk_arch = crew.json("/api/archive")
+    check("nonsense answers are not stored",
+          junk_arch.get("responses", 0) == after_arch.get("responses", 0))
+    crew.request("POST", "/api/rooms/" + ROOM, {"closed": False})
+
     # ---- the join code can go back on the wall at any point ----
     # People arrive late. The scan-to-join panel used to exist only before the
     # doors opened, so the only way back to it was ending the event.
@@ -324,9 +375,17 @@ def run(guest, crew, data_dir):
 
     _, aud_html, _ = guest.get("/" + ROOM)
     fields = _c.findall(rb"<(?:input|textarea|select)[^>]*>", aud_html)
-    bare = [f for f in fields if b"aria-label" not in f and b"hidden" not in f]
+    # A visible <label for=…> is a real label — better than aria-label, since a
+    # sighted user reads it too. Accept either, and nothing else.
+    labelled_ids = set(_c.findall(rb'<label[^>]*\bfor="([^"]+)"', aud_html))
+    def _named(f):
+        if b"aria-label" in f:
+            return True
+        fid = _c.search(rb'\bid="([^"]+)"', f)
+        return bool(fid and fid.group(1) in labelled_ids)
+    bare = [f for f in fields if not _named(f) and b"hidden" not in f]
     check("every field a guest types into is labelled for a screen reader",
-          not bare, "%d unlabelled" % len(bare))
+          not bare, "%d unlabelled: %s" % (len(bare), b" ".join(bare)[:120]))
 
     for sheet in ("audience", "projector", "moderator"):
         _, sheet_css, _ = guest.get("/css/%s.css" % sheet)

@@ -226,6 +226,10 @@ signs the crew out, and anyone with the code has the controls.
   The ask is a single button that goes where the giving happens, because there
   is nothing to leave behind.
 
+  The ask carries its own words on one big button and nothing else — no address
+  field, no unsubscribe note, and no confirmation claiming a list was joined,
+  because giving is not joining one.
+
   Tapping **I'M INTERESTED** records interest *in the app* rather than sending
   anyone to a landing page mid-event — where an address
   is already known, from a profile or the debrief sign-up, it is one tap and

@@ -284,7 +284,36 @@
         btn.querySelector(".ql").textContent = on ? hide : (ready ? label : why);
       });
 
-    // the undo offer, for as long as the server will still honour it
+    // Ending the night is the only button here that cannot be undone by pressing
+  // it again, so it asks first. Everything else on this page is a toggle.
+  let endArmed = false;
+  $("#endnight-btn").addEventListener("click", async () => {
+    const btn = $("#endnight-btn"), lab = btn.querySelector(".ql");
+    if (!endArmed) {
+      endArmed = true;
+      btn.classList.add("armed");
+      lab.textContent = "Tap again to end";
+      setTimeout(() => {
+        if (!endArmed) return;
+        endArmed = false;
+        btn.classList.remove("armed");
+        lab.textContent = "End the Event";
+      }, 6000);
+      return;
+    }
+    endArmed = false;
+    btn.classList.remove("armed");
+    lab.textContent = "Ending…";
+    btn.disabled = true;
+    await fetch("/api/rooms/" + encodeURIComponent(Live.room()), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ closed: true }),
+    });
+    lab.textContent = "Event Ended";
+  });
+
+  // the undo offer, for as long as the server will still honour it
     $("#undo-bar").hidden = !st.undoable;
 
     // the START bar is only there until the night begins

@@ -1638,6 +1638,9 @@ def snapshot(code, crew=False):
             "started": bool(r.get("started")),
             # the night's running order, so the lobby can show what's coming
             "runningOrder": [t["question"] for t in r["topics"]],
+            # the closing survey's wording, sent rather than duplicated in the
+            # phone's markup, so there is one copy of each question
+            "survey": {"questions": SURVEY_Q, "enjoyed": list(SURVEY_ENJOYED)},
 
             # aggregate only — no names, nothing that identifies anyone
             "roomStats": room_stats(r),
@@ -1942,7 +1945,22 @@ def _hold_undo(room, what, item):
 # how many words one phone may add to a single cloud
 MAX_WORDS_PER_PHONE = 3
 
-AUDIENCE_ACTIONS = ("join", "sentiment", "whatsnext", "challenge", "poll", "word",
+# The closing survey. Defined here so the phone, the archive and the report all
+# use the same words — a question stored per-response is what makes the answers
+# readable a year later, when the form has been changed.
+SURVEY_Q = {
+    "rating": "How would you rate your experience honestly out of 10?",
+    "enjoyed": "What did you enjoy most about the event?",
+    "next": "What's one thing you'd like to see next time?",
+}
+SURVEY_ENJOYED = ("Discussion", "Interactivity", "Panelists", "Meeting new people")
+
+# The survey only ever happens once the night is over, so it is the one thing a
+# closed room must still accept. Without this it was dropped and answered 200,
+# which told the guest "THANK YOU" for an answer nobody kept.
+AFTER_CLOSE = ("survey",)
+
+AUDIENCE_ACTIONS = ("join", "survey", "sentiment", "whatsnext", "challenge", "poll", "word",
                     "emoji", "slider", "ranking", "ask", "upvote", "burst", "profile",
                     "connect", "connectRespond", "interested", "forgetMe")
 
@@ -1963,7 +1981,7 @@ def act(code, kind, pid, data):
         r = get_room(code)
         if r is None:
             return False   # no such room — nothing to act on
-        if r.get("closed") and kind in AUDIENCE_ACTIONS:
+        if r.get("closed") and kind in AUDIENCE_ACTIONS and kind not in AFTER_CLOSE:
             return  # a closed room stops taking part; tallies are left as they are
 
         topic = r["topics"][r["topicIndex"]]
@@ -2000,6 +2018,25 @@ def act(code, kind, pid, data):
 
         if kind == "join":
             pass
+
+        elif kind == "survey":
+            # The closing survey. Three answers about the night itself rather
+            # than about a topic, so they carry no topic index. Anonymous like
+            # every other response: the email on the same screen is a separate
+            # record that is never joined to this one.
+            rating = data.get("rating")
+            if isinstance(rating, (int, float)) and 1 <= rating <= 10:
+                crm.record(session, pid, "survey_rating",
+                           interaction_question=SURVEY_Q["rating"],
+                           value=str(int(rating)), value_num=float(rating))
+            enjoyed = (data.get("enjoyed") or "").strip()[:60]
+            if enjoyed in SURVEY_ENJOYED:
+                crm.record(session, pid, "survey_enjoyed",
+                           interaction_question=SURVEY_Q["enjoyed"], value=enjoyed)
+            nxt = (data.get("next") or "").strip()[:300]
+            if nxt:
+                crm.record(session, pid, "survey_next",
+                           interaction_question=SURVEY_Q["next"], value=nxt)
 
         elif kind == "sentiment":
             choice = data.get("choice")

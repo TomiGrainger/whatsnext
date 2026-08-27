@@ -219,6 +219,11 @@ body.s-moderator{background:#060607;min-height:100vh;}
 .qa.holding.armed .ql{color:#fff;font-weight:700;}
 .qa.joinq.armed{border-color:var(--red);background:var(--red);}
 .qa.joinq.armed .ql{color:#fff;font-weight:700;}
+/* ending the night: quiet until armed, then unmistakable */
+.qa.endnight .ql{color:var(--muted);}
+.qa.endnight:hover .ql{color:var(--red);}
+.qa.endnight.armed{border-color:var(--red);background:var(--red);}
+.qa.endnight.armed .ql{color:#fff;font-weight:700;}
 
 /* ---- word cloud moderation ---- */
 .wcmod[hidden]{display:none;}

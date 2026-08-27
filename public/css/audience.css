@@ -185,6 +185,25 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
   text-align:center;line-height:1.5;margin-top:4px;
 }
 .cv-note.err{color:var(--red);}
+/* ---- the closing survey ---- */
+.cv-survey{display:flex;flex-direction:column;gap:9px;margin-top:34px;text-align:left;
+  border-top:1px solid var(--line);padding-top:26px;}
+.cv-survey[hidden]{display:none;}
+.sv-h{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--red);
+  font-weight:700;margin-bottom:4px;}
+.sv-q{font-size:15px;font-weight:600;color:var(--ink);line-height:1.4;margin-top:14px;}
+.cv-survey .field{width:100%;}
+.sv-text{resize:vertical;min-height:78px;font-family:inherit;line-height:1.5;padding:13px 14px;}
+.cv-survey .btn{width:100%;margin-top:14px;box-shadow:var(--glow);}
+
+/* the 1-10 slider: the number has to be readable while a thumb is on it */
+.sv-slider{display:flex;align-items:center;gap:14px;}
+.sv-slider input[type=range]{flex:1;min-width:0;accent-color:var(--red);height:34px;}
+.sv-out{font-family:var(--display);font-size:30px;line-height:1;color:var(--red);
+  min-width:2.2ch;text-align:center;}
+.sv-ends{display:flex;justify-content:space-between;font-family:var(--mono);
+  font-size:10px;letter-spacing:.1em;color:var(--dim);margin-top:-4px;}
+
 .cv-done{margin-top:30px;}
 .cv-done[hidden]{display:none;}
 .cv-done .tick{

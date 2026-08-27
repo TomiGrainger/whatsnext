@@ -64,6 +64,8 @@ input,textarea{font-family:inherit;}
 /* a class-level display beats the UA [hidden] rule, so restate it */
 .btn[hidden]{display:none;}
 .btn.ghost{background:var(--card-2);color:var(--ink);border:1px solid var(--line);}
+/* the ask: one button, and it should look like the only thing on the sheet */
+.btn.big{font-size:17px;padding:22px 26px;width:100%;box-shadow:var(--glow);letter-spacing:.14em;}
 .btn.outline{background:transparent;border:1px solid var(--red);color:var(--red);}
 
 .card{background:var(--card);border:1px solid var(--line);border-radius:20px;}

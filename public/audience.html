@@ -227,6 +227,39 @@
       <div class="ds">The debrief lands in your inbox after the event.</div>
     </div>
 
+    <!-- Three questions about the night itself. Anonymous: the address above is
+         a separate record and is never joined to these answers. -->
+    <form class="cv-survey" id="survey-form">
+      <div class="sv-h">TWO MINUTES, IF YOU HAVE THEM</div>
+
+      <label class="sv-q" for="sv-rating" id="sv-rating-q"></label>
+      <div class="sv-slider">
+        <input type="range" id="sv-rating" min="1" max="10" step="1" value="8"
+               aria-describedby="sv-rating-out">
+        <output class="sv-out" id="sv-rating-out">8</output>
+      </div>
+      <div class="sv-ends"><span>1 — poor</span><span>10 — brilliant</span></div>
+
+      <label class="sv-q" for="sv-enjoyed" id="sv-enjoyed-q"></label>
+      <select class="field" id="sv-enjoyed">
+        <option value="">Pick one…</option>
+      </select>
+
+      <label class="sv-q" for="sv-next" id="sv-next-q"></label>
+      <textarea class="field sv-text" id="sv-next" rows="3" maxlength="300"
+                placeholder="Anything at all — we do read these."></textarea>
+
+      <button class="btn" id="sv-submit" type="submit">SEND IT →</button>
+      <div class="cv-note" id="sv-note">Answers are anonymous. They are not
+        attached to your name or address.</div>
+    </form>
+
+    <div class="cv-done" id="survey-done" hidden>
+      <div class="tick">✓</div>
+      <div class="dn">THANK YOU</div>
+      <div class="ds">That genuinely helps shape the next one.</div>
+    </div>
+
     <a class="btn ghost cv-recap" id="recap-link" href="/recap">SEE TONIGHT'S RESULTS →</a>
 
     <div class="cv-promos" id="cv-promos"></div>
@@ -294,7 +327,7 @@
          at the other end of it. -->
     <a class="btn" id="offer-link" target="_blank" rel="noopener noreferrer"></a>
     <button class="btn ghost" id="offer-cta">I'M INTERESTED</button>
-    <p class="offer-also">We'll send tonight's results to the same address.
+    <p class="offer-also" id="offer-also">We'll send tonight's results to the same address.
       Every email has a one-tap unsubscribe.
       <a href="/privacy" target="_blank" rel="noopener">Privacy</a>.</p>
   </div>
