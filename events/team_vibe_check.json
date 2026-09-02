@@ -1,0 +1,377 @@
+{
+  "brand": "WAVEMAKER INFLUENCE",
+  "eventName": "TEAM VIBE CHECK",
+  "topics": [
+    {
+      "id": "t1",
+      "question": "I'm arriving today with a full tank.",
+      "settings": {
+        "whatsNextThreshold": 5
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "emoji",
+          "question": "How are you actually arriving?",
+          "settings": {
+            "duration": 30
+          },
+          "options": [
+            {
+              "id": "o1",
+              "char": "🔥"
+            },
+            {
+              "id": "o2",
+              "char": "🙂"
+            },
+            {
+              "id": "o3",
+              "char": "🤔"
+            },
+            {
+              "id": "o4",
+              "char": "🤞"
+            },
+            {
+              "id": "o5",
+              "char": "😌"
+            },
+            {
+              "id": "o6",
+              "char": "🥱"
+            },
+            {
+              "id": "o7",
+              "char": "🤯"
+            },
+            {
+              "id": "o8",
+              "char": "😐"
+            },
+            {
+              "id": "o9",
+              "char": "😰"
+            },
+            {
+              "id": "o10",
+              "char": "💩"
+            }
+          ]
+        },
+        {
+          "id": "i2",
+          "kind": "wordcloud",
+          "question": "One word for how you're walking in.",
+          "settings": {
+            "duration": 90
+          }
+        },
+        {
+          "id": "i3",
+          "kind": "slider",
+          "question": "Where's your energy, honestly?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "running on empty",
+          "rightLabel": "fully charged",
+          "resultLabel": "arrived with a full tank"
+        }
+      ]
+    },
+    {
+      "id": "t2",
+      "question": "The last few months have been good for this team.",
+      "settings": {
+        "whatsNextThreshold": 5
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "slider",
+          "question": "How have the last few months felt?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "brutal",
+          "rightLabel": "really good",
+          "resultLabel": "say the last few months were good"
+        },
+        {
+          "id": "i2",
+          "kind": "poll",
+          "question": "What has taken the most out of you lately?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "The workload"
+            },
+            {
+              "id": "o2",
+              "label": "Not knowing what's coming"
+            },
+            {
+              "id": "o3",
+              "label": "Context-switching"
+            },
+            {
+              "id": "o4",
+              "label": "Not enough of the work I love"
+            },
+            {
+              "id": "o5",
+              "label": "Nothing — I'm good"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t3",
+      "question": "I'm genuinely excited about what's coming.",
+      "settings": {
+        "whatsNextThreshold": 5
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "wordcloud",
+          "question": "One word for what you're excited about.",
+          "settings": {
+            "duration": 90
+          }
+        },
+        {
+          "id": "i2",
+          "kind": "poll",
+          "question": "What are you most looking forward to?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "The work itself"
+            },
+            {
+              "id": "o2",
+              "label": "Learning something new"
+            },
+            {
+              "id": "o3",
+              "label": "Working with new people"
+            },
+            {
+              "id": "o4",
+              "label": "Things settling down"
+            },
+            {
+              "id": "o5",
+              "label": "Honestly, not sure yet"
+            }
+          ]
+        },
+        {
+          "id": "i3",
+          "kind": "slider",
+          "question": "How excited are you, really?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "not much",
+          "rightLabel": "genuinely",
+          "resultLabel": "are genuinely excited"
+        }
+      ]
+    },
+    {
+      "id": "t4",
+      "question": "There's something I'm nervous about that we haven't talked about.",
+      "settings": {
+        "whatsNextThreshold": 5
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "wordcloud",
+          "question": "One word for what's on your mind.",
+          "settings": {
+            "duration": 120
+          }
+        },
+        {
+          "id": "i2",
+          "kind": "poll",
+          "question": "Where do the nerves actually sit?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "The pace of change"
+            },
+            {
+              "id": "o2",
+              "label": "Unclear priorities"
+            },
+            {
+              "id": "o3",
+              "label": "Whether we have enough people"
+            },
+            {
+              "id": "o4",
+              "label": "My own role"
+            },
+            {
+              "id": "o5",
+              "label": "How we work together"
+            },
+            {
+              "id": "o6",
+              "label": "Nothing much"
+            }
+          ]
+        },
+        {
+          "id": "i3",
+          "kind": "slider",
+          "question": "How safe does it feel to say the hard thing here?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "not safe",
+          "rightLabel": "completely",
+          "resultLabel": "feel safe saying the hard thing"
+        }
+      ]
+    },
+    {
+      "id": "t5",
+      "question": "We're clear on what matters most for the next 90 days.",
+      "settings": {
+        "whatsNextThreshold": 5
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "ranking",
+          "question": "What would make the biggest difference to you?",
+          "settings": {
+            "duration": 75
+          },
+          "items": [
+            {
+              "id": "o1",
+              "label": "Clearer priorities"
+            },
+            {
+              "id": "o2",
+              "label": "Fewer meetings"
+            },
+            {
+              "id": "o3",
+              "label": "More autonomy"
+            },
+            {
+              "id": "o4",
+              "label": "Better handovers"
+            },
+            {
+              "id": "o5",
+              "label": "More time to think"
+            }
+          ]
+        },
+        {
+          "id": "i2",
+          "kind": "wordcloud",
+          "question": "One thing we should stop doing.",
+          "settings": {
+            "duration": 90
+          }
+        }
+      ]
+    },
+    {
+      "id": "t6",
+      "question": "I'm leaving today ready to make waves.",
+      "settings": {
+        "whatsNextThreshold": 5
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "wordcloud",
+          "question": "One word for how you're leaving.",
+          "settings": {
+            "duration": 90
+          }
+        },
+        {
+          "id": "i2",
+          "kind": "wordcloud",
+          "question": "The one thing you're taking into tomorrow.",
+          "settings": {
+            "duration": 90
+          }
+        },
+        {
+          "id": "i3",
+          "kind": "emoji",
+          "question": "How are you leaving?",
+          "settings": {
+            "duration": 30
+          },
+          "options": [
+            {
+              "id": "o1",
+              "char": "🔥"
+            },
+            {
+              "id": "o2",
+              "char": "💪"
+            },
+            {
+              "id": "o3",
+              "char": "💡"
+            },
+            {
+              "id": "o4",
+              "char": "🤞"
+            },
+            {
+              "id": "o5",
+              "char": "🤝"
+            },
+            {
+              "id": "o6",
+              "char": "🙌"
+            },
+            {
+              "id": "o7",
+              "char": "🤔"
+            },
+            {
+              "id": "o8",
+              "char": "😌"
+            },
+            {
+              "id": "o9",
+              "char": "⚡"
+            },
+            {
+              "id": "o10",
+              "char": "🙄"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "id": "team_vibe_check"
+}
