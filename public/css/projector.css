@@ -549,3 +549,30 @@ body.reveal-flash .pv-slider .big{animation:revealglow .9s ease;}
   color:var(--red);font-weight:700;}
 .cp-name{font-family:var(--display);text-transform:uppercase;color:var(--ink);
   font-size:clamp(26px,2.6vw,46px);line-height:1;margin-top:6px;}
+
+/* ---- a long guest list still fits on the wall ----
+   Nothing is dropped when a room has more job titles than the panel was drawn
+   for; the rows get tighter instead. A name people can read at the back beats
+   a tidy list with half the room missing from it. */
+.sv-bars.dense{gap:.7vh;}
+.sv-bars.dense .sv-bar{padding:.75vh 16px;border-radius:9px;}
+.sv-bars.dense .t{font-size:clamp(13px,1.15vw,21px);}
+.sv-bars.dense .n{font-size:clamp(16px,1.45vw,27px);}
+
+.wr-bars.dense{gap:.5vh;}
+.wr-bars.dense .wr-bar{padding:.55vh 13px;border-radius:8px;}
+.wr-bars.dense .t{font-size:clamp(12px,.95vw,17px);}
+.wr-bars.dense .n{font-size:clamp(13px,1.1vw,21px);}
+/* a second tier, for a room with a long list of job titles on a 720p wall */
+.wr-bars.denser{gap:.3vh;}
+.wr-bars.denser .wr-bar{padding:.35vh 11px;border-radius:7px;}
+.wr-bars.denser .t{font-size:clamp(11px,.85vw,15px);}
+.wr-bars.denser .n{font-size:clamp(11px,.95vw,18px);}
+/* said out loud when the wall genuinely cannot hold the rest */
+.wr-more{font-family:var(--mono);font-size:clamp(10px,.8vw,14px);color:var(--dim);
+  letter-spacing:.12em;padding:.4vh 2px;}
+
+.wr-vibes.dense{gap:7px;}
+.wr-vibes.dense .wr-vibe{padding:.5vh 11px;gap:5px;}
+.wr-vibes.dense .e{font-size:clamp(15px,1.3vw,23px);}
+.wr-vibes.dense .n{font-size:clamp(12px,1vw,19px);}

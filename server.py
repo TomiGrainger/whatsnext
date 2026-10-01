@@ -1078,6 +1078,10 @@ def validate_event(payload):
         "eventName": _text(payload.get("eventName"), "Event name", 60),
         "topics": topics,
     }
+    jobs = payload.get("occupations")
+    if isinstance(jobs, list) and jobs:
+        cleaned = [_text(j, "Job title", 60, required=False) for j in jobs[:40]]
+        out["occupations"] = [j for j in cleaned if j]
     for kind in PROMOS:
         promo = _validate_offer(payload.get(kind), kind)
         if promo:
@@ -1919,6 +1923,22 @@ def forget_email(email):
                 except (OSError, json.JSONDecodeError):
                     continue
     return removed
+
+
+def event_occupations(room_code):
+    """The job list for one room's event, falling back to the house list.
+
+    A public debate and a client workshop want different dropdowns, and the
+    override on the volume is install-wide — so it is the event that carries
+    this, not the server.
+    """
+    r = get_room(sanitize_code(room_code)) if room_code else None
+    if r:
+        cfg = EVENTS.get(r.get("eventId")) or {}
+        own = cfg.get("occupations") or []
+        if own:
+            return list(own)
+    return occupations()
 
 
 def occupations():
@@ -2847,7 +2867,8 @@ class Handler(BaseHTTPRequestHandler):
                 "updated": time.strftime("%B %Y"),
             }), "application/json", {"Cache-Control": "no-cache"})
         if path == "/api/onboarding":
-            payload = {"occupations": occupations(), "vibes": VIBES}
+            room_q = parse_qs(parsed.query).get("room", [""])[0]
+            payload = {"occupations": event_occupations(room_q), "vibes": VIBES}
             return self._send(200, json.dumps(payload), "application/json",
                               {"Cache-Control": "no-cache"})
         if path == "/api/events":

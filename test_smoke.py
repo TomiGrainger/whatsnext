@@ -278,6 +278,42 @@ def run(guest, crew, data_dir):
           junk_arch.get("responses", 0) == after_arch.get("responses", 0))
     crew.request("POST", "/api/rooms/" + ROOM, {"closed": False})
 
+    # ---- the job list belongs to the event ----
+    # The override on the volume is install-wide, so a client workshop's titles
+    # would have shown up in a public debate's dropdown.
+    _, onb = guest.json("/api/onboarding?room=" + ROOM)
+    check("the check-in offers a job list", len(onb.get("occupations", [])) > 0)
+    _, wpp_cfg = crew.json("/api/events/wpp_beauty_tech_labs")
+    own = (wpp_cfg.get("config") or {}).get("occupations") or []
+    check("an event can carry its own job titles", len(own) == 8)
+    check("...including the ones that were asked for",
+          "Influencer Group Director" in own and "Managing Partner" in own)
+    check("...and they do not leak into another event's dropdown",
+          not any("Influencer" in j for j in onb.get("occupations", [])))
+
+    # the config having them is not the point — the phone has to receive them
+    crew.post("/api/rooms", {"code": "WPPT", "eventId": "wpp_beauty_tech_labs"})
+    _, wpp_onb = guest.json("/api/onboarding?room=WPPT")
+    served = wpp_onb.get("occupations", [])
+    check("a phone in that room is actually served them",
+          "Influencer Group Director" in served and len(served) == 8)
+    crew.request("DELETE", "/api/rooms/WPPT")
+
+    # ---- nobody is dropped from the room ----
+    # The wall used to render the first seven job titles and the first five in
+    # the lobby, silently losing whoever was least common in the room.
+    _, proj_js2, _ = crew.get("/js/projector.js")
+    check("the state-of-the-room screen no longer truncates the list",
+          b"occupations.slice(0, 7)" not in proj_js2)
+    check("neither does the lobby",
+          b"occupations.slice(0, 5)" not in proj_js2)
+    check("nor the vibes", b".slice(0, 6).forEach" not in proj_js2)
+    check("and when the wall truly runs out of room it says how many are missing",
+          b"trimToFit" in proj_js2 and b"more\"" in proj_js2)
+    _, aud_js2, _ = crew.get("/js/audience.js")
+    check("the phone shows the whole room too",
+          b"occupations.slice(0, 6)" not in aud_js2)
+
     # ---- starting the same room over ----
     # RESET means "back to before the doors opened", and before the doors opened
     # the room was open. Wiping a room you had ended used to leave it shut, with

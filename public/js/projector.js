@@ -27,6 +27,25 @@
     document.querySelectorAll(".pview").forEach((v) => v.classList.toggle("active", v.id === id));
   }
 
+  function trimToFit(host, rowClass, moreClass, total) {
+    const limit = window.innerHeight - 8;
+    let rows = [...host.querySelectorAll("." + rowClass)];
+    while (rows.length > 1 &&
+           rows[rows.length - 1].getBoundingClientRect().bottom > limit) {
+      host.removeChild(rows.pop());
+    }
+    if (rows.length < total) {
+      const more = document.createElement("div");
+      more.className = moreClass;
+      more.textContent = "+" + (total - rows.length) + " more";
+      host.appendChild(more);
+      if (more.getBoundingClientRect().bottom > limit && rows.length > 1) {
+        host.removeChild(rows.pop());
+        more.textContent = "+" + (total - (rows.length)) + " more";
+      }
+    }
+  }
+
   // Who is in the room, on the wall — the moment that turns a crowd into a room.
   function paintRoomStats(st) {
     const rs = st.roomStats;
@@ -38,8 +57,12 @@
     const top = Math.max(1, ...rs.occupations.map((o) => o.count));
     const host = $("#sv-occ");
     host.innerHTML = "";
-    // a projector has room for the shape of the room, not a long tail
-    rs.occupations.slice(0, 7).forEach((o) => {
+    // Everyone who checked in is on the wall. Capping this at seven quietly
+    // dropped whoever was least common in the room — which, in a room that has
+    // been given twenty job titles to choose from, is most of them. The rows
+    // tighten instead of the list getting shorter.
+    host.classList.toggle("dense", rs.occupations.length > 7);
+    rs.occupations.forEach((o) => {
       const row = document.createElement("div");
       row.className = "sv-bar";
       const fill = document.createElement("div");
@@ -264,7 +287,10 @@
     const top = Math.max(1, ...rs.occupations.map((o) => o.count));
     const host = $("#wr-occ");
     host.innerHTML = "";
-    rs.occupations.slice(0, 5).forEach((o) => {
+    host.classList.remove("dense", "denser");
+    if (rs.occupations.length > 7) host.classList.add("dense", "denser");
+    else if (rs.occupations.length > 5) host.classList.add("dense");
+    rs.occupations.forEach((o) => {
       const row = document.createElement("div");
       row.className = "wr-bar";
       const fill = document.createElement("div");
@@ -280,10 +306,19 @@
       host.appendChild(row);
     });
 
+    // The lobby shares the wall with the join code, so on a short screen the
+    // tail can still run off the bottom. Rather than let a row sit invisible
+    // below the edge, trim what does not fit and say how many are missing —
+    // the one thing worse than a short list is a short list pretending to be
+    // the whole room.
+    trimToFit(host, "wr-bar", "wr-more", rs.occupations.length);
+
     const vhost = $("#wr-vibes");
     vhost.innerHTML = "";
-    rs.vibes.filter((v) => v.count > 0).sort((a, b) => b.count - a.count)
-      .slice(0, 6).forEach((v) => {
+    const shownVibes = rs.vibes.filter((v) => v.count > 0)
+      .sort((a, b) => b.count - a.count);
+    vhost.classList.toggle("dense", shownVibes.length > 6);
+    shownVibes.forEach((v) => {
         const cell = document.createElement("div");
         cell.className = "wr-vibe";
         const e = document.createElement("span");

@@ -1,0 +1,215 @@
+{
+  "brand": "WAVEMAKER INFLUENCE",
+  "eventName": "WPP BEAUTY TECH LABS",
+  "topics": [
+    {
+      "id": "t1",
+      "question": "I'm arriving today with a full tank.",
+      "settings": {
+        "whatsNextThreshold": 5
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "emoji",
+          "question": "How are you actually arriving?",
+          "settings": {
+            "duration": 30
+          },
+          "options": [
+            {
+              "id": "o1",
+              "char": "🔥"
+            },
+            {
+              "id": "o2",
+              "char": "🙂"
+            },
+            {
+              "id": "o3",
+              "char": "🤔"
+            },
+            {
+              "id": "o4",
+              "char": "🤞"
+            },
+            {
+              "id": "o5",
+              "char": "😌"
+            },
+            {
+              "id": "o6",
+              "char": "🥱"
+            },
+            {
+              "id": "o7",
+              "char": "🤯"
+            },
+            {
+              "id": "o8",
+              "char": "😐"
+            },
+            {
+              "id": "o9",
+              "char": "😰"
+            },
+            {
+              "id": "o10",
+              "char": "💩"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t2",
+      "question": "The last few months have been good for this team.",
+      "settings": {
+        "whatsNextThreshold": 5
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "slider",
+          "question": "How have the last few months felt?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "brutal",
+          "rightLabel": "really good",
+          "resultLabel": "say the last few months were good"
+        }
+      ]
+    },
+    {
+      "id": "t3",
+      "question": "I'm genuinely excited about what's coming.",
+      "settings": {
+        "whatsNextThreshold": 5
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "poll",
+          "question": "What are you most looking forward to?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "The work itself"
+            },
+            {
+              "id": "o2",
+              "label": "Learning something new"
+            },
+            {
+              "id": "o3",
+              "label": "Working with new people"
+            },
+            {
+              "id": "o4",
+              "label": "Things settling down"
+            },
+            {
+              "id": "o5",
+              "label": "Honestly, not sure yet"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t4",
+      "question": "There's something I'm nervous about that we haven't talked about.",
+      "settings": {
+        "whatsNextThreshold": 5
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "wordcloud",
+          "question": "One word for what's on your mind.",
+          "settings": {
+            "duration": 120
+          }
+        },
+        {
+          "id": "i2",
+          "kind": "wordcloud",
+          "question": "Something that inspires me about my role and opportunities on L'Oréal.",
+          "settings": {
+            "duration": 90
+          }
+        },
+        {
+          "id": "i3",
+          "kind": "wordcloud",
+          "question": "The one thing I would add or change to make our agency better.",
+          "settings": {
+            "duration": 90
+          }
+        }
+      ]
+    },
+    {
+      "id": "t5",
+      "question": "We're clear on what matters most for the next 90 days.",
+      "settings": {
+        "whatsNextThreshold": 5
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "ranking",
+          "question": "What would make the biggest difference to you?",
+          "settings": {
+            "duration": 75
+          },
+          "items": [
+            {
+              "id": "o1",
+              "label": "Clearer priorities"
+            },
+            {
+              "id": "o2",
+              "label": "Fewer meetings"
+            },
+            {
+              "id": "o3",
+              "label": "More autonomy"
+            },
+            {
+              "id": "o4",
+              "label": "Better handovers"
+            },
+            {
+              "id": "o5",
+              "label": "More time to think"
+            }
+          ]
+        },
+        {
+          "id": "i2",
+          "kind": "wordcloud",
+          "question": "One thing we should stop doing.",
+          "settings": {
+            "duration": 90
+          }
+        }
+      ]
+    }
+  ],
+  "occupations": [
+    "Influencer Coordinator",
+    "Influencer Executive",
+    "Influencer Manager",
+    "Influencer Director",
+    "Influencer Group Director",
+    "Managing Partner",
+    "Strategist",
+    "Program Manager"
+  ],
+  "id": "wpp_beauty_tech_labs"
+}

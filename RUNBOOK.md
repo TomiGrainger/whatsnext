@@ -140,6 +140,15 @@ question and vice versa.
 Every question and challenge has **REMOVE** — and an **UNDO** appears for twelve
 seconds afterwards if you hit the wrong one.
 
+### The job titles on the check-in
+An event can carry its own list, so a client workshop and a public debate do
+not share a dropdown. It lives in the event file as `occupations`; without one
+the room falls back to the house list, or to `occupations.txt` on the volume.
+
+Everyone who checks in is shown on the wall — no list is cut to a top few. On a
+short screen the lobby will trim the tail rather than run off the bottom, and
+says `+N more` when it does. **STATE OF THE ROOM** shows the whole room.
+
 ### Running the same room again — a rehearsal, or a second sitting
 **RESET** on the room's row in `/setup` (it asks twice). It clears every vote,
 word, question, challenge and check-in, puts the room back in the lobby, and —

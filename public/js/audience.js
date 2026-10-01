@@ -241,7 +241,8 @@
 
   function loadOptions() {
     if (!optionsLoaded) {
-      optionsLoaded = fetch("/api/onboarding")
+      // the job list belongs to the event, so the room has to go with the ask
+      optionsLoaded = fetch("/api/onboarding?room=" + encodeURIComponent(Live.room() || ""))
         .then((r) => r.json())
         .catch(() => ({ occupations: [], vibes: [] }));
     }
@@ -373,7 +374,7 @@
     const top = Math.max(1, ...rs.occupations.map((o) => o.count));
     const host = $("#lb-occ");
     host.innerHTML = "";
-    rs.occupations.slice(0, 6).forEach((o) => {
+    rs.occupations.forEach((o) => {
       const row = document.createElement("div");
       row.className = "lb-bar";
       const fill = document.createElement("div");
