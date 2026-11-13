@@ -12,10 +12,11 @@
   let sliderActive = false;
   let rankBuilt = false;
   let lastMode = null;
+  let voteOpen = false;      // is the clock still running on what's on screen
 
   const MODE_SCREEN = {
     discussion: "s-discussion", poll: "s-poll", wordcloud: "s-wordcloud",
-    emoji: "s-emoji", slider: "s-slider", ranking: "s-ranking", results: "s-results",
+    emoji: "s-emoji", slider: "s-slider", ranking: "s-ranking",
   };
 
   // decorative "scan to join" tile
@@ -974,6 +975,7 @@
   async function submitWord() {
     const w = $("#wc-input").value.trim();
     if (!w) return;
+    if (!voteOpen) { UI.toast("Time's up"); return; }
     $("#wc-input").value = "";
     const res = await Live.send("word", { word: w });
     // A word the filter caught gets the same reply as one that landed: saying
@@ -1006,6 +1008,7 @@
   const endSlide = () => {
     if (!sliderActive) return;
     sliderActive = false;
+    if (!voteOpen) { UI.toast("Time's up"); return; }
     mySlider = +slider.value;
     Live.send("slider", { value: mySlider });
     UI.toast("Response recorded");
@@ -1023,6 +1026,7 @@
         cell.className = "emoji-cell";
         cell.innerHTML = '<div class="e">' + r.char + '</div><div class="c">' + r.count + "</div>";
         cell.addEventListener("click", (ev) => {
+          if (!voteOpen) { UI.toast("Time's up"); return; }
           Live.send("emoji", { id: r.id });
           const f = document.createElement("div");
           f.className = "float-plus"; f.textContent = "+1";
@@ -1089,6 +1093,7 @@
         item.style.transform = ""; item.classList.remove("drag"); dragEl = null;
         renumber();
         const order = $$("#rank-list .rank-item").map((r) => r.dataset.id);
+        if (!voteOpen) { UI.toast("Time's up"); return; }
         Live.send("ranking", { order });
         UI.toast("Ranking submitted");
       };
@@ -1123,9 +1128,19 @@
     if (!active || active.id !== screenId || force) showScreen(screenId);
     updateCounter(st);
 
+    // The clock, for the phone holding the answer. A vote closes when it runs
+    // out, so this is the only warning the room gets — the projector shows no
+    // countdown and never has.
+    voteOpen = Boolean(st.voteOpen);
+    const timing = st.activeInteraction !== null;
+    const chip = $("#time-chip");
+    chip.hidden = !timing || !joined || !Live.isOnline();
+    chip.classList.toggle("up", !voteOpen);
+    $("#time-chip-t").textContent = voteOpen ? UI.fmtTime(st.timeRemaining) : "TIME'S UP";
+    document.body.classList.toggle("vote-closed", timing && !voteOpen);
+
     // topic-dependent titles
     setQuestionTitle("#disc-q", st.topic, true);
-    setQuestionTitle("#res-q", st.topic, true);
 
     renderQa(st);
     paintRoom(st);
@@ -1180,12 +1195,6 @@
     if (screenId !== "s-ranking") rankBuilt = false;
     $("#rank-foot").textContent = st.responses;
 
-    // results
-    $("#res-agree").textContent = st.sentiment.agreePct;
-    $("#res-disagree").textContent = st.sentiment.disagreePct;
-    $("#res-unsure").textContent = st.sentiment.unsurePct;
-    $("#res-foot").textContent = st.responses + " RESPONSES · THANK YOU";
-
     lastMode = targetMode;
   }
 
@@ -1214,6 +1223,7 @@
         el.className = "poll-opt"; el.dataset.id = o.id;
         el.innerHTML = '<div class="fill"></div><div class="lab">' + o.label + '</div><div class="pct">0%</div>';
         el.addEventListener("click", () => {
+          if (!voteOpen) { UI.toast("Time's up"); return; }
           myPoll = o.id; Live.send("poll", { option: o.id }); markPoll(); UI.toast("Vote counted");
         });
         list.appendChild(el);

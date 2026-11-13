@@ -169,6 +169,24 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
 }
 @keyframes netpulse{0%,100%{opacity:1;}50%{opacity:.25;}}
 
+/* How long is left to answer. The crew has always had this clock; the phone
+   being asked the question never did, so an answer could stop counting with
+   nothing on screen to explain why. Sits where the connection chip sits —
+   they are never both up, because a phone that is offline has a bigger
+   problem than the clock. */
+.time-chip{
+  position:fixed;left:50%;transform:translateX(-50%);top:14px;z-index:949;
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;font-weight:700;
+  color:var(--ink);background:rgba(10,10,11,.94);border:1px solid var(--line-2);
+  border-radius:999px;padding:8px 14px;box-shadow:0 8px 30px rgba(0,0,0,.6);
+}
+.time-chip[hidden]{display:none;}
+.time-chip.up{color:var(--red);border-color:var(--red);}
+/* Time is up: what is on screen is now a result, not a question. Dimmed and
+   inert rather than removed, so the room can still read what it answered. */
+.vote-closed #poll-list,.vote-closed #emoji-grid,.vote-closed #rank-list,
+.vote-closed .word-input,.vote-closed .range-wrap{opacity:.45;pointer-events:none;}
+
 /* poll results held back until the moderator reveals */
 .poll-list.locked .poll-opt{border-style:dashed;}
 .poll-list.locked .poll-opt .pct::after{

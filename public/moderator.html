@@ -23,10 +23,9 @@
       <div class="brand" id="mod-brand"></div>
       <div class="room-code" id="mod-room">ROOM · <b>WN25</b></div>
       <nav class="nav">
-        <a class="act" href="#"><span class="ic"></span> Dashboard</a>
-        <a href="#" data-jump="interactions"><span class="ic"></span> Topics</a>
-        <a href="#" data-jump="interactions"><span class="ic"></span> Interactions</a>
-        <a href="#" data-jump="challenges"><span class="ic"></span> Challenges <span class="badge" id="nav-ch">6</span></a>
+        <a href="#" data-jump="interactions"><span class="ic"></span> On the wall</a>
+        <a href="#" data-jump="questions"><span class="ic"></span> Questions</a>
+        <a href="#" data-jump="challenges"><span class="ic"></span> Challenges <span class="badge" id="nav-ch">0</span></a>
         <a href="#" data-jump="stats-panel"><span class="ic"></span> The room</a>
         <a href="/crm" target="_blank"><span class="ic"></span> The rooms</a>
         <a href="/setup" target="_blank"><span class="ic"></span> Setup</a>
@@ -45,7 +44,6 @@
           <div class="stat-ico"><span class="ring"></span><div><div class="v" id="in-room">0</div><div class="k">IN ROOM</div></div></div>
           <div class="stat-ico"><span class="ring"></span><div><div class="v" id="time-rem">—</div><div class="k" id="time-lab">ON SCREEN</div></div></div>
           <button class="tb-btn" id="pause-btn">❚❚ PAUSE</button>
-          <button class="tb-btn danger" id="end-btn">SHOW RESULTS</button>
         </div>
       </div>
 
@@ -55,7 +53,7 @@
 
       <div class="topic-nav">
         <button class="nav-btn" id="prev-btn">← PREV</button>
-        <div class="topic-eyebrow">TOPIC <span id="topic-n">1</span> OF <span id="topic-t">3</span></div>
+        <div class="topic-eyebrow">TOPIC <span id="topic-n">—</span> OF <span id="topic-t">—</span></div>
         <button class="nav-btn" id="next-btn">NEXT TOPIC →</button>
       </div>
       <h2 class="topic-q" id="topic-q">—</h2>
@@ -70,9 +68,9 @@
           <div class="sent-top">
             <svg class="donut" id="donut" viewBox="0 0 36 36"></svg>
             <div class="sent-nums">
-              <div class="row agree"><span class="p" id="p-agree">41%</span><span class="lab">AGREE</span></div>
-              <div class="row disagree"><span class="p" id="p-disagree">37%</span><span class="lab">DISAGREE</span></div>
-              <div class="row unsure"><span class="p" id="p-unsure">22%</span><span class="lab">UNSURE</span></div>
+              <div class="row agree"><span class="p" id="p-agree">0%</span><span class="lab">AGREE</span></div>
+              <div class="row disagree"><span class="p" id="p-disagree">0%</span><span class="lab">DISAGREE</span></div>
+              <div class="row unsure"><span class="p" id="p-unsure">0%</span><span class="lab">UNSURE</span></div>
             </div>
           </div>
           <div class="spark-lab">Sentiment over time</div>
@@ -82,10 +80,10 @@
         <!-- WHAT'S NEXT -->
         <div class="panel wn">
           <div class="wn-head">🚀 What's next?</div>
-          <div class="big"><span class="num" id="wn-num">7</span><span class="den">/<span id="wn-den">10</span></span></div>
+          <div class="big"><span class="num" id="wn-num">0</span><span class="den">/<span id="wn-den">0</span></span></div>
           <div class="sub">people want to move on</div>
           <div class="track"><div id="wn-bar"></div></div>
-          <div class="hint" id="wn-hint">3 more votes to unlock</div>
+          <div class="hint" id="wn-hint">Waiting on the room</div>
         </div>
 
         <!-- AUDIENCE Q&A -->
@@ -96,7 +94,7 @@
 
         <!-- CHALLENGES -->
         <div class="panel ch" id="challenges">
-          <div class="ch-head">Challenges <span class="badge" id="ch-count">6</span> in queue</div>
+          <div class="ch-head">Challenges <span class="badge" id="ch-count">0</span> in queue</div>
           <div class="ch-list" id="ch-list"></div>
           <button class="invite-btn" id="invite-btn">INVITE FROM QUEUE</button>
         </div>
@@ -156,8 +154,6 @@
         <button class="qa rerun" id="again-btn"><span class="qi">🔁</span><span class="ql">Ask Again</span></button>
         <button class="qa" id="discussion-btn"><span class="qi">💬</span><span class="ql">Back to Discussion</span></button>
         <button class="qa" id="extend-btn"><span class="qi">＋</span><span class="ql">Extend Time</span></button>
-        <button class="qa" id="results-btn"><span class="qi">◉</span><span class="ql">Show Results</span></button>
-        <button class="qa primary" id="next-btn-2"><span class="qi">→</span><span class="ql">Next Topic</span></button>
         <button class="qa endnight" id="endnight-btn"><span class="qi">■</span><span class="ql">End the Event</span></button>
       </div>
     </div>

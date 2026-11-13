@@ -839,6 +839,11 @@ def _activate_interaction(r, index):
     items = topic.get("interactions", [])
     if not 0 <= index < len(items):
         return
+    # Launching what is already on the wall is a mis-tap, not an instruction.
+    # It used to re-hide a revealed result and put the clock back to the full
+    # duration, in front of the room, so now it does nothing at all.
+    if index == r.get("activeInteraction"):
+        return
     r["activeInteraction"] = index
     r["mode"] = items[index]["kind"]
     r["paused"] = False
@@ -1744,9 +1749,15 @@ def snapshot(code, crew=False):
             "mode": r["mode"],
             "revealed": revealed,
             "revealable": active is not None and items[active]["kind"] in HIDEABLE and not revealed,
-            # the same poll can be put back to the room after the discussion
-            "rerunnable": active is not None and items[active]["kind"] == "poll",
-            "timed": active is not None and r["mode"] != "results",
+            # The same poll can be put back to the room after the discussion —
+            # but only once the first result is out. Armed any earlier it sits
+            # beside REVEAL waiting to wipe a vote that is still being taken.
+            "rerunnable": (active is not None and items[active]["kind"] == "poll"
+                           and revealed),
+            "timed": active is not None,
+            # The clock closes the vote, so the phone has to be able to see it
+            # coming — otherwise a tap is simply ignored with nothing said.
+            "voteOpen": active is not None and r["timeRemaining"] > 0,
             "paused": r["paused"],
             "timeRemaining": r["timeRemaining"],
             "inRoom": in_room,
@@ -2097,12 +2108,18 @@ def act(code, kind, pid, data):
         irt = rt["interactions"][active] if item is not None else None
 
         def live(kind_name):
-            return item is not None and item["kind"] == kind_name and r["mode"] != "results"
+            # A vote is open while its interaction is on the wall and its clock
+            # is still running. The countdown used to decide nothing: answers
+            # kept landing at 0:00, so a tally could still move after the room
+            # had been told its time was up. A pause holds the clock rather
+            # than closing the vote — one button, one meaning.
+            return (item is not None and item["kind"] == kind_name
+                    and r["timeRemaining"] > 0)
 
         # If the crew drives the show without pressing START, the event has
         # plainly started — nobody should be left looking at the lobby because
         # a button was skipped.
-        if kind in ("launchInteraction", "nextTopic", "prevTopic", "showResults"):
+        if kind in ("launchInteraction", "nextTopic", "prevTopic"):
             r["started"] = True
 
         # Everything a person does is copied to the archive as it happens, so a
@@ -2392,9 +2409,9 @@ def act(code, kind, pid, data):
             r["mode"] = "discussion"
             r["paused"] = False
             r["timeRemaining"] = 0
-        elif kind == "showResults":
-            r["mode"] = "results"
-            r["paused"] = True
+            # nothing on a discussion is concealed, so leaving a poll's hidden
+            # state behind made the control room read "DISCUSSION · HIDDEN"
+            r["revealed"] = True
         elif kind == "nextTopic":
             if r["topicIndex"] < r["topicCount"] - 1:
                 _activate_topic(r, r["topicIndex"] + 1)
@@ -2557,7 +2574,7 @@ def ticker():
                 r = ROOMS[code]
                 # only a live interaction counts down; a topic's discussion has
                 # no timer and simply stays up until the moderator acts
-                timed = r.get("activeInteraction") is not None and r["mode"] != "results"
+                timed = r.get("activeInteraction") is not None
                 if timed and not r["paused"] and not r.get("closed") and r["timeRemaining"] > 0:
                     r["timeRemaining"] -= 1
                     mark_dirty()

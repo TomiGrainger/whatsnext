@@ -3,7 +3,7 @@
   const $ = (s) => document.querySelector(s);
 
   const MODE_VIEW = {
-    discussion: "pv-discussion", results: "pv-discussion",
+    discussion: "pv-discussion",
     poll: "pv-poll", wordcloud: "pv-wordcloud", emoji: "pv-emoji",
     slider: "pv-slider", ranking: "pv-ranking",
   };

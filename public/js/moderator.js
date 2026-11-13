@@ -5,7 +5,7 @@
 
   const MODE_LABEL = {
     discussion: "DISCUSSION", poll: "POLL", wordcloud: "WORD CLOUD",
-    emoji: "EMOJI REACTIONS", slider: "SLIDER", ranking: "RANKING", results: "SHOWING RESULTS",
+    emoji: "EMOJI REACTIONS", slider: "SLIDER", ranking: "RANKING",
   };
   const KIND_ICON = {
     poll: "📊", wordcloud: "☁️", emoji: "🙂", slider: "🎚", ranking: "↕",
@@ -14,11 +14,8 @@
   // topic flow
   $("#extend-btn").addEventListener("click", () => { Live.send("extendTime"); UI.toast("+30s added"); });
   $("#next-btn").addEventListener("click", () => Live.send("nextTopic"));
-  $("#next-btn-2").addEventListener("click", () => Live.send("nextTopic"));
   $("#prev-btn").addEventListener("click", () => Live.send("prevTopic"));
   $("#pause-btn").addEventListener("click", () => Live.send("togglePause"));
-  $("#results-btn").addEventListener("click", () => { Live.send("showResults"); UI.toast("Showing results"); });
-  $("#end-btn").addEventListener("click", () => { Live.send("showResults"); UI.toast("Showing results"); });
   $("#discussion-btn").addEventListener("click", () => { Live.send("backToDiscussion"); UI.toast("Back to discussion"); });
   $("#reveal-btn").addEventListener("click", () => { Live.send("reveal"); UI.toast("Results revealed"); });
   $("#again-btn").addEventListener("click", () => { Live.send("askAgain"); UI.toast("Same poll, round two"); });
@@ -34,6 +31,39 @@
     $("#undo-bar").hidden = true;
   });
   $("#invite-btn").addEventListener("click", () => { Live.send("inviteTop"); UI.toast("Invited to speak"); });
+
+  // Ending the night is the only button here that cannot be undone by pressing
+  // it again, so it asks first. Everything else on this page is a toggle.
+  // It lives out here with the other one-off wiring: registered inside render()
+  // it was re-added on every snapshot, and the second tap then fired one
+  // room-closing request per listener that had piled up.
+  let endArmed = false;
+  $("#endnight-btn").addEventListener("click", async () => {
+    const btn = $("#endnight-btn"), lab = btn.querySelector(".ql");
+    if (!endArmed) {
+      endArmed = true;
+      btn.classList.add("armed");
+      lab.textContent = "Tap again to end";
+      setTimeout(() => {
+        if (!endArmed) return;
+        endArmed = false;
+        btn.classList.remove("armed");
+        lab.textContent = "End the Event";
+      }, 6000);
+      return;
+    }
+    endArmed = false;
+    btn.classList.remove("armed");
+    lab.textContent = "Ending…";
+    btn.disabled = true;
+    await fetch("/api/rooms/" + encodeURIComponent(Live.room()), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ closed: true }),
+    });
+    lab.textContent = "Event Ended";
+  });
+
   // sidebar quick-jumps
   $$('.nav a[data-jump]').forEach((a) => a.addEventListener("click", (e) => {
     e.preventDefault(); document.getElementById(a.dataset.jump).scrollIntoView({ behavior: "smooth" });
@@ -80,9 +110,13 @@
 
     $$("#run-row .run-btn").forEach((b) => {
       const live = b.dataset.role === "discussion"
-        ? st.activeInteraction === null && st.mode !== "results"
-        : Number(b.dataset.index) === st.activeInteraction && st.mode !== "results";
+        ? st.activeInteraction === null
+        : Number(b.dataset.index) === st.activeInteraction;
       b.classList.toggle("live", live);
+      // Whatever is already up has nothing left to launch. Pressing it again
+      // used to re-hide a revealed result and put the clock back to the top.
+      b.disabled = live;
+      b.title = live ? "Already on the wall" : "";
     });
   }
 
@@ -229,9 +263,10 @@
       label.classList.add("takeover");
       label.classList.remove("hidden-state");
     } else {
-      label.textContent = (MODE_LABEL[st.mode] || "DISCUSSION") + (st.revealed ? "" : " · HIDDEN");
+      const concealed = st.activeInteraction !== null && !st.revealed;
+      label.textContent = (MODE_LABEL[st.mode] || "DISCUSSION") + (concealed ? " · HIDDEN" : "");
       label.classList.remove("takeover");
-      label.classList.toggle("hidden-state", !st.revealed);
+      label.classList.toggle("hidden-state", concealed);
     }
     const missing = st.exists === false;
     $("#closed-banner").hidden = !missing && !st.closed;
@@ -253,12 +288,13 @@
     $("#pause-btn").innerHTML = st.paused ? "▶ RESUME" : "❚❚ PAUSE";
     $("#pause-btn").disabled = !st.timed;
     $("#extend-btn").disabled = !st.timed;
-    $("#discussion-btn").disabled = st.activeInteraction === null && st.mode !== "results";
+    $("#discussion-btn").disabled = st.activeInteraction === null;
     // the crew always sees real figures; this button is what lets the room see them
     $("#reveal-btn").disabled = !st.revealable;
     $("#reveal-btn").classList.toggle("armed", Boolean(st.revealable));
     $("#reveal-btn").querySelector(".ql").textContent =
-      st.revealable ? "Reveal Results" : (st.revealed ? "Results Showing" : "Reveal Results");
+      (!st.revealable && st.activeInteraction !== null && st.revealed)
+        ? "Results Showing" : "Reveal Results";
     // asking again only makes sense once the room has seen the first result
     $("#again-btn").disabled = !st.rerunnable;
     $("#again-btn").querySelector(".ql").textContent =
@@ -284,43 +320,13 @@
         btn.querySelector(".ql").textContent = on ? hide : (ready ? label : why);
       });
 
-    // Ending the night is the only button here that cannot be undone by pressing
-  // it again, so it asks first. Everything else on this page is a toggle.
-  let endArmed = false;
-  $("#endnight-btn").addEventListener("click", async () => {
-    const btn = $("#endnight-btn"), lab = btn.querySelector(".ql");
-    if (!endArmed) {
-      endArmed = true;
-      btn.classList.add("armed");
-      lab.textContent = "Tap again to end";
-      setTimeout(() => {
-        if (!endArmed) return;
-        endArmed = false;
-        btn.classList.remove("armed");
-        lab.textContent = "End the Event";
-      }, 6000);
-      return;
-    }
-    endArmed = false;
-    btn.classList.remove("armed");
-    lab.textContent = "Ending…";
-    btn.disabled = true;
-    await fetch("/api/rooms/" + encodeURIComponent(Live.room()), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ closed: true }),
-    });
-    lab.textContent = "Event Ended";
-  });
-
-  // the undo offer, for as long as the server will still honour it
+    // the undo offer, for as long as the server will still honour it
     $("#undo-bar").hidden = !st.undoable;
 
     // the START bar is only there until the night begins
     $("#start-bar").hidden = Boolean(st.started) || st.exists === false;
     $("#prev-btn").disabled = st.topicIndex === 0;
     $("#next-btn").disabled = st.topicIndex >= st.topicCount - 1;
-    $("#next-btn-2").disabled = st.topicIndex >= st.topicCount - 1;
 
     $("#topic-n").textContent = st.topicIndex + 1;
     $("#topic-t").textContent = st.topicCount;

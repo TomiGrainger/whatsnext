@@ -51,7 +51,6 @@ body.s-moderator{background:#060607;min-height:100vh;}
 .stat-ico .v{font-family:var(--sans);font-weight:800;font-size:22px;line-height:1;}
 .stat-ico .k{font-family:var(--mono);font-size:14.3px;letter-spacing:.14em;color:var(--muted);}
 .tb-btn{font-family:var(--mono);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:15.3px;padding:14px 20px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--ink);}
-.tb-btn.danger{color:var(--red);border-color:rgba(255,45,70,.4);}
 .tb-btn:hover{filter:brightness(1.15);}
 
 .closed-banner{
@@ -76,6 +75,8 @@ body.s-moderator{background:#060607;min-height:100vh;}
   transition:border-color .15s;
 }
 .run-btn:hover{border-color:var(--line-2);}
+/* whatever is already up is inert — lit, not greyed, and not clickable */
+.run-btn:disabled{cursor:default;}
 .run-btn.live{border-color:var(--red);background:var(--red-dim);box-shadow:0 0 0 1px var(--red) inset;}
 .run-btn .ri{font-size:18.9px;}
 .run-btn .rl{font-weight:600;font-size:16.5px;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -163,7 +164,6 @@ body.s-moderator{background:#060607;min-height:100vh;}
 .qa .qi{font-size:16px;flex:0 0 auto;}
 .qa .ql{font-family:var(--mono);font-weight:700;letter-spacing:.08em;
   font-size:clamp(12.5px,1.5vh,14.2px);text-transform:uppercase;color:var(--ink);}
-.qa.primary{background:var(--red);} .qa.primary .ql{color:#fff;}
 
 @media(max-width:1080px){
   .mod-shell{grid-template-columns:1fr;} .side{flex-direction:row;flex-wrap:wrap;align-items:center;border-right:none;border-bottom:1px solid var(--line);}

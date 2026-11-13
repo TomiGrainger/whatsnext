@@ -244,8 +244,9 @@ def run(guest, crew, data_dir):
     _, mod_html2, _ = crew.get("/moderator?room=" + ROOM)
     check("the control room has its own end button",
           b'id="endnight-btn"' in mod_html2)
-    check("...which did not steal the topbar's id",
-          mod_html2.count(b'id="end-btn"') == 1)
+    check("...exactly once, and nothing else answers to that id",
+          mod_html2.count(b'id="endnight-btn"') == 1
+          and b'id="end-btn"' not in mod_html2)
 
     _, st_sv = guest.json("/api/state?room=%s" % ROOM)
     survey = st_sv.get("survey") or {}
@@ -723,15 +724,30 @@ def run(guest, crew, data_dir):
     after = {o["id"]: o["votes"] for o in state(guest)["poll"]["options"]}
     check("changing a poll vote moves it", after[option] == before - 1)
 
-    # results stay hidden until the crew reveals them
+    # Tapping the interaction that is already up is a mis-tap, not a relaunch.
+    # It used to re-hide a revealed result and put the clock back to the full
+    # duration — the room watching its own answer disappear.
+    live_before = state(crew)
+    crew.act("launchInteraction", index=0)
+    live_after = state(crew)
+    check("re-tapping the live interaction leaves the result showing",
+          all(o.get("votes") is not None for o in state(guest)["poll"]["options"]),
+          "the numbers went back into hiding")
+    check("...and does not restart its clock",
+          live_after["timeRemaining"] <= live_before["timeRemaining"],
+          "%ss became %ss" % (live_before["timeRemaining"], live_after["timeRemaining"]))
+
+    crew.act("launchInteraction", index=1)
+    check("the crew can launch a word cloud", state(guest)["mode"] == "wordcloud")
+
+    # results stay hidden until the crew reveals them: coming back to the poll
+    # is a real launch, and it opens closed however it ended last time
     crew.act("launchInteraction", index=0)
     hidden = state(guest)
     check("a fresh poll hides its numbers from the room",
           all(o.get("votes") in (None, 0) for o in hidden["poll"]["options"]),
           "guest could see %s" % hidden["poll"]["options"])
-
     crew.act("launchInteraction", index=1)
-    check("the crew can launch a word cloud", state(guest)["mode"] == "wordcloud")
 
     # ---- word cloud moderation ----
     guest.act("word", pid="p_clean", word="hopeful")
@@ -829,7 +845,7 @@ def run(guest, crew, data_dir):
 
     # ---- crew-only actions are all closed to guests ----
     for kind in ("launchInteraction", "nextTopic", "prevTopic", "reveal", "askAgain",
-                 "extend", "pause", "showResults", "backToDiscussion", "removeQuestion",
+                 "extend", "pause", "backToDiscussion", "removeQuestion",
                  "removeChallenge", "featureQuestion", "featureProfile", "inviteTop",
                  "showScreen", "startEvent", "removeWord", "reset"):
         status, _ = guest.act(kind, index=0)
