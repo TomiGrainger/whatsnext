@@ -320,6 +320,33 @@ body.reveal-flash .pv-slider .big{animation:revealglow .9s ease;}
 .offer-veil.no-hero .ov-qr{justify-content:center;}
 @media(max-width:1100px){ .ov-grid{grid-template-columns:1fr;gap:3vh;} .ov-hero{max-height:34vh;} }
 
+/* ---- calling bullshit ---- */
+/* Above every other veil, holding loop included: for two seconds this is the
+   only thing in the room. One hard cut in and a quick fade out — never a
+   strobe, which at this size is a seizure risk rather than a dramatic effect. */
+.bs-veil{
+  position:fixed;inset:0;z-index:980;background:var(--red);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vh;
+  animation:bs-in .09s steps(1,end);
+}
+.bs-veil[hidden]{display:none;}
+@keyframes bs-in{from{opacity:0;}to{opacity:1;}}
+.bs-word{
+  font-family:var(--display);text-transform:uppercase;color:#fff;
+  font-size:clamp(90px,19vw,340px);line-height:.86;letter-spacing:-.01em;
+}
+.bs-by{
+  font-family:var(--mono);font-weight:700;color:rgba(255,255,255,.92);
+  letter-spacing:.3em;font-size:clamp(16px,2.2vw,40px);text-transform:uppercase;
+}
+.sound-badge{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:995;
+  font-family:var(--mono);font-size:13px;letter-spacing:.2em;color:var(--ink);
+  background:rgba(10,10,11,.92);border:1px solid var(--line-2);
+  border-radius:999px;padding:9px 16px;
+}
+.sound-badge[hidden]{display:none;}
+
 /* ---- holding screen ---- */
 /* Above every other veil: when this is up, it is the only thing on the wall. */
 .hold-veil{position:fixed;inset:0;z-index:950;background:#000;}

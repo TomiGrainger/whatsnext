@@ -250,6 +250,18 @@
   <!-- reactions from the floor drift up over everything -->
   <div class="burst-layer" id="burst-layer" aria-hidden="true"></div>
 
+  <!-- Someone has called bullshit. Takes everything, including the holding
+       loop, for a couple of seconds, with the name of whoever called it. -->
+  <div class="bs-veil" id="bs-veil" hidden>
+    <div class="bs-word">BULLSHIT</div>
+    <div class="bs-by">CALLED BY <span id="bs-name"></span></div>
+  </div>
+
+  <!-- The siren cannot play until this page has been clicked once; browsers
+       block audio on a page nobody has touched, and this one is opened and
+       walked away from. -->
+  <div class="sound-badge" id="sound-badge" hidden>CLICK ANYWHERE TO ENABLE SOUND</div>
+
   <div class="stage"></div>
 </div>
 

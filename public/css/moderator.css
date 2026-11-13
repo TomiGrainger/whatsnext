@@ -51,6 +51,11 @@ body.s-moderator{background:#060607;min-height:100vh;}
 .stat-ico .v{font-family:var(--sans);font-weight:800;font-size:22px;line-height:1;}
 .stat-ico .k{font-family:var(--mono);font-size:14.3px;letter-spacing:.14em;color:var(--muted);}
 .tb-btn{font-family:var(--mono);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:15.3px;padding:14px 20px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--ink);}
+/* The one you press when something has to come off the screen this second,
+   so it is lit while there is something to clear and plainly dead when the
+   wall is already just the topic. */
+.tb-btn.clear{color:var(--red);border-color:rgba(255,45,70,.45);}
+.tb-btn.clear:disabled{color:var(--dim);border-color:var(--line);}
 .tb-btn:hover{filter:brightness(1.15);}
 
 .closed-banner{
@@ -161,6 +166,13 @@ body.s-moderator{background:#060607;min-height:100vh;}
   padding:clamp(7px,1.05vh,11px) 12px;display:flex;align-items:center;
   justify-content:center;gap:9px;transition:transform .08s,filter .15s;min-width:0;}
 .qa:hover{filter:brightness(1.2);} .qa:active{transform:scale(.97);}
+.qa.bs.armed{background:var(--red-dim);border-color:var(--red);}
+.bs-note{color:var(--muted);font-size:13px;}
+.bs-list{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+.bs-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  border-bottom:1px solid var(--line);padding-bottom:6px;}
+.bs-row .who{font-weight:600;font-size:14.5px;}
+.bs-row .when{font-family:var(--mono);font-size:12.5px;letter-spacing:.1em;color:var(--muted);}
 .qa .qi{font-size:16px;flex:0 0 auto;}
 .qa .ql{font-family:var(--mono);font-weight:700;letter-spacing:.08em;
   font-size:clamp(12.5px,1.5vh,14.2px);text-transform:uppercase;color:var(--ink);}

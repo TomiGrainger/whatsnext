@@ -662,5 +662,60 @@
   });
 
   Live.onState(render);
+  // ---- calling bullshit -------------------------------------------------
+  // The siren is generated rather than a file: no asset to ship, and the
+  // length is whatever the server says it is. It still needs the page to have
+  // been clicked once, because browsers refuse audio on a page nobody has
+  // touched and this one is opened and left alone all night.
+  let actx = null;
+  function armAudio() {
+    if (actx) return;
+    try {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === "suspended") actx.resume();
+      $("#sound-badge").hidden = true;
+    } catch (e) { actx = null; }
+  }
+  document.addEventListener("click", armAudio);
+  document.addEventListener("keydown", armAudio);
+  // say so, once, if nothing has armed it by the time the room is filling
+  setTimeout(() => { if (!actx) $("#sound-badge").hidden = false; }, 4000);
+
+  function siren(seconds) {
+    if (!actx || actx.state !== "running") return;
+    const t0 = actx.currentTime;
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = "sawtooth";
+    // two tones alternating, the way a klaxon does
+    for (let i = 0; i * 0.22 < seconds; i++) {
+      osc.frequency.setValueAtTime(i % 2 ? 540 : 780, t0 + i * 0.22);
+    }
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.3, t0 + 0.04);
+    gain.gain.setValueAtTime(0.3, t0 + Math.max(0.1, seconds - 0.18));
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + seconds);
+    osc.connect(gain).connect(actx.destination);
+    osc.start(t0);
+    osc.stop(t0 + seconds + 0.05);
+  }
+
+  let bsTimer = null;
+  Live.onBlip((msg) => {
+    // the crew clearing the wall takes a name down mid-siren too
+    if (msg.t === "bullshitClear") {
+      clearTimeout(bsTimer);
+      $("#bs-veil").hidden = true;
+      return;
+    }
+    if (msg.t !== "bullshit") return;
+    const hold = Number(msg.hold) > 0 ? Number(msg.hold) : 2;
+    $("#bs-name").textContent = msg.name || "SOMEONE";
+    $("#bs-veil").hidden = false;
+    siren(hold);
+    clearTimeout(bsTimer);
+    bsTimer = setTimeout(() => { $("#bs-veil").hidden = true; }, hold * 1000);
+  });
+
   Live.connect("projector");
 })();

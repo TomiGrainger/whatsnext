@@ -59,7 +59,8 @@
     <p class="ci-privacy">
       Your answers tonight are kept as anonymous room data — what people do and
       how they voted, never who. Your name stays on this phone unless you ask us
-      for the debrief, and is never attached to anything you answer.
+      for the debrief — the one exception is the bullshit button, which puts
+      your name on the big screen when you press it.
       <a href="/privacy" target="_blank" rel="noopener">How we handle your details</a>.
     </p>
     <button class="btn" id="ci-done" disabled>I'M IN →</button>
@@ -109,6 +110,13 @@
       <button class="react" data-choice="unsure"><div class="emo">😐</div><div class="lab">UNSURE</div></button>
       <button class="react fight" id="fight-btn"><div class="emo">⚡</div><div class="lab">FIGHT</div></button>
     </div>
+    <!-- One tap takes the big screen, with their name under it. The crew can
+         switch it off from the control room if it is being ridden. -->
+    <button class="bs-bar" id="bs-btn" hidden>
+      <span class="bs-big">🚨 CALL BULLSHIT</span>
+      <span class="bs-sub">Goes on the big screen with your name</span>
+    </button>
+
     <!-- shown until they've made a profile, then it gets out of the way -->
     <button class="profile-cta" id="profile-cta">
       <span class="pc-face" id="pc-face"><span id="pc-initials">👋</span></span>

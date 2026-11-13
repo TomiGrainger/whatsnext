@@ -16,6 +16,17 @@
   $("#next-btn").addEventListener("click", () => Live.send("nextTopic"));
   $("#prev-btn").addEventListener("click", () => Live.send("prevTopic"));
   $("#pause-btn").addEventListener("click", () => Live.send("togglePause"));
+  // Everything off the wall at once. Also on Escape, because the moment you
+  // need this you are talking to a room, not looking for a button.
+  function clearWall() {
+    if ($("#clear-btn").disabled) return;
+    Live.send("clearWall");
+    UI.toast("Wall cleared");
+  }
+  $("#clear-btn").addEventListener("click", clearWall);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") clearWall();
+  });
   $("#discussion-btn").addEventListener("click", () => { Live.send("backToDiscussion"); UI.toast("Back to discussion"); });
   $("#reveal-btn").addEventListener("click", () => { Live.send("reveal"); UI.toast("Results revealed"); });
   $("#again-btn").addEventListener("click", () => { Live.send("askAgain"); UI.toast("Same poll, round two"); });
@@ -31,6 +42,39 @@
     $("#undo-bar").hidden = true;
   });
   $("#invite-btn").addEventListener("click", () => { Live.send("inviteTop"); UI.toast("Invited to speak"); });
+
+  // The bullshit button, and who has been leaning on it. The calls arrive as
+  // one-off blips rather than room state, so the list is what this page has
+  // seen since it was opened — enough to spot one person riding it.
+  $("#bs-toggle").addEventListener("click", async () => {
+    const res = await Live.send("toggleBullshit");
+    if (res) UI.toast(res.bullshitOn ? "Bullshit button on" : "Bullshit button off");
+  });
+  const bsCalls = [];
+  Live.onBlip((msg) => {
+    if (msg.t !== "bullshit") return;
+    bsCalls.unshift({ who: msg.name || "SOMEONE", at: Math.floor(Date.now() / 1000) });
+    bsCalls.splice(12);
+    paintBullshit();
+  });
+  function paintBullshit() {
+    $("#bs-count").textContent = bsCalls.length;
+    $("#bs-note").hidden = bsCalls.length > 0;
+    const host = $("#bs-list");
+    host.innerHTML = "";
+    bsCalls.forEach((c) => {
+      const row = document.createElement("div");
+      row.className = "bs-row";
+      const who = document.createElement("span");
+      who.className = "who";
+      who.textContent = c.who;          // audience text never becomes markup
+      const when = document.createElement("span");
+      when.className = "when";
+      when.textContent = UI.ago(c.at);
+      row.append(who, when);
+      host.appendChild(row);
+    });
+  }
 
   // Ending the night is the only button here that cannot be undone by pressing
   // it again, so it asks first. Everything else on this page is a toggle.
@@ -319,6 +363,13 @@
         btn.classList.toggle("armed", on);
         btn.querySelector(".ql").textContent = on ? hide : (ready ? label : why);
       });
+
+    $("#clear-btn").disabled = !st.wallCovered;
+
+    const bsOn = st.bullshitOn !== false;
+    $("#bs-toggle").classList.toggle("armed", bsOn);
+    $("#bs-toggle").querySelector(".ql").textContent =
+      bsOn ? "Turn Bullshit Off" : "Turn Bullshit On";
 
     // the undo offer, for as long as the server will still honour it
     $("#undo-bar").hidden = !st.undoable;

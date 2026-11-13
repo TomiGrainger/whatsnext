@@ -971,6 +971,15 @@
     UI.toast("Challenge submitted");
   });
 
+  // ---- calling bullshit ----
+  // One tap takes the big screen for a couple of seconds with their name on
+  // it, so the reply says whether it actually went: a second caller during the
+  // cooldown should not be told it landed when the wall never moved.
+  $("#bs-btn").addEventListener("click", async () => {
+    const res = await Live.send("bullshit");
+    UI.toast(res && res.called ? "Called." : "Just went off — give it a second");
+  });
+
   // ---- word cloud submit ----
   async function submitWord() {
     const w = $("#wc-input").value.trim();
@@ -1141,6 +1150,9 @@
 
     // topic-dependent titles
     setQuestionTitle("#disc-q", st.topic, true);
+
+    // the crew can take the button away mid-sentence
+    $("#bs-btn").hidden = !st.bullshitOn || st.closed;
 
     renderQa(st);
     paintRoom(st);

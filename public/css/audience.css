@@ -169,6 +169,19 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
 }
 @keyframes netpulse{0%,100%{opacity:1;}50%{opacity:.25;}}
 
+/* Calling bullshit. Full width and loud on purpose — it is not a reaction
+   tucked in a row of four, it is an interruption, and it should look like one. */
+.bs-bar{
+  width:100%;display:flex;flex-direction:column;align-items:center;gap:2px;
+  margin-top:10px;padding:12px 14px;border-radius:16px;
+  background:var(--red);border:1px solid var(--red-2);
+  box-shadow:0 10px 30px rgba(255,45,70,.3);
+}
+.bs-bar[hidden]{display:none;}
+.bs-bar:active{transform:scale(.98);}
+.bs-big{font-family:var(--display);font-size:22px;letter-spacing:.04em;color:#fff;text-transform:uppercase;}
+.bs-sub{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:rgba(255,255,255,.82);text-transform:uppercase;}
+
 /* How long is left to answer. The crew has always had this clock; the phone
    being asked the question never did, so an answer could stop counting with
    nothing on screen to explain why. Sits where the connection chip sits —

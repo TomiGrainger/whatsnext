@@ -44,6 +44,7 @@
           <div class="stat-ico"><span class="ring"></span><div><div class="v" id="in-room">0</div><div class="k">IN ROOM</div></div></div>
           <div class="stat-ico"><span class="ring"></span><div><div class="v" id="time-rem">—</div><div class="k" id="time-lab">ON SCREEN</div></div></div>
           <button class="tb-btn" id="pause-btn">❚❚ PAUSE</button>
+          <button class="tb-btn clear" id="clear-btn" title="Take everything off the big screen (Esc)">✕ CLEAR THE WALL</button>
         </div>
       </div>
 
@@ -113,6 +114,13 @@
           </div>
         </div>
 
+        <!-- who has been calling bullshit, so one person riding it is obvious -->
+        <div class="panel bspanel" id="bs-panel">
+          <div class="ch-head">Bullshit <span class="badge" id="bs-count">0</span> called tonight</div>
+          <div class="bs-note" id="bs-note">Nobody has called it yet.</div>
+          <div class="bs-list" id="bs-list"></div>
+        </div>
+
         <!-- only while a word cloud is live: what is actually on the wall -->
         <div class="panel wcmod" id="wc-panel" hidden>
           <div class="ch-head">On the wall <span class="badge" id="wc-count">0</span> words</div>
@@ -154,6 +162,7 @@
         <button class="qa rerun" id="again-btn"><span class="qi">🔁</span><span class="ql">Ask Again</span></button>
         <button class="qa" id="discussion-btn"><span class="qi">💬</span><span class="ql">Back to Discussion</span></button>
         <button class="qa" id="extend-btn"><span class="qi">＋</span><span class="ql">Extend Time</span></button>
+        <button class="qa bs" id="bs-toggle"><span class="qi">🚨</span><span class="ql">Bullshit Button</span></button>
         <button class="qa endnight" id="endnight-btn"><span class="qi">■</span><span class="ql">End the Event</span></button>
       </div>
     </div>

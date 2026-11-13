@@ -32,6 +32,7 @@ window.Live = (function () {
   const QUIET_MS = 20000;
   const statusListeners = [];
   const burstListeners = [];
+  const blipListeners = [];
   let online = false;
   let lastMessage = 0;
   let watchdog = null;
@@ -55,6 +56,13 @@ window.Live = (function () {
         // most messages are the room snapshot; tagged ones are one-off blips
         if (msg && msg.t === "burst") {
           burstListeners.forEach((fn) => { try { fn(msg.emoji); } catch (e) { console.error(e); } });
+          return;
+        }
+        // any other tagged message is a blip too. It must never fall through
+        // to the state listeners — a snapshot is what every screen renders
+        // from, and half a message would blank the wall.
+        if (msg && msg.t) {
+          blipListeners.forEach((fn) => { try { fn(msg); } catch (e) { console.error(e); } });
           return;
         }
         state = msg;
@@ -83,6 +91,7 @@ window.Live = (function () {
   function connect(r) { role = r || "audience"; open(); startWatchdog(); }
   function onStatus(fn) { statusListeners.push(fn); fn(online); }
   function onBurst(fn) { burstListeners.push(fn); }
+  function onBlip(fn) { blipListeners.push(fn); }
   function isOnline() { return online; }
 
   // Reactions fire while a finger is held down, so they skip the retry queue —
@@ -134,7 +143,7 @@ window.Live = (function () {
   function get() { return state; }
   function room() { return roomCode; }
 
-  return { connect, send, burst, onState, onStatus, onBurst, isOnline, get, pid, setRoom, room,
+  return { connect, send, burst, onState, onStatus, onBurst, onBlip, isOnline, get, pid, setRoom, room,
            roomWasGiven: () => roomWasGiven };
 })();
 

@@ -888,6 +888,8 @@ def new_room(code, event_id=DEFAULT_EVENT_ID, seed=False):
         "featuredProfile": None,
         # connection requests between audience members
         "connections": [],
+        # the bullshit button, on until the crew decides otherwise
+        "bullshitOn": True,
         "simParticipants": config.get("seedSimParticipants", 0) if seed else 0,
     }
     _activate_topic(room, 0)
@@ -1220,6 +1222,7 @@ def reset_room(room):
     room["profiles"] = {}
     room["featuredProfile"] = None
     room["connections"] = []
+    room["bullshitOn"] = True
     room["simParticipants"] = 0
     # a reset is "back to before the doors opened", so the lobby comes back too
     room["started"] = False
@@ -1366,10 +1369,28 @@ def burst_allowed(code):
         return True
 
 
-def broadcast_burst(code, emoji):
-    """A reaction is a one-off blip, not room state: it goes out as its own tiny
-    message rather than re-sending the whole snapshot to everyone."""
-    data = json.dumps({"t": "burst", "emoji": emoji})
+# Calling bullshit. One tap takes the whole wall for a couple of seconds, so
+# unlike a reaction it cannot stack: the room gets one siren at a time, and the
+# crew can switch the button off for the rest of the night if it is being
+# ridden. Deliberately not a threshold — one person calling it is the point.
+BULLSHIT_HOLD = 2.0       # how long the wall is taken
+BULLSHIT_COOLDOWN = 6.0   # and how long before it can be taken again
+_bullshit_last = {}       # code -> when it last fired
+
+
+def bullshit_allowed(code):
+    now = time.time()
+    with BURST_LOCK:
+        if now - _bullshit_last.get(code, 0) < BULLSHIT_COOLDOWN:
+            return False
+        _bullshit_last[code] = now
+        return True
+
+
+def broadcast_blip(code, payload):
+    """A one-off event, not room state: it goes out as its own tiny message
+    rather than re-sending the whole snapshot to everyone."""
+    data = json.dumps(payload)
     with SUB_LOCK:
         subs = [s for s in SUBSCRIBERS.values() if s["code"] == code]
     for s in subs:
@@ -1377,6 +1398,10 @@ def broadcast_burst(code, emoji):
             s["q"].put_nowait(data)
         except queue.Full:
             pass
+
+
+def broadcast_burst(code, emoji):
+    broadcast_blip(code, {"t": "burst", "emoji": emoji})
 
 
 def broadcast(code):
@@ -1725,6 +1750,10 @@ def snapshot(code, crew=False):
             "promo": room_offer(r),
             # whichever takeover is up, or nothing. One at a time, always.
             "screen": r.get("screen"),
+            "bullshitOn": r.get("bullshitOn", True),
+            # is anything covering the topic right now
+            "wallCovered": bool(r.get("screen") or r.get("featuredQuestion")
+                                or r.get("featuredChallenge") or r.get("featuredProfile")),
             "undoable": bool(r.get("_undo")
                              and time.time() - r["_undo"]["at"] <= UNDO_WINDOW
                              and crew),
@@ -2077,7 +2106,8 @@ AFTER_CLOSE = ("survey",)
 
 AUDIENCE_ACTIONS = ("join", "survey", "sentiment", "whatsnext", "challenge", "poll", "word",
                     "emoji", "slider", "ranking", "ask", "upvote", "burst", "profile",
-                    "connect", "connectRespond", "interested", "forgetMe")
+                    "connect", "connectRespond", "interested", "forgetMe",
+                    "bullshit")
 
 
 def _connection(room, a, b):
@@ -2478,6 +2508,12 @@ def act(code, kind, pid, data):
             r["started"] = True
             r["screen"] = "holding"
 
+        elif kind == "toggleBullshit":
+            # one tap takes the wall, so the crew needs to be able to take the
+            # button away mid-sentence when somebody is riding it
+            r["bullshitOn"] = not r.get("bullshitOn", True)
+            result = {"bullshitOn": r["bullshitOn"]}
+
         elif kind == "removeWord":
             # pulls it off the projector and stops it coming straight back
             word = (data.get("word") or "").strip().lower()[:20]
@@ -2488,6 +2524,21 @@ def act(code, kind, pid, data):
                         banned = wrt.setdefault("banned", [])
                         if word not in banned:
                             banned.append(word)
+
+        elif kind == "clearWall":
+            # Everything that can cover the topic, off in one press. Each of
+            # these is its own toggle, which is fine when you are choosing what
+            # to put up and useless when something needs to come down NOW and
+            # the room is watching you hunt for which button put it there.
+            # Deliberately leaves the topic and the live interaction alone:
+            # this clears what is over the wall, it does not move the show on.
+            r["screen"] = None
+            r["featuredQuestion"] = None
+            r["featuredChallenge"] = None
+            r["featuredProfile"] = None
+            # a name mid-siren comes down with everything else rather than
+            # sitting there for the rest of its two seconds
+            broadcast_blip(r["code"], {"t": "bullshitClear"})
 
         elif kind == "showScreen":
             # One takeover at a time, because there is one projector. Putting a
@@ -3078,6 +3129,27 @@ class Handler(BaseHTTPRequestHandler):
         room = get_room(code)
         if room is None:
             return self._send(404, json.dumps({"ok": False, "error": "That room isn't open."}),
+                              "application/json", {"Cache-Control": "no-store"})
+
+        if kind == "bullshit":
+            # One tap takes the whole wall, with the caller's name under it, so
+            # this is a blip like a reaction rather than room state. It is still
+            # archived: who called what, and when, is the best line in a debrief.
+            caller = re_pid(data.get("pid"))
+            with LOCK:
+                on = room.get("bullshitOn", True) and not room.get("closed")
+                who = (room.get("profiles", {}).get(caller, {}).get("name") or "").strip()
+                index = room["topicIndex"]
+                question = room["topics"][index].get("question", "")
+                session = archive_session(room)
+            called = on and bullshit_allowed(sanitize_code(code))
+            if called:
+                crm.record(session, caller, "bullshit", topic_index=index,
+                           topic_question=question, value=who)
+                broadcast_blip(sanitize_code(code),
+                               {"t": "bullshit", "name": who or "SOMEONE",
+                                "hold": BULLSHIT_HOLD})
+            return self._send(200, json.dumps({"ok": True, "called": called}),
                               "application/json", {"Cache-Control": "no-store"})
 
         if kind == "burst":
