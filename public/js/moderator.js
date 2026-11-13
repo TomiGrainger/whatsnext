@@ -465,6 +465,16 @@
     $("#topic-n").textContent = st.topicIndex + 1;
     $("#topic-t").textContent = st.topicCount;
     $("#topic-q").textContent = st.topic;
+
+    // what the NEXT TOPIC button is about to put in front of the room
+    const order = st.runningOrder || [];
+    const upNext = order[st.topicIndex + 1];
+    const nextUp = $("#next-up");
+    nextUp.hidden = !order.length;
+    nextUp.classList.toggle("last", !upNext);
+    $("#nu-k").textContent = upNext ? "COMING UP" : "LAST TOPIC";
+    $("#nu-q").textContent = upNext || "Nothing after this one — then the close.";
+
     renderRunRow(st);
 
     $("#p-agree").textContent = st.sentiment.agreePct + "%";

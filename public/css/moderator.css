@@ -92,6 +92,15 @@ body.s-moderator{background:#060607;min-height:100vh;}
   line-height:1.15;letter-spacing:-.02em;color:#fff;margin:0 0 calc(var(--v)*.8);}
 
 /* the topic's own interactions, mirroring how it was set up */
+.next-up{display:flex;align-items:baseline;gap:12px;margin:-4px 0 18px;
+  padding-left:2px;min-width:0;}
+.next-up[hidden]{display:none;}
+.nu-k{font-family:var(--mono);font-weight:700;font-size:12.5px;letter-spacing:.22em;
+  color:var(--red);flex:0 0 auto;}
+.nu-q{font-size:15px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;}
+.next-up.last .nu-k{color:var(--muted);}
+
 .run-row{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 calc(var(--v)*.7);flex:0 0 auto;}
 .run-btn{
   display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
