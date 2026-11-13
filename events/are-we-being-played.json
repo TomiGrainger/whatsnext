@@ -6,7 +6,8 @@
       "id": "t1",
       "question": "We are being played.",
       "settings": {
-        "whatsNextThreshold": 15
+        "whatsNextThreshold": 15,
+        "whatsNextShare": 30
       },
       "interactions": [
         {
@@ -68,7 +69,8 @@
       "id": "t2",
       "question": "The world has always been corrupt. We've only recently woken up.",
       "settings": {
-        "whatsNextThreshold": 15
+        "whatsNextThreshold": 15,
+        "whatsNextShare": 30
       },
       "interactions": [
         {
@@ -114,7 +116,8 @@
       "id": "t3",
       "question": "We are living in a simulation.",
       "settings": {
-        "whatsNextThreshold": 15
+        "whatsNextThreshold": 15,
+        "whatsNextShare": 30
       },
       "interactions": [
         {
@@ -194,7 +197,8 @@
       "id": "t4",
       "question": "Democracy gives us the illusion of choice, not genuine power.",
       "settings": {
-        "whatsNextThreshold": 15
+        "whatsNextThreshold": 15,
+        "whatsNextShare": 30
       },
       "interactions": [
         {
@@ -270,7 +274,8 @@
       "id": "t5",
       "question": "Privacy is already dead.",
       "settings": {
-        "whatsNextThreshold": 15
+        "whatsNextThreshold": 15,
+        "whatsNextShare": 30
       },
       "interactions": [
         {
@@ -320,7 +325,8 @@
       "id": "t6",
       "question": "We can no longer make independent choices when algorithms can predict our behaviour.",
       "settings": {
-        "whatsNextThreshold": 15
+        "whatsNextThreshold": 15,
+        "whatsNextShare": 30
       },
       "interactions": [
         {
@@ -366,7 +372,8 @@
       "id": "t7",
       "question": "We are so distracted by entertainment that we've stopped paying attention to the world.",
       "settings": {
-        "whatsNextThreshold": 15
+        "whatsNextThreshold": 15,
+        "whatsNextShare": 30
       },
       "interactions": [
         {
@@ -450,7 +457,8 @@
       "id": "t8",
       "question": "We are losing the ability to think for ourselves.",
       "settings": {
-        "whatsNextThreshold": 15
+        "whatsNextThreshold": 15,
+        "whatsNextShare": 30
       },
       "interactions": [
         {
@@ -508,7 +516,8 @@
       "id": "t9",
       "question": "Most people would ignore injustice if speaking up threatened their own comfort.",
       "settings": {
-        "whatsNextThreshold": 15
+        "whatsNextThreshold": 15,
+        "whatsNextShare": 30
       },
       "interactions": [
         {
@@ -584,7 +593,8 @@
       "id": "t10",
       "question": "The truth is more dangerous than the lies we're told.",
       "settings": {
-        "whatsNextThreshold": 15
+        "whatsNextThreshold": 15,
+        "whatsNextShare": 30
       },
       "interactions": [
         {

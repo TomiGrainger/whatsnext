@@ -816,6 +816,10 @@ def _init_topic_runtime(topic, seed):
         "whatsNext": {
             "votes": seed_data.get("whatsNextVotes", 0),
             "threshold": topic.get("settings", {}).get("whatsNextThreshold", 10),
+            # a percentage of whoever is actually here, which is the only way
+            # one event file works for a room of thirty and a room of three
+            # hundred without being told the size a fortnight in advance
+            "share": topic.get("settings", {}).get("whatsNextShare", 0),
         },
         "responses": seed_data.get("responses", 0),
         "_votes": {"sentiment": {}, "next": []},
@@ -1074,9 +1078,15 @@ def validate_event(payload):
         topics.append({
             "id": "t%d" % (i + 1),
             "question": _text(raw.get("question"), "%s question" % label, 200),
-            "settings": {"whatsNextThreshold": _int(
-                (raw.get("settings") or {}).get("whatsNextThreshold"),
-                "%s what's-next threshold" % label, 1, 1000, 10)},
+            "settings": {
+                "whatsNextThreshold": _int(
+                    (raw.get("settings") or {}).get("whatsNextThreshold"),
+                    "%s what's-next threshold" % label, 1, 1000, 10),
+                # 0 means "use the number above"; anything else wins
+                "whatsNextShare": _int(
+                    (raw.get("settings") or {}).get("whatsNextShare"),
+                    "%s what's-next share" % label, 0, 100, 0),
+            },
             "interactions": [_validate_interaction(item, i + 1, n) for n, item in enumerate(raw_items)],
         })
 
@@ -1423,7 +1433,7 @@ def broadcast(code):
             pass
 
 
-def _discussion_payload(rt):
+def _discussion_payload(rt, in_room=0):
     """The current topic's discussion tallies. Always present — every topic has a
     discussion, and it is what the room falls back to between interactions."""
     s = rt["sentiment"]
@@ -1435,10 +1445,17 @@ def _discussion_payload(rt):
         "unsurePct": round(100 * s["unsure"] / total),
     }
     wn = rt["whatsNext"]
+    # A share is measured against the room as it is right now, so it moves as
+    # people arrive. Deliberately not latched: "a third of the room wants to
+    # move on" is a question about the room in front of you, and twenty people
+    # walking in late have not answered it.
+    share = wn.get("share") or 0
+    threshold = (max(WN_FLOOR, int(round(share * in_room / 100.0)))
+                 if share else wn["threshold"])
     whats_next = {
-        "votes": wn["votes"], "threshold": wn["threshold"],
-        "remaining": max(0, wn["threshold"] - wn["votes"]),
-        "unlocked": wn["votes"] >= wn["threshold"],
+        "votes": wn["votes"], "threshold": threshold,
+        "remaining": max(0, threshold - wn["votes"]),
+        "unlocked": wn["votes"] >= threshold,
     }
     return sentiment, rt["sentimentHistory"], whats_next, rt["responses"]
 
@@ -1722,7 +1739,7 @@ def snapshot(code, crew=False):
         items = topic.get("interactions", [])
         active = r.get("activeInteraction")
 
-        sentiment, sentiment_history, whats_next, disc_responses = _discussion_payload(rt)
+        sentiment, sentiment_history, whats_next, disc_responses = _discussion_payload(rt, in_room)
 
         # Only the live interaction carries content; the other screens are sent
         # as empty shells so each surface can render whichever one is showing
@@ -2088,6 +2105,10 @@ def _hold_undo(room, what, item):
 
 # how many words one phone may add to a single cloud
 MAX_WORDS_PER_PHONE = 3
+# A share of the room never asks fewer than this. Thirty per cent of the four
+# people who have checked in while the doors are still open is one person, and
+# "the room wants to move on" should never mean one person.
+WN_FLOOR = 3
 
 # The closing survey. Defined here so the phone, the archive and the report all
 # use the same words — a question stored per-response is what makes the answers

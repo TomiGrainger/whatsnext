@@ -33,7 +33,7 @@
   // it is on screen. The discussion itself needs no configuring beyond the
   // question — it is always there and never counts down.
   function addTopic() {
-    topics.push({ question: "", threshold: 10, interactions: [] });
+    topics.push({ question: "", threshold: 10, share: 0, interactions: [] });
     renderTopics();
   }
 
@@ -71,6 +71,10 @@
       card.appendChild(field(t.question, "The question to debate", (v) => (t.question = v)));
       card.appendChild(subLab("Votes to unlock “what’s next”"));
       card.appendChild(field(t.threshold, "10", (v) => (t.threshold = v), "number"));
+      // A fixed number means guessing the attendance when you write the event.
+      // A share works it out against whoever turns up, and never drops below 3.
+      card.appendChild(subLab("…or a % of the room, which beats guessing (0 = use the number)"));
+      card.appendChild(field(t.share, "0", (v) => (t.share = v), "number"));
 
       // ---- interactions nested under this topic ----
       card.appendChild(subLab("During this topic you can launch"));
@@ -328,6 +332,7 @@
     return {
       question: t.question || "",
       threshold: (t.settings || {}).whatsNextThreshold || 10,
+      share: (t.settings || {}).whatsNextShare || 0,
       interactions: (t.interactions || []).map((it) => {
         const m = {
           kind: it.kind,
@@ -356,7 +361,7 @@
       donate: promoPayload("donate"),
       topics: topics.map((t) => ({
         question: t.question,
-        settings: { whatsNextThreshold: t.threshold },
+        settings: { whatsNextThreshold: t.threshold, whatsNextShare: t.share },
         interactions: t.interactions.map((it) => {
           const out = {
             kind: it.kind,
