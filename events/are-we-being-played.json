@@ -1,0 +1,638 @@
+{
+  "brand": "THE UPGRADE",
+  "eventName": "ARE WE BEING PLAYED?",
+  "topics": [
+    {
+      "id": "t1",
+      "question": "We are being played.",
+      "settings": {
+        "whatsNextThreshold": 15
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "wordcloud",
+          "question": "Played by whom? One word.",
+          "settings": {
+            "duration": 60
+          }
+        },
+        {
+          "id": "i2",
+          "kind": "poll",
+          "question": "Who's actually holding the strings?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "Governments"
+            },
+            {
+              "id": "o2",
+              "label": "Tech companies"
+            },
+            {
+              "id": "o3",
+              "label": "The press"
+            },
+            {
+              "id": "o4",
+              "label": "Big money"
+            },
+            {
+              "id": "o5",
+              "label": "Nobody \u2014 it's just chaos"
+            },
+            {
+              "id": "o6",
+              "label": "We are, on ourselves"
+            }
+          ]
+        },
+        {
+          "id": "i3",
+          "kind": "slider",
+          "question": "How played do you feel, day to day?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "I'm fine, thanks",
+          "rightLabel": "completely manipulated",
+          "resultLabel": "feel played"
+        }
+      ]
+    },
+    {
+      "id": "t2",
+      "question": "The world has always been corrupt. We've only recently woken up.",
+      "settings": {
+        "whatsNextThreshold": 15
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "poll",
+          "question": "What's actually changed?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "Nothing \u2014 we can just see it now"
+            },
+            {
+              "id": "o2",
+              "label": "It's genuinely got worse"
+            },
+            {
+              "id": "o3",
+              "label": "We've got more paranoid, not more awake"
+            },
+            {
+              "id": "o4",
+              "label": "It was always this bad, always will be"
+            }
+          ]
+        },
+        {
+          "id": "i2",
+          "kind": "slider",
+          "question": "Compared with your parents' generation, the world is\u2026",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "far less corrupt",
+          "rightLabel": "far more corrupt",
+          "resultLabel": "say it's got worse"
+        }
+      ]
+    },
+    {
+      "id": "t3",
+      "question": "We are living in a simulation.",
+      "settings": {
+        "whatsNextThreshold": 15
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "slider",
+          "question": "The odds we're in one.",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "0% \u00b7 definitely real",
+          "rightLabel": "100% \u00b7 simulated",
+          "resultLabel": "think it's a simulation"
+        },
+        {
+          "id": "i2",
+          "kind": "poll",
+          "question": "Honestly?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "Yes, and I'm relaxed about it"
+            },
+            {
+              "id": "o2",
+              "label": "Yes, and it bothers me"
+            },
+            {
+              "id": "o3",
+              "label": "No, but I can't prove it"
+            },
+            {
+              "id": "o4",
+              "label": "No, this is absurd"
+            },
+            {
+              "id": "o5",
+              "label": "I'd rather not know"
+            }
+          ]
+        },
+        {
+          "id": "i3",
+          "kind": "emoji",
+          "question": "Gut reaction.",
+          "settings": {
+            "duration": 30
+          },
+          "options": [
+            {
+              "id": "o1",
+              "char": "\ud83e\udd2f"
+            },
+            {
+              "id": "o2",
+              "char": "\ud83d\ude02"
+            },
+            {
+              "id": "o3",
+              "char": "\ud83d\ude10"
+            },
+            {
+              "id": "o4",
+              "char": "\ud83e\udee0"
+            },
+            {
+              "id": "o5",
+              "char": "\ud83d\udc7d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t4",
+      "question": "Democracy gives us the illusion of choice, not genuine power.",
+      "settings": {
+        "whatsNextThreshold": 15
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "ranking",
+          "question": "What actually decides how you live?",
+          "settings": {
+            "duration": 90
+          },
+          "items": [
+            {
+              "id": "o1",
+              "label": "Your vote"
+            },
+            {
+              "id": "o2",
+              "label": "Corporate lobbying"
+            },
+            {
+              "id": "o3",
+              "label": "The press"
+            },
+            {
+              "id": "o4",
+              "label": "Global markets"
+            },
+            {
+              "id": "o5",
+              "label": "Pure luck of birth"
+            }
+          ]
+        },
+        {
+          "id": "i2",
+          "kind": "slider",
+          "question": "How much real power does your vote have?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "none at all",
+          "rightLabel": "it decides things",
+          "resultLabel": "say their vote has real power"
+        },
+        {
+          "id": "i3",
+          "kind": "poll",
+          "question": "If your vote changed nothing, what would you do?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "Keep voting anyway"
+            },
+            {
+              "id": "o2",
+              "label": "Take to the streets"
+            },
+            {
+              "id": "o3",
+              "label": "Disengage completely"
+            },
+            {
+              "id": "o4",
+              "label": "Something a lot more radical"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t5",
+      "question": "Privacy is already dead.",
+      "settings": {
+        "whatsNextThreshold": 15
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "slider",
+          "question": "How much do you actually care?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "not at all",
+          "rightLabel": "it keeps me up at night",
+          "resultLabel": "care about their privacy"
+        },
+        {
+          "id": "i2",
+          "kind": "poll",
+          "question": "What would you actually give up to get it back?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "My phone"
+            },
+            {
+              "id": "o2",
+              "label": "Social media"
+            },
+            {
+              "id": "o3",
+              "label": "Free services \u2014 I'd start paying"
+            },
+            {
+              "id": "o4",
+              "label": "Convenience of every kind"
+            },
+            {
+              "id": "o5",
+              "label": "Nothing, honestly"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t6",
+      "question": "We can no longer make independent choices when algorithms can predict our behaviour.",
+      "settings": {
+        "whatsNextThreshold": 15
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "poll",
+          "question": "What chose your last three hours?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "You did"
+            },
+            {
+              "id": "o2",
+              "label": "The algorithm did"
+            },
+            {
+              "id": "o3",
+              "label": "Both, and that's fine"
+            },
+            {
+              "id": "o4",
+              "label": "Both, and that frightens me"
+            }
+          ]
+        },
+        {
+          "id": "i2",
+          "kind": "slider",
+          "question": "How predictable do you think you are?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "completely unpredictable",
+          "rightLabel": "entirely predictable",
+          "resultLabel": "think they're predictable"
+        }
+      ]
+    },
+    {
+      "id": "t7",
+      "question": "We are so distracted by entertainment that we've stopped paying attention to the world.",
+      "settings": {
+        "whatsNextThreshold": 15
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "poll",
+          "question": "Your screen time yesterday \u2014 honestly.",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "Under 2 hours"
+            },
+            {
+              "id": "o2",
+              "label": "2\u20134 hours"
+            },
+            {
+              "id": "o3",
+              "label": "4\u20136 hours"
+            },
+            {
+              "id": "o4",
+              "label": "6\u20138 hours"
+            },
+            {
+              "id": "o5",
+              "label": "More than 8"
+            },
+            {
+              "id": "o6",
+              "label": "I don't want to look"
+            }
+          ]
+        },
+        {
+          "id": "i2",
+          "kind": "emoji",
+          "question": "How do you feel about that number?",
+          "settings": {
+            "duration": 30
+          },
+          "options": [
+            {
+              "id": "o1",
+              "char": "\ud83d\ude33"
+            },
+            {
+              "id": "o2",
+              "char": "\ud83d\ude2c"
+            },
+            {
+              "id": "o3",
+              "char": "\ud83e\udd37"
+            },
+            {
+              "id": "o4",
+              "char": "\ud83d\ude0e"
+            },
+            {
+              "id": "o5",
+              "char": "\ud83d\ude2d"
+            }
+          ]
+        },
+        {
+          "id": "i3",
+          "kind": "slider",
+          "question": "Distraction is\u2026",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "how I cope",
+          "rightLabel": "how they keep us quiet",
+          "resultLabel": "say it's how we're kept quiet"
+        }
+      ]
+    },
+    {
+      "id": "t8",
+      "question": "We are losing the ability to think for ourselves.",
+      "settings": {
+        "whatsNextThreshold": 15
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "wordcloud",
+          "question": "Where did your last strong opinion come from? One word.",
+          "settings": {
+            "duration": 60
+          }
+        },
+        {
+          "id": "i2",
+          "kind": "poll",
+          "question": "Who do you trust to tell you the truth?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "Scientists"
+            },
+            {
+              "id": "o2",
+              "label": "Journalists"
+            },
+            {
+              "id": "o3",
+              "label": "My own research"
+            },
+            {
+              "id": "o4",
+              "label": "Friends and family"
+            },
+            {
+              "id": "o5",
+              "label": "Nobody"
+            }
+          ]
+        },
+        {
+          "id": "i3",
+          "kind": "slider",
+          "question": "Your opinions are\u2026",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "mostly borrowed",
+          "rightLabel": "worked out myself",
+          "resultLabel": "say they work it out themselves"
+        }
+      ]
+    },
+    {
+      "id": "t9",
+      "question": "Most people would ignore injustice if speaking up threatened their own comfort.",
+      "settings": {
+        "whatsNextThreshold": 15
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "ranking",
+          "question": "What actually stops people speaking up?",
+          "settings": {
+            "duration": 90
+          },
+          "items": [
+            {
+              "id": "o1",
+              "label": "Losing their job"
+            },
+            {
+              "id": "o2",
+              "label": "Losing friends"
+            },
+            {
+              "id": "o3",
+              "label": "Being wrong in public"
+            },
+            {
+              "id": "o4",
+              "label": "Nothing would change anyway"
+            },
+            {
+              "id": "o5",
+              "label": "Physical danger"
+            }
+          ]
+        },
+        {
+          "id": "i2",
+          "kind": "poll",
+          "question": "Have you ever stayed quiet when you should have spoken up?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "Yes, and I still think about it"
+            },
+            {
+              "id": "o2",
+              "label": "Yes, and I'd do the same again"
+            },
+            {
+              "id": "o3",
+              "label": "No, I've always spoken up"
+            },
+            {
+              "id": "o4",
+              "label": "I'd rather not say"
+            }
+          ]
+        },
+        {
+          "id": "i3",
+          "kind": "slider",
+          "question": "How much would you risk to speak up?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "nothing",
+          "rightLabel": "everything",
+          "resultLabel": "would risk a great deal"
+        }
+      ]
+    },
+    {
+      "id": "t10",
+      "question": "The truth is more dangerous than the lies we're told.",
+      "settings": {
+        "whatsNextThreshold": 15
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "poll",
+          "question": "Would you want to know?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "Yes, all of it, whatever it costs"
+            },
+            {
+              "id": "o2",
+              "label": "Only if I could do something about it"
+            },
+            {
+              "id": "o3",
+              "label": "No \u2014 I'd rather live well"
+            },
+            {
+              "id": "o4",
+              "label": "I already know, and it changed nothing"
+            }
+          ]
+        },
+        {
+          "id": "i2",
+          "kind": "slider",
+          "question": "Tonight moved me\u2026",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "nothing's changed",
+          "rightLabel": "I see it differently now",
+          "resultLabel": "see it differently now"
+        },
+        {
+          "id": "i3",
+          "kind": "wordcloud",
+          "question": "One word you're leaving with.",
+          "settings": {
+            "duration": 60
+          }
+        }
+      ]
+    }
+  ]
+}
