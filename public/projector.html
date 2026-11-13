@@ -57,9 +57,15 @@
     </div>
   </div>
 
+  <!-- The clock the room is actually running against. It closes the vote, so
+       it cannot live only on the crew's laptop. A draining bar for the back of
+       the room, the digits for anyone who wants them. -->
+  <div class="clock-bar" id="p-clock-bar" hidden><i id="p-clock-fill"></i></div>
+
   <div class="proj-top">
     <div class="wordmark" id="wordmark"></div>
     <div class="topic">TOPIC <span id="p-n">1</span> OF <span id="p-t">5</span></div>
+    <div class="clock" id="p-clock" hidden><span id="p-clock-t"></span></div>
   </div>
 
   <!-- HOW IT WORKS: a short loop of slides explaining the app to a room that

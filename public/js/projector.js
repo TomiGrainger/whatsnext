@@ -507,6 +507,7 @@
     $("#p-n").textContent = st.topicIndex + 1;
     $("#p-t").textContent = st.topicCount;
     showView(MODE_VIEW[st.mode] || "pv-discussion");
+    paintClock(st);
 
     let foot = "";
 
@@ -662,6 +663,36 @@
   });
 
   Live.onState(render);
+  // ---- the clock, where the room can see it ------------------------------
+  // The countdown closes the vote, and until now it lived only on the crew's
+  // laptop: answers stopped counting for a reason nobody in the room could
+  // see. The bar is for the back of the room, the digits for the front.
+  let lastPct = 0;
+  function paintClock(st) {
+    const live = st.activeInteraction !== null;
+    const bar = $("#p-clock-bar");
+    const clock = $("#p-clock");
+    bar.hidden = !live;
+    clock.hidden = !live;
+    if (!live) { lastPct = 0; return; }
+
+    const item = (st.interactions || []).find((i) => i.index === st.activeInteraction);
+    const total = (item && item.duration) || 0;
+    const left = Math.max(0, st.timeRemaining || 0);
+    const pct = total ? Math.max(0, Math.min(100, (left / total) * 100)) : 0;
+    // only ease the drain; time going back up is a relaunch or an extension
+    bar.classList.toggle("jump", pct > lastPct + 0.5);
+    $("#p-clock-fill").style.width = pct + "%";
+    lastPct = pct;
+
+    const up = left <= 0;
+    clock.classList.toggle("up", up);
+    bar.classList.toggle("up", up);
+    clock.classList.toggle("paused", Boolean(st.paused) && !up);
+    $("#p-clock-t").textContent =
+      up ? "TIME'S UP" : (st.paused ? "\u275a\u275a " : "") + UI.fmtTime(left);
+  }
+
   // ---- calling bullshit -------------------------------------------------
   // The siren is generated rather than a file: no asset to ship, and the
   // length is whatever the server says it is. It still needs the page to have
