@@ -45,6 +45,7 @@
           <div class="stat-ico"><span class="ring"></span><div><div class="v" id="time-rem">—</div><div class="k" id="time-lab">ON SCREEN</div></div></div>
           <button class="tb-btn" id="pause-btn">❚❚ PAUSE</button>
           <button class="tb-btn clear" id="clear-btn" title="Take everything off the big screen (Esc)">✕ CLEAR THE WALL</button>
+          <button class="tb-btn kbd" id="kbd-hint" title="Keyboard shortcuts (?)">?</button>
         </div>
       </div>
 
@@ -130,7 +131,18 @@
 
       </div>
 
-      <div class="undo-bar" id="undo-bar" hidden>
+          <!-- What the keyboard does. Built from the same table the keys use, so
+           it cannot drift from the real behaviour. -->
+      <div class="kbd-veil" id="kbd-veil" hidden>
+        <div class="kbd-card">
+          <button class="kbd-x" id="kbd-x" type="button">×</button>
+          <div class="kbd-h">KEYBOARD</div>
+          <div class="kbd-list" id="kbd-list"></div>
+          <div class="kbd-foot">Ending the event and removing anything stay mouse-only, on purpose.</div>
+        </div>
+      </div>
+
+  <div class="undo-bar" id="undo-bar" hidden>
         <span id="undo-what">Removed.</span>
         <button class="undo-btn" id="undo-btn" type="button">UNDO</button>
       </div>

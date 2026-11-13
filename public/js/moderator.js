@@ -24,9 +24,6 @@
     UI.toast("Wall cleared");
   }
   $("#clear-btn").addEventListener("click", clearWall);
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") clearWall();
-  });
   $("#discussion-btn").addEventListener("click", () => { Live.send("backToDiscussion"); UI.toast("Back to discussion"); });
   $("#reveal-btn").addEventListener("click", () => { Live.send("reveal"); UI.toast("Results revealed"); });
   $("#again-btn").addEventListener("click", () => { Live.send("askAgain"); UI.toast("Same poll, round two"); });
@@ -107,6 +104,92 @@
     });
     lab.textContent = "Event Ended";
   });
+
+  // ---- the keyboard ------------------------------------------------------
+  // Running a room from a laptop at the front means not looking at the screen.
+  // Every shortcut presses the button it names rather than sending the action
+  // itself, so a key can never do something the button would have refused —
+  // no revealing a discussion, no launching what is already on the wall.
+  function press(sel) {
+    const btn = $(sel);
+    if (!btn || btn.disabled || btn.hidden) return false;
+    btn.click();
+    return true;
+  }
+
+  // The destructive ones are deliberately absent: ending the night, removing
+  // a question and switching the room off stay deliberate taps with a mouse.
+  const KEYS = {
+    " ": ["#pause-btn", "Pause / resume"],
+    ArrowRight: ["#next-btn", "Next topic"],
+    ArrowLeft: ["#prev-btn", "Previous topic"],
+    r: ["#reveal-btn", "Reveal results"],
+    d: ["#discussion-btn", "Back to discussion"],
+    e: ["#extend-btn", "Extend time by 30s"],
+    a: ["#again-btn", "Ask the poll again"],
+    h: ["#holding-btn", "Holding screen"],
+    j: ["#join-btn", "Join code on the wall"],
+  };
+
+  function showHelp(on) {
+    $("#kbd-veil").hidden = on === false ? true : !$("#kbd-veil").hidden;
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const el = e.target;
+    if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA"
+               || el.tagName === "SELECT" || el.isContentEditable)) return;
+
+    if (e.key === "Escape") {
+      if (!$("#kbd-veil").hidden) { showHelp(false); return; }
+      clearWall();
+      return;
+    }
+    // "/" as well as "?": on plenty of layouts the question mark needs a
+    // modifier this never sees, and there is nothing else here to type into.
+    if (e.key === "?" || e.key === "/" || e.code === "Slash") {
+      e.preventDefault(); showHelp(); return;
+    }
+
+    // launch the nth interaction on this topic
+    if (/^[1-9]$/.test(e.key)) {
+      const btns = $$("#run-row .run-btn[data-index]");
+      const btn = btns[Number(e.key) - 1];
+      e.preventDefault();
+      if (btn && !btn.disabled) btn.click();
+      return;
+    }
+
+    const hit = KEYS[e.key] || KEYS[(e.key || "").toLowerCase()];
+    if (!hit) return;
+    // space would otherwise re-press whichever button was clicked last, and
+    // scroll the page on the way
+    e.preventDefault();
+    if (!press(hit[0])) UI.toast("Can't do that right now");
+  });
+
+  $("#kbd-hint").addEventListener("click", () => showHelp());
+  $("#kbd-x").addEventListener("click", () => showHelp(false));
+  // the cheatsheet is built from the same table that drives the keys, so it
+  // cannot drift from what the keyboard actually does
+  (function buildHelp() {
+    const host = $("#kbd-list");
+    const rows = [["Esc", "Clear the wall"], ["1 – 9", "Launch that interaction"]]
+      .concat(Object.keys(KEYS).map((k) =>
+        [k === " " ? "Space" : k.replace("Arrow", "").toUpperCase(), KEYS[k][1]]))
+      .concat([["?", "This list"]]);
+    rows.forEach(function (row) {
+      const line = document.createElement("div");
+      line.className = "kbd-row";
+      const key = document.createElement("kbd");
+      key.textContent = row[0];
+      const lab = document.createElement("span");
+      lab.textContent = row[1];
+      line.append(key, lab);
+      host.appendChild(line);
+    });
+  })();
 
   // sidebar quick-jumps
   $$('.nav a[data-jump]').forEach((a) => a.addEventListener("click", (e) => {
