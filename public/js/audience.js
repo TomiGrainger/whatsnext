@@ -837,8 +837,7 @@
   const BURSTS = ["🔥", "👏", "❤️", "😂", "🤯", "🙌"];
   const BURST_EVERY = 160;   // ms between sends while held — fast enough to feel live
 
-  (function buildBursts() {
-    const row = $("#burst-row");
+  function buildBursts(row) {
     BURSTS.forEach((emoji) => {
       const b = document.createElement("button");
       b.className = "burst";
@@ -873,7 +872,9 @@
       b.addEventListener("pointerleave", stop);
       row.appendChild(b);
     });
-  })();
+  }
+  buildBursts($("#burst-row"));        // in the flow of the discussion screen
+  buildBursts($("#burst-dock-row"));   // floating over everything else
 
   // ---- Q&A ----
   // which questions this phone has upvoted; the server never sends voter ids
@@ -1135,6 +1136,14 @@
       : (MODE_SCREEN[targetMode] || "s-discussion");
     const active = $(".screen.active");
     if (!active || active.id !== screenId || force) showScreen(screenId);
+
+    // Reactions used to vanish the moment an interaction opened, which is
+    // exactly when the room is most worth hearing from. The discussion keeps
+    // its own row; every interaction screen gets the floating one.
+    const dockOn = ["s-poll", "s-wordcloud", "s-emoji", "s-slider", "s-ranking"]
+      .indexOf(screenId) >= 0 && !st.closed;
+    $("#burst-dock").hidden = !dockOn;
+    document.body.classList.toggle("has-dock", dockOn);
     updateCounter(st);
 
     // The clock, for the phone holding the answer. A vote closes when it runs

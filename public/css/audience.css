@@ -169,6 +169,21 @@ input[type=range].slider::-moz-range-thumb{width:34px;height:34px;border:none;bo
 }
 @keyframes netpulse{0%,100%{opacity:1;}50%{opacity:.25;}}
 
+/* The reaction dock. Under the sheets (40/50) so opening one covers it, over
+   the screen content, and faded into the background rather than sitting on a
+   hard edge. */
+.burst-dock{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  max-width:440px;margin:0 auto;
+  padding:16px 18px calc(10px + env(safe-area-inset-bottom));
+  background:linear-gradient(to top,rgba(10,10,11,.97) 55%,rgba(10,10,11,0));
+  pointer-events:none;
+}
+.burst-dock[hidden]{display:none;}
+.burst-dock .burst-row{margin:0;pointer-events:auto;}
+/* so the dock never sits on top of what it is reacting to */
+body.has-dock .screen.active{padding-bottom:86px;}
+
 /* Calling bullshit. Full width and loud on purpose — it is not a reaction
    tucked in a row of four, it is an interruption, and it should look like one. */
 .bs-bar{
