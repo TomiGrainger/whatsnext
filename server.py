@@ -26,6 +26,7 @@ Features
 
 import copy
 import csv
+import hashlib
 import hmac
 import io
 import json
@@ -193,24 +194,82 @@ def upgrade_config(cfg):
     return cfg
 
 
+# What we last wrote onto the volume, by name -> sha256 of those bytes. It is
+# how a deploy can tell "nobody has touched this since we put it there" from
+# "the crew edited this on the night", which look identical on disk otherwise.
+SEEDED_FILE = os.path.join(DATA_DIR, ".events-seeded.json")
+
+
+def _read_seeded():
+    try:
+        with open(SEEDED_FILE) as fh:
+            kept = json.load(fh)
+            return kept if isinstance(kept, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _digest(blob):
+    return hashlib.sha256(blob).hexdigest()
+
+
 def seed_events():
-    """Copy the events shipped with the app into the data directory, but only
-    ones that aren't there yet. A fresh volume gets the demo event; an event the
-    crew authored or edited is never overwritten by a later deploy."""
+    """Put the events shipped with the app onto the data directory.
+
+    A file that isn't there is copied. A file that is there and still matches
+    what we last wrote is refreshed when the shipped one has moved on — that is
+    how an edit to an event in the repo ever reaches a deployed room, and
+    without it a reworded question lives in git and nowhere else.
+
+    A file the crew has edited through /setup is never touched, because their
+    version is the one that has been through a rehearsal. Anything we cannot
+    prove we wrote ourselves counts as theirs."""
     if EVENTS_DIR == BUNDLED_EVENTS_DIR:
-        return []
+        return [], [], []
     os.makedirs(EVENTS_DIR, exist_ok=True)
-    copied = []
+    seeded = _read_seeded()
+    copied, refreshed, kept = [], [], []
+
     for name in sorted(os.listdir(BUNDLED_EVENTS_DIR)):
         if not name.endswith(".json"):
             continue
+        with open(os.path.join(BUNDLED_EVENTS_DIR, name), "rb") as fh:
+            shipped = fh.read()
+        shipped_hash = _digest(shipped)
         target = os.path.join(EVENTS_DIR, name)
-        if os.path.exists(target):
+
+        try:
+            with open(target, "rb") as fh:
+                live = fh.read()
+        except OSError:
+            live = None
+
+        if live is None:
+            where = copied
+        elif _digest(live) == shipped_hash:
+            seeded[name] = shipped_hash      # already identical; just remember it
             continue
-        with open(os.path.join(BUNDLED_EVENTS_DIR, name)) as src, open(target, "w") as dst:
-            dst.write(src.read())
-        copied.append(name)
-    return copied
+        elif seeded.get(name) == _digest(live):
+            where = refreshed                # ours, untouched, and now out of date
+        else:
+            kept.append(name)                # theirs — leave it exactly as it is
+            continue
+
+        tmp = target + ".tmp"
+        with open(tmp, "wb") as fh:
+            fh.write(shipped)
+        os.replace(tmp, target)
+        seeded[name] = shipped_hash
+        where.append(name)
+
+    try:
+        tmp = SEEDED_FILE + ".tmp"
+        with open(tmp, "w") as fh:
+            json.dump(seeded, fh, indent=2)
+        os.replace(tmp, SEEDED_FILE)
+    except OSError:
+        pass          # worst case the next deploy treats these as the crew's
+    return copied, refreshed, kept
 
 
 def load_events():
@@ -3582,7 +3641,7 @@ def main():
                   % (dropped, RETENTION_DAYS))
     try:
         os.makedirs(DATA_DIR, exist_ok=True)
-        copied = seed_events()
+        copied, refreshed, kept = seed_events()
     except OSError as exc:
         raise SystemExit("  Cannot write to DATA_DIR %s: %s" % (DATA_DIR, exc))
     load_events()
@@ -3593,6 +3652,10 @@ def main():
     print("  Loaded %d event(s): %s" % (len(EVENTS), ", ".join(sorted(EVENTS))))
     if copied:
         print("  Seeded onto the data dir: %s" % ", ".join(copied))
+    if refreshed:
+        print("  Updated from this build: %s" % ", ".join(refreshed))
+    if kept:
+        print("  Left as the crew edited them: %s" % ", ".join(kept))
     print("  Data dir: %s   Events: %s" % (DATA_DIR, EVENTS_DIR))
     load_state()
     threading.Thread(target=ticker, daemon=True).start()
