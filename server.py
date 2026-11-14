@@ -869,6 +869,7 @@ def new_room(code, event_id=DEFAULT_EVENT_ID, seed=False):
         "eventId": event_id,
         "brand": config.get("brand", "LIVE EVENT"),
         "eventName": config.get("eventName", "EVENT"),
+        "holdingVideo": config.get("holdingVideo", ""),
         "screen": None,     # holding | stats | offer | donate | None
         "started": False,   # until the crew starts, everyone sits in the lobby
         "topics": topics,
@@ -1095,6 +1096,14 @@ def validate_event(payload):
         "eventName": _text(payload.get("eventName"), "Event name", 60),
         "topics": topics,
     }
+    # The loop that plays before the doors and in the break. An event can ship
+    # its own — a promo for the night in question beats the house reel — and
+    # anything without one falls back to it. basename only: this ends up in a
+    # URL under /media/, so it cannot be steered anywhere else.
+    holding = os.path.basename(_text(payload.get("holdingVideo"), "Holding video",
+                                     120, required=False))
+    if holding:
+        out["holdingVideo"] = holding
     jobs = payload.get("occupations")
     if isinstance(jobs, list) and jobs:
         cleaned = [_text(j, "Job title", 60, required=False) for j in jobs[:40]]
@@ -1166,7 +1175,7 @@ def _remap_seed(prev, item, seed):
 def merge_preserved(old, new):
     """Carry over the parts of an event the setup form does not edit — the demo
     room's seed blocks — so saving an edit never silently discards them."""
-    for key in ("seedChallenges", "seedSimParticipants"):
+    for key in ("seedChallenges", "seedSimParticipants", "holdingVideo"):
         if key in old:
             new[key] = old[key]
     old_topics = old.get("topics", [])
@@ -1767,6 +1776,7 @@ def snapshot(code, crew=False):
             "promo": room_offer(r),
             # whichever takeover is up, or nothing. One at a time, always.
             "screen": r.get("screen"),
+            "holdingVideo": r.get("holdingVideo", ""),
             "bullshitOn": r.get("bullshitOn", True),
             # is anything covering the topic right now
             "wallCovered": bool(r.get("screen") or r.get("featuredQuestion")

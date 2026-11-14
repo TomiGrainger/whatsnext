@@ -338,6 +338,13 @@
     const on = st.screen === "holding";
     const veil = $("#hold-veil");
     const video = $("#hold-video");
+    // an event can bring its own loop; everything else gets the house one
+    const src = "/media/" + (st.holdingVideo || "holding.mp4");
+    if (video.dataset.src !== src) {
+      video.dataset.src = src;
+      video.src = src;
+      video.load();
+    }
     if (on === !veil.hidden) return;          // already in the right state
     veil.hidden = !on;
     if (on) {
