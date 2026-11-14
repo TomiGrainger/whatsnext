@@ -1,137 +1,307 @@
 {
   "brand": "THE UPGRADE",
   "eventName": "THE BIG DEBATE",
-  "seedSimParticipants": 49,
-  "offer": {
-    "headline": "Work with me for 12 weeks",
-    "body": "Small group coaching, starts in March.",
-    "cta": "I'M INTERESTED",
-    "link": "https://theupgrade.live/coaching",
-    "linkLabel": "See the details",
-    "image": ""
-  },
-  "seedChallenges": [
-    { "name": "Alex R.", "text": "I disagree — convenience has freed up time for creativity.", "agoSeconds": 60 },
-    { "name": "Maya L.", "text": "But at what cost to our attention and focus?", "agoSeconds": 120 },
-    { "name": "Jordan T.", "text": "Convenience is a tool, not the problem.", "agoSeconds": 180 },
-    { "name": "Sana K.", "text": "We optimized comfort and lost resilience.", "agoSeconds": 240 },
-    { "name": "Dev P.", "text": "Every generation says this about new tech.", "agoSeconds": 300 },
-    { "name": "Riya N.", "text": "Weaker how? Define the metric first.", "agoSeconds": 360 }
-  ],
   "topics": [
     {
-      "id": "t-convenience",
+      "id": "t1",
       "question": "Is convenience making us weaker?",
-      "settings": { "whatsNextThreshold": 10 },
-      "seed": {
-        "sentiment": { "agree": 41, "disagree": 37, "unsure": 22 },
-        "sentimentHistory": [
-          { "agree": 44, "disagree": 34 }, { "agree": 43, "disagree": 35 },
-          { "agree": 45, "disagree": 33 }, { "agree": 42, "disagree": 36 },
-          { "agree": 43, "disagree": 35 }, { "agree": 41, "disagree": 37 },
-          { "agree": 42, "disagree": 37 }, { "agree": 41, "disagree": 37 }
-        ],
-        "whatsNextVotes": 7,
-        "responses": 100
+      "settings": {
+        "whatsNextThreshold": 10
       },
       "interactions": [
         {
-          "id": "i-poll-challenge",
+          "id": "i1",
           "kind": "poll",
           "question": "Biggest challenge ahead?",
-          "settings": { "duration": 60 },
+          "settings": {
+            "duration": 60
+          },
           "options": [
-            { "id": "ai", "label": "AI & technology" },
-            { "id": "climate", "label": "Climate change" },
-            { "id": "mental", "label": "Mental health" },
-            { "id": "econ", "label": "Economic inequality" }
+            {
+              "id": "o1",
+              "label": "AI & technology"
+            },
+            {
+              "id": "o2",
+              "label": "Climate change"
+            },
+            {
+              "id": "o3",
+              "label": "Mental health"
+            },
+            {
+              "id": "o4",
+              "label": "Economic inequality"
+            }
           ],
-          "seed": { "votes": { "ai": 42, "climate": 28, "mental": 17, "econ": 13 } }
-        },
-        {
-          "id": "i-wordcloud-future",
-          "kind": "wordcloud",
-          "question": "One word for the future?",
-          "settings": { "duration": 90 },
           "seed": {
-            "words": {
-              "exciting": 24, "uncertain": 19, "opportunity": 21, "overwhelming": 14,
-              "hopeful": 12, "innovative": 11, "optimistic": 10, "limitless": 13,
-              "changing": 9, "freedom": 12, "scary": 7, "unknown": 6,
-              "automation": 6, "fragile": 5
+            "votes": {
+              "o1": 42,
+              "o2": 28,
+              "o3": 17,
+              "o4": 13
             }
           }
         },
         {
-          "id": "i-emoji-feel",
+          "id": "i2",
+          "kind": "wordcloud",
+          "question": "One word for the future?",
+          "settings": {
+            "duration": 90
+          },
+          "seed": {
+            "words": {
+              "exciting": 24,
+              "uncertain": 19,
+              "opportunity": 21,
+              "overwhelming": 14,
+              "hopeful": 12,
+              "innovative": 11,
+              "optimistic": 10,
+              "limitless": 13,
+              "changing": 9,
+              "freedom": 12,
+              "scary": 7,
+              "unknown": 6,
+              "automation": 6,
+              "fragile": 5
+            }
+          }
+        },
+        {
+          "id": "i3",
           "kind": "emoji",
           "question": "How do you feel?",
-          "settings": { "duration": 30 },
+          "settings": {
+            "duration": 30
+          },
           "options": [
-            { "id": "fire", "char": "🔥" },
-            { "id": "clap", "char": "👏" },
-            { "id": "think", "char": "🤔" },
-            { "id": "heart", "char": "❤️" },
-            { "id": "eyes", "char": "👀" },
-            { "id": "pray", "char": "🙌" },
-            { "id": "grimace", "char": "😬" },
-            { "id": "party", "char": "🎉" },
-            { "id": "bulb", "char": "💡" }
+            {
+              "id": "o1",
+              "char": "\ud83d\udd25"
+            },
+            {
+              "id": "o2",
+              "char": "\ud83d\udc4f"
+            },
+            {
+              "id": "o3",
+              "char": "\ud83e\udd14"
+            },
+            {
+              "id": "o4",
+              "char": "\u2764\ufe0f"
+            },
+            {
+              "id": "o5",
+              "char": "\ud83d\udc40"
+            },
+            {
+              "id": "o6",
+              "char": "\ud83d\ude4c"
+            },
+            {
+              "id": "o7",
+              "char": "\ud83d\ude2c"
+            },
+            {
+              "id": "o8",
+              "char": "\ud83c\udf89"
+            },
+            {
+              "id": "o9",
+              "char": "\ud83d\udca1"
+            }
           ],
           "seed": {
-            "counts": { "fire": 18, "clap": 12, "think": 9, "heart": 22, "eyes": 15, "pray": 10, "grimace": 6, "party": 4, "bulb": 3 }
+            "counts": {
+              "o1": 18,
+              "o2": 12,
+              "o3": 9,
+              "o4": 22,
+              "o5": 15,
+              "o6": 10,
+              "o7": 6,
+              "o8": 4,
+              "o9": 3
+            }
+          }
+        }
+      ],
+      "seed": {
+        "sentiment": {
+          "agree": 41,
+          "disagree": 37,
+          "unsure": 22
+        },
+        "sentimentHistory": [
+          {
+            "agree": 44,
+            "disagree": 34
+          },
+          {
+            "agree": 43,
+            "disagree": 35
+          },
+          {
+            "agree": 45,
+            "disagree": 33
+          },
+          {
+            "agree": 42,
+            "disagree": 36
+          },
+          {
+            "agree": 43,
+            "disagree": 35
+          },
+          {
+            "agree": 41,
+            "disagree": 37
+          },
+          {
+            "agree": 42,
+            "disagree": 37
+          },
+          {
+            "agree": 41,
+            "disagree": 37
+          }
+        ],
+        "whatsNextVotes": 7,
+        "responses": 100
+      }
+    },
+    {
+      "id": "t2",
+      "question": "Should AI have creative rights?",
+      "settings": {
+        "whatsNextThreshold": 10
+      },
+      "interactions": [
+        {
+          "id": "i1",
+          "kind": "poll",
+          "question": "Which will matter most in 10 years?",
+          "settings": {
+            "duration": 60
+          },
+          "options": [
+            {
+              "id": "o1",
+              "label": "Renewable energy"
+            },
+            {
+              "id": "o2",
+              "label": "Space exploration"
+            },
+            {
+              "id": "o3",
+              "label": "Biotechnology"
+            },
+            {
+              "id": "o4",
+              "label": "Quantum computing"
+            }
+          ]
+        },
+        {
+          "id": "i2",
+          "kind": "slider",
+          "question": "AI replacing human jobs?",
+          "settings": {
+            "duration": 45
+          },
+          "leftLabel": "not worried",
+          "rightLabel": "very",
+          "resultLabel": "very concerned",
+          "seed": {
+            "sum": 3600,
+            "count": 50
           }
         }
       ]
     },
     {
-      "id": "t-ai-creative-rights",
-      "question": "Should AI have creative rights?",
-      "settings": { "whatsNextThreshold": 10 },
-      "interactions": [
-        {
-          "id": "i-poll-decade",
-          "kind": "poll",
-          "question": "Which will matter most in 10 years?",
-          "settings": { "duration": 60 },
-          "options": [
-            { "id": "renewable", "label": "Renewable energy" },
-            { "id": "space", "label": "Space exploration" },
-            { "id": "biotech", "label": "Biotechnology" },
-            { "id": "quantum", "label": "Quantum computing" }
-          ]
-        },
-        {
-          "id": "i-slider-ai-jobs",
-          "kind": "slider",
-          "question": "AI replacing human jobs?",
-          "leftLabel": "not worried",
-          "rightLabel": "very",
-          "resultLabel": "very concerned",
-          "settings": { "duration": 45 },
-          "seed": { "sum": 3600, "count": 50 }
-        }
-      ]
-    },
-    {
-      "id": "t-privacy-dead",
+      "id": "t3",
       "question": "Is privacy already dead?",
-      "settings": { "whatsNextThreshold": 10 },
+      "settings": {
+        "whatsNextThreshold": 10
+      },
       "interactions": [
         {
-          "id": "i-ranking-happiness",
+          "id": "i1",
           "kind": "ranking",
           "question": "Rank by future happiness",
-          "settings": { "duration": 60 },
+          "settings": {
+            "duration": 60
+          },
           "items": [
-            { "id": "rel", "label": "Relationships" },
-            { "id": "health", "label": "Health" },
-            { "id": "purpose", "label": "Purpose / Meaning" },
-            { "id": "money", "label": "Money" },
-            { "id": "success", "label": "Success" }
+            {
+              "id": "o1",
+              "label": "Relationships"
+            },
+            {
+              "id": "o2",
+              "label": "Health"
+            },
+            {
+              "id": "o3",
+              "label": "Purpose / Meaning"
+            },
+            {
+              "id": "o4",
+              "label": "Money"
+            },
+            {
+              "id": "o5",
+              "label": "Success"
+            }
           ]
         }
       ]
     }
-  ]
+  ],
+  "offer": {
+    "headline": "Coaching Program",
+    "body": "Let's do it",
+    "cta": "I'M INTERESTED",
+    "link": "https://www.tomigrainger.com",
+    "linkLabel": "See the details",
+    "image": "the-big-debate.png"
+  },
+  "seedChallenges": [
+    {
+      "name": "Alex R.",
+      "text": "I disagree \u2014 convenience has freed up time for creativity.",
+      "agoSeconds": 60
+    },
+    {
+      "name": "Maya L.",
+      "text": "But at what cost to our attention and focus?",
+      "agoSeconds": 120
+    },
+    {
+      "name": "Jordan T.",
+      "text": "Convenience is a tool, not the problem.",
+      "agoSeconds": 180
+    },
+    {
+      "name": "Sana K.",
+      "text": "We optimized comfort and lost resilience.",
+      "agoSeconds": 240
+    },
+    {
+      "name": "Dev P.",
+      "text": "Every generation says this about new tech.",
+      "agoSeconds": 300
+    },
+    {
+      "name": "Riya N.",
+      "text": "Weaker how? Define the metric first.",
+      "agoSeconds": 360
+    }
+  ],
+  "seedSimParticipants": 49
 }

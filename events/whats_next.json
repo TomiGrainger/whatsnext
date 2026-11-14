@@ -192,35 +192,35 @@
           "options": [
             {
               "id": "o1",
-              "char": "🔥"
+              "char": "\ud83d\udd25"
             },
             {
               "id": "o2",
-              "char": "👏"
+              "char": "\ud83d\udc4f"
             },
             {
               "id": "o3",
-              "char": "🤔"
+              "char": "\ud83e\udd14"
             },
             {
               "id": "o4",
-              "char": "❤️"
+              "char": "\u2764\ufe0f"
             },
             {
               "id": "o5",
-              "char": "👀"
+              "char": "\ud83d\udc40"
             },
             {
               "id": "o6",
-              "char": "🥱"
+              "char": "\ud83e\udd71"
             },
             {
               "id": "o7",
-              "char": "👎"
+              "char": "\ud83d\udc4e"
             },
             {
               "id": "o8",
-              "char": "💩"
+              "char": "\ud83d\udca9"
             }
           ]
         }
@@ -525,35 +525,35 @@
           "options": [
             {
               "id": "o1",
-              "char": "🔥"
+              "char": "\ud83d\udd25"
             },
             {
               "id": "o2",
-              "char": "👏"
+              "char": "\ud83d\udc4f"
             },
             {
               "id": "o3",
-              "char": "🤔"
+              "char": "\ud83e\udd14"
             },
             {
               "id": "o4",
-              "char": "❤️"
+              "char": "\u2764\ufe0f"
             },
             {
               "id": "o5",
-              "char": "👀"
+              "char": "\ud83d\udc40"
             },
             {
               "id": "o6",
-              "char": "🥱"
+              "char": "\ud83e\udd71"
             },
             {
               "id": "o7",
-              "char": "👎"
+              "char": "\ud83d\udc4e"
             },
             {
               "id": "o8",
-              "char": "💩"
+              "char": "\ud83d\udca9"
             }
           ]
         }
@@ -618,7 +618,7 @@
     "opensLink": false,
     "link": "https://www.tomigrainger.com/upgrade",
     "linkLabel": "See the details",
-    "image": ""
+    "image": "what-s-next-offer.png"
   },
   "donate": {
     "headline": "Donate to Wear It Purple",
@@ -628,7 +628,6 @@
     "opensLink": true,
     "link": "https://donate.stripe.com/bJe14mclL9u9a8mdOPeQM06",
     "linkLabel": "Give here",
-    "image": ""
-  },
-  "id": "whats_next"
+    "image": "what-s-next-donate.webp"
+  }
 }

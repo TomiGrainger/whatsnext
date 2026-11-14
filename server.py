@@ -272,6 +272,40 @@ def seed_events():
     return copied, refreshed, kept
 
 
+BUNDLED_OFFER_IMAGES = os.path.join(BUNDLED_EVENTS_DIR, "offer-images")
+
+
+def seed_offer_images():
+    """Promo artwork that ships with the app, copied onto the volume if it is
+    not already there.
+
+    An event names its image by filename and the app serves it from the data
+    directory, so an event in the repo that mentions one is only half an event
+    without it — a rebuilt volume would seed the words and serve a broken
+    picture. Copy-if-missing, never overwrite: anything already there was
+    uploaded through /setup and is the version someone chose."""
+    if not os.path.isdir(BUNDLED_OFFER_IMAGES) or DATA_DIR == ROOT:
+        return []
+    target_dir = offers_dir()
+    os.makedirs(target_dir, exist_ok=True)
+    copied = []
+    for name in sorted(os.listdir(BUNDLED_OFFER_IMAGES)):
+        source = os.path.join(BUNDLED_OFFER_IMAGES, name)
+        if name.startswith(".") or not os.path.isfile(source):
+            continue
+        target = os.path.join(target_dir, name)
+        if os.path.exists(target):
+            continue
+        with open(source, "rb") as src:
+            blob = src.read()
+        tmp = target + ".tmp"
+        with open(tmp, "wb") as dst:
+            dst.write(blob)
+        os.replace(tmp, target)
+        copied.append(name)
+    return copied
+
+
 def load_events():
     EVENTS.clear()
     for name in sorted(os.listdir(EVENTS_DIR)):
@@ -3642,6 +3676,7 @@ def main():
     try:
         os.makedirs(DATA_DIR, exist_ok=True)
         copied, refreshed, kept = seed_events()
+        artwork = seed_offer_images()
     except OSError as exc:
         raise SystemExit("  Cannot write to DATA_DIR %s: %s" % (DATA_DIR, exc))
     load_events()
@@ -3656,6 +3691,8 @@ def main():
         print("  Updated from this build: %s" % ", ".join(refreshed))
     if kept:
         print("  Left as the crew edited them: %s" % ", ".join(kept))
+    if artwork:
+        print("  Promo artwork copied across: %s" % ", ".join(artwork))
     print("  Data dir: %s   Events: %s" % (DATA_DIR, EVENTS_DIR))
     load_state()
     threading.Thread(target=ticker, daemon=True).start()
